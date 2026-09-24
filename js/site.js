@@ -173,10 +173,16 @@
       if (empty) empty.style.display = shown ? 'none' : '';
     });
   }
+  // Same markup as ProductCard (src/components/parts.js): contained square picture, name,
+  // code, price status.
   function card(it) {
-    var img = it.i ? '<img src="' + ROOT + it.i + '" alt="" loading="lazy">' : '<span>No image</span>';
-    return '<a class="pcard" href="' + ROOT + it.u + '"><div class="img' + (it.i ? '' : ' noimg') + '">' + img + '</div><div class="body"><h3>' + esc(it.n) + '</h3>' + (it.s ? '<div class="sku">' + esc(it.s) + '</div>' : '') + '</div></a>';
+    var price = page ? page.getAttribute('data-price-label') || '' : '';
+    var noimg = page ? page.getAttribute('data-noimg-label') || '' : '';
+    var img = it.i ? '<img src="' + ROOT + it.i + '" alt="" loading="lazy" width="300" height="300">' : '<span>' + esc(noimg) + '</span>';
+    return '<a class="pcard" href="' + ROOT + it.u + '"><div class="img' + (it.i ? '' : ' noimg') + '">' + img + '</div><div class="body"><h3>' + esc(it.n) + '</h3>' +
+      '<div class="sku">' + (it.s ? esc(it.s) : '&nbsp;') + '</div>' + (price ? '<div class="price">' + esc(price) + '</div>' : '') + '</div></a>';
   }
+
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ---- forms: post JSON to the configured endpoint. Never pretend to succeed. ---- */
