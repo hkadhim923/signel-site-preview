@@ -3359,6 +3359,16 @@ Redirect 301 /nos-services/reparation-support-technique/ /services/repair/
 Redirect 301 /produit/fleche-portative-a-leds-montee-poteau-effia/ /product-category/arrow-boards-and-accessories/arrow-boards/
 Redirect 301 /catalogues/B_Guide-2025.html /catalogue/
 Redirect 301 /catalogues/G_Achat-2026.html /catalogue/
+Redirect 301 /a-propos/carrieres/ /careers/
+Redirect 301 /nos-services/services-de-location/ /services/rental-services/
+Redirect 301 /categorie-produit/solutions-covid-19/barrieres-de-foule/ /product-category/barriers-and-guardrails/crowd-control-barriers/
+Redirect 301 /en/produit/patte-pour-cloture/ /product/fence-foot/
+Redirect 301 /pesee-signel-ap1010d/ /product/ballasts-for-t-rv-7/
+Redirect 301 /vos-besoins/cadenassage/ /solutions/lock-out-it-saves-lives/
+Redirect 301 /vos-besoins/panneaux-lumineux/ /solutions/illuminated-signage/
+Redirect 301 /vos-besoins/radars-pedagogiques-signel/ /solutions/managing-speed-in-your-municipality/
+Redirect 301 /vos-besoins/securite-zone-scolaire/ /solutions/safer-school-zones/
+Redirect 301 /vos-besoins/barriere-signaleur-routier/ /product-category/trailers-and-portable-traffic-signals/flagger-barricades/
 Redirect 301 /wp-login.php /
 Redirect 301 /wp-admin/ /
 

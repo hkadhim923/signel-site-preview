@@ -33,26 +33,16 @@ None found so far. (Filled in by `tools/fetch-product-docs.mjs`, which reads the
 
 ## 4. Links to pages that no longer exist
 
-16 links inside page and post content point at URLs that return 404.
+6 links inside page and post content point at URLs that return 404.
 
 | Where to check | The link on that page points to | What happens |
 |---|---|---|
-| https://www.signel.ca/concours-signel-embauche/ | https://www.signel.ca/a-propos/carrieres/ | 404 |
-| https://www.signel.ca/zone-de-securite-corridor-sanitaire/ | https://www.signel.ca/categorie-produit/solutions-covid-19/barrieres-de-foule/ | 404 |
-| https://www.signel.ca/produit/cloture-temporaire/ | https://www.signel.ca/en/produit/patte-pour-cloture/ | 404 |
-| https://www.signel.ca/soyez-visibles/ | https://www.signel.ca/nos-services/services-de-location/ | 404 |
-| https://www.signel.ca/produit/pesees-pour-t-rv-7/ | https://www.signel.ca/pesee-signel-ap1010d/ | 404 |
 | https://www.signel.ca/remorque-pour-signaleurs/ | https://www.signel.ca/product/remorque-pour-signaleur/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/boite-de-controle-rf-pour-feu-de-chantier-feuflex/ | 404 |
 | https://www.signel.ca/produit/support-motorise-sbm22/<br>https://www.signel.ca/produit/support-motorise-profil-bas/ | https://www.signel.ca/produit/fleche-de-signalisation-moulee-avec-capteur-photosensible/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/option-chargeur-de-batterie/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/option-panneau-solaire-pour-feuflex/ | 404 |
-| https://www.signel.ca/soyez-visibles/ | https://www.signel.ca/vos-besoins/barriere-signaleur-routier/ | 404 |
-| https://www.signel.ca/dispositifs-de-cadenassage-daqueduc/ | https://www.signel.ca/vos-besoins/cadenassage/ | 404 |
-| https://www.signel.ca/location-de-signalisation-temporaire/<br>https://www.signel.ca/octobre-mois-pieton/<br>https://www.signel.ca/evitons-accidents-velos-fantomes/ | https://www.signel.ca/vos-besoins/panneaux-lumineux/ | 404 |
-| https://www.signel.ca/location-de-signalisation-temporaire/<br>https://www.signel.ca/evitons-accidents-velos-fantomes/ | https://www.signel.ca/vos-besoins/radars-pedagogiques-signel/ | 404 |
 | https://www.signel.ca/location-de-signalisation-temporaire/ | https://www.signel.ca/vos-besoins/securite-signaleurs/ | 404 |
-| https://www.signel.ca/la-rentree-scolaire/ | https://www.signel.ca/vos-besoins/securite-zone-scolaire/ | 404 |
 
 ## 5. Catalogue links that are not documents
 

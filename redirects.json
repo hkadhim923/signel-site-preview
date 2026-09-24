@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-24T16:24:08.723Z",
+  "generated": "2026-09-24T17:16:01.615Z",
   "redirects": [
     {
       "from": "/produit/poteau-axe/",
@@ -20112,6 +20112,66 @@
       "to": "/catalogue/",
       "status": 301,
       "why": "the buyer's guide now has its own page, sized to fit"
+    },
+    {
+      "from": "/a-propos/carrieres/",
+      "to": "/careers/",
+      "status": 301,
+      "why": "old careers address"
+    },
+    {
+      "from": "/nos-services/services-de-location/",
+      "to": "/services/rental-services/",
+      "status": 301,
+      "why": "old slug of the rental service"
+    },
+    {
+      "from": "/categorie-produit/solutions-covid-19/barrieres-de-foule/",
+      "to": "/product-category/barriers-and-guardrails/crowd-control-barriers/",
+      "status": 301,
+      "why": "crowd control barriers moved out of the COVID-19 category"
+    },
+    {
+      "from": "/en/produit/patte-pour-cloture/",
+      "to": "/product/fence-foot/",
+      "status": 301,
+      "why": "same product (patte-pour-cloture) under an old /en/ prefix"
+    },
+    {
+      "from": "/pesee-signel-ap1010d/",
+      "to": "/product/ballasts-for-t-rv-7/",
+      "status": 301,
+      "why": "the AP1010 ballast is this product (code AP1010x)"
+    },
+    {
+      "from": "/vos-besoins/cadenassage/",
+      "to": "/solutions/lock-out-it-saves-lives/",
+      "status": 301,
+      "why": "the lockout solution page, renamed"
+    },
+    {
+      "from": "/vos-besoins/panneaux-lumineux/",
+      "to": "/solutions/illuminated-signage/",
+      "status": 301,
+      "why": "the illuminated signs solution page, renamed"
+    },
+    {
+      "from": "/vos-besoins/radars-pedagogiques-signel/",
+      "to": "/solutions/managing-speed-in-your-municipality/",
+      "status": 301,
+      "why": "the driver feedback signs solution page, renamed"
+    },
+    {
+      "from": "/vos-besoins/securite-zone-scolaire/",
+      "to": "/solutions/safer-school-zones/",
+      "status": 301,
+      "why": "the school zone solution page, renamed"
+    },
+    {
+      "from": "/vos-besoins/barriere-signaleur-routier/",
+      "to": "/product-category/trailers-and-portable-traffic-signals/flagger-barricades/",
+      "status": 301,
+      "why": "the flagger barricade range"
     },
     {
       "from": "/wp-login.php",
