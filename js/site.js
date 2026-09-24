@@ -12,6 +12,83 @@
     });
   }
 
+  document.documentElement.classList.add('js');
+
+  /* ---- mega menus (desktop). Hover intent: open after a short rest on the link, close
+     after a short grace period, so crossing the header doesn't flash a panel. The page
+     below is dimmed; moving onto it or clicking it closes the menu, as do the X and Esc.
+     On touch, the first tap on Products / Services / Solutions opens the panel instead of
+     following the link. ---- */
+  var menus = Array.prototype.slice.call(document.querySelectorAll('.has-menu'));
+  if (menus.length) {
+    var wide = window.matchMedia('(min-width: 861px)');
+    var backdrop = document.createElement('div');
+    backdrop.className = 'mega-backdrop';
+    document.body.appendChild(backdrop);
+    var current = null, openTimer = null, closeTimer = null, lastPointer = 'mouse';
+    var setOpen = function (m, on) {
+      m.classList.toggle('is-open', on);
+      var a = m.querySelector(':scope > a'); if (a) a.setAttribute('aria-expanded', on ? 'true' : 'false');
+    };
+    var open = function (m) {
+      clearTimeout(closeTimer); clearTimeout(openTimer);
+      if (current && current !== m) setOpen(current, false);
+      current = m; setOpen(m, true); backdrop.classList.add('on');
+    };
+    var close = function () {
+      clearTimeout(openTimer); clearTimeout(closeTimer);
+      if (current) setOpen(current, false);
+      current = null; backdrop.classList.remove('on');
+      if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.has-menu')) document.activeElement.blur();
+    };
+    document.addEventListener('pointerdown', function (e) { lastPointer = e.pointerType || 'mouse'; }, true);
+    menus.forEach(function (m) {
+      m.addEventListener('mouseenter', function () {
+        if (!wide.matches || lastPointer === 'touch') return;
+        clearTimeout(closeTimer); clearTimeout(openTimer);
+        openTimer = setTimeout(function () { open(m); }, current ? 0 : 150);   // switching between menus is instant
+      });
+      m.addEventListener('mouseleave', function () {
+        if (!wide.matches) return;
+        clearTimeout(openTimer);
+        closeTimer = setTimeout(close, 250);
+      });
+      var link = m.querySelector(':scope > a');
+      if (link) link.addEventListener('click', function (e) {
+        if (wide.matches && lastPointer !== 'mouse' && current !== m) { e.preventDefault(); open(m); }
+        // Phone menu: the first tap unfolds the list under the item, the second follows it.
+        else if (!wide.matches && !m.classList.contains('is-open')) { e.preventDefault(); menus.forEach(function (o) { setOpen(o, o === m); }); }
+      });
+      var x = m.querySelector('[data-mega-close]');
+      if (x) x.addEventListener('click', close);
+    });
+    // Products: resting on a category shows its pane. A short delay, cancelled when the
+    // pointer reaches the pane, so cutting diagonally across other categories on the way
+    // to a subcategory doesn't switch the pane under it.
+    document.querySelectorAll('[data-mega-panes]').forEach(function (box) {
+      var links = Array.prototype.slice.call(box.querySelectorAll('[data-pane]'));
+      var panes = box.querySelector('.mega-panes'), timer = null;
+      var show = function (a) {
+        links.forEach(function (l) {
+          var on = l === a;
+          l.classList.toggle('on', on);
+          var pane = document.getElementById(l.getAttribute('data-pane'));
+          if (pane) pane.hidden = !on;
+        });
+      };
+      links.forEach(function (a) {
+        a.addEventListener('mouseenter', function () { clearTimeout(timer); timer = setTimeout(function () { show(a); }, 90); });
+        a.addEventListener('focus', function () { show(a); });
+      });
+      if (panes) panes.addEventListener('mouseenter', function () { clearTimeout(timer); });
+    });
+
+    backdrop.addEventListener('mouseenter', close);
+    backdrop.addEventListener('click', close);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) close(); });
+    wide.addEventListener('change', function () { menus.forEach(function (o) { setOpen(o, false); }); close(); });
+  }
+
   /* ---- sticky header: shrink the logo once the page scrolls (signel.ca's sticky effect,
      offset 0) and publish the header's height as --head-h for sticky sidebars ---- */
   var head = document.querySelector('.site-head');
