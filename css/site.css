@@ -956,28 +956,16 @@ ul.tp-cats{margin-top:49px}
 .mega-all{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:15px;color:var(--blue);white-space:nowrap}
 .mega-all:hover{text-decoration:none}.mega-all:hover .chev{transform:translateX(3px);opacity:1}
 
-/* products */
-.mega-cat{display:grid;grid-template-columns:320px minmax(0,1fr);gap:0;padding:24px 0 28px}
-.mega-rail{list-style:none;margin:0;padding:8px;background:var(--off);border-radius:12px;align-self:start}
-.mega-rail-link{display:flex;align-items:center;gap:12px;padding:7px 10px;border-radius:8px;color:var(--ink);font-size:15px;font-weight:500;line-height:1.25}
-.mega-rail-link img,.mega-rail-noimg{width:36px;height:36px;flex:none;object-fit:contain;background:#fff;border-radius:6px}
-.mega-rail-name{flex:1}
-.mega-rail-link:hover,.mega-rail-link.on{background:#fff;color:var(--blue);text-decoration:none;box-shadow:0 1px 2px rgba(14,23,27,.06),0 2px 8px rgba(14,23,27,.05)}
-.mega-rail-link.on .chev{opacity:1}
-.mega-panes{padding:8px 0 0 40px;min-width:0}
-.mega-pane{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:32px;align-items:start}
-.mega-pane[hidden]{display:none}
-.mega-pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding-bottom:14px;margin-bottom:10px;border-bottom:1px solid var(--line)}
-.mega-pane-head h3{margin:0;font:700 24px/1.15 var(--font-cond);text-transform:uppercase}
-.mega-pane-head h3 a{color:var(--ink)}
-.mega-sub{list-style:none;margin:0;padding:0;columns:2;column-gap:28px}
-.mega-sub li{break-inside:avoid}
-.mega-sub a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:8px;color:var(--ink);font-size:15px;line-height:1.3}
-.mega-sub a:hover{background:var(--off);color:var(--blue);text-decoration:none}
-.mega-sub small{flex:none;min-width:28px;padding:1px 8px;border-radius:999px;background:var(--off);color:var(--muted);font-size:12px;text-align:center}
-.mega-sub a:hover small{background:#fff}
-.mega-pane-pic{display:block;background:var(--off);border-radius:12px;padding:16px}
-.mega-pane-pic img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
+/* products: the eleven categories, four across */
+.mega-cats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mcat{display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border:1px solid var(--line);border-radius:12px;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+.mcat img,.mcat-noimg{width:52px;height:52px;flex:none;object-fit:contain;background:var(--off);border-radius:8px;padding:4px}
+.mcat-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mcat-name{font-size:15px;font-weight:600;line-height:1.25}
+.mcat small{font-size:12px;color:var(--muted)}
+.mcat:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(14,23,27,.08);text-decoration:none}
+.mcat:hover .mcat-name{color:var(--blue)}
+.mcat:hover .chev{transform:translateX(3px);opacity:1}
 
 /* services, solutions */
 .mega-list{padding:24px 0 30px}
@@ -992,19 +980,18 @@ ul.tp-cats{margin-top:49px}
 .mlink:hover .chev{transform:translateX(3px);opacity:1}
 
 @media (min-width:861px) and (max-width:1100px){
-  .mega-cat{grid-template-columns:260px minmax(0,1fr)}
-  .mega-pane{grid-template-columns:1fr}.mega-pane-pic{display:none}
+  .mega-cats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .mega-links{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 /* phones and tablets: inside the burger menu, a plain list of the same links */
 @media (max-width:860px){
   .mega{border-top:0}
   .mega-grid{width:auto}
-  .mega-cat{display:block;padding:0}
-  .mega-rail{background:none;padding:0}
-  .mega-rail-link{padding:6px 0}
-  .mega-rail-link img,.mega-rail-noimg,.mega .chev,.mega-panes,.mega-list-head{display:none}
-  .mega-rail-link:hover,.mega-rail-link.on{box-shadow:none;background:none}
+  .mega-cats{display:block}
+  .mega .chev,.mega-list-head{display:none}
+  .mcat{border:0;padding:6px 0}
+  .mcat img,.mcat-noimg,.mcat small{display:none}
+  .mcat-name{font-weight:500}
   .mega-list{padding:0}
   .mega-links{display:block}
   .mlink{border:0;padding:6px 0}
@@ -1021,5 +1008,4 @@ ul.tp-cats{margin-top:49px}
   html:not(.js) .has-menu > .mega,.has-menu.is-open > .mega{display:block}
   .has-menu.is-open > a::after{transform:rotate(-135deg) translateY(-2px)}
   .mega-backdrop{display:none}
-  .mega-rail-link.on{color:var(--ink)}
 }

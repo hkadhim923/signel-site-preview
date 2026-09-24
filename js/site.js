@@ -14,11 +14,11 @@
 
   document.documentElement.classList.add('js');
 
-  /* ---- mega menus (desktop). Hover intent: open after a short rest on the link, close
-     after a short grace period, so crossing the header doesn't flash a panel. The page
-     below is dimmed; moving onto it or clicking it closes the menu, as do the X and Esc.
-     On touch, the first tap on Products / Services / Solutions opens the panel instead of
-     following the link. ---- */
+  /* ---- mega menus (desktop). Products opens with one click and stays open until it is
+     clicked again, the dimmed page is clicked, or the X or Esc is used; the mouse leaving
+     does not close it. Services and Solutions open on hover, with a short delay in and a
+     grace period out, and also close when the pointer moves onto the dimmed page. On
+     touch, the first tap opens a panel instead of following the link. ---- */
   var menus = Array.prototype.slice.call(document.querySelectorAll('.has-menu'));
   if (menus.length) {
     var wide = window.matchMedia('(min-width: 861px)');
@@ -43,47 +43,28 @@
     };
     document.addEventListener('pointerdown', function (e) { lastPointer = e.pointerType || 'mouse'; }, true);
     menus.forEach(function (m) {
+      var byClick = m.hasAttribute('data-mega-click');
       m.addEventListener('mouseenter', function () {
-        if (!wide.matches || lastPointer === 'touch') return;
+        if (!wide.matches || lastPointer === 'touch' || byClick) return;
         clearTimeout(closeTimer); clearTimeout(openTimer);
         openTimer = setTimeout(function () { open(m); }, current ? 0 : 150);   // switching between menus is instant
       });
       m.addEventListener('mouseleave', function () {
-        if (!wide.matches) return;
+        if (!wide.matches || byClick) return;
         clearTimeout(openTimer);
         closeTimer = setTimeout(close, 250);
       });
       var link = m.querySelector(':scope > a');
       if (link) link.addEventListener('click', function (e) {
-        if (wide.matches && lastPointer !== 'mouse' && current !== m) { e.preventDefault(); open(m); }
+        if (wide.matches && byClick) { e.preventDefault(); if (current === m) close(); else open(m); }
+        else if (wide.matches && lastPointer !== 'mouse' && current !== m) { e.preventDefault(); open(m); }
         // Phone menu: the first tap unfolds the list under the item, the second follows it.
         else if (!wide.matches && !m.classList.contains('is-open')) { e.preventDefault(); menus.forEach(function (o) { setOpen(o, o === m); }); }
       });
       var x = m.querySelector('[data-mega-close]');
       if (x) x.addEventListener('click', close);
     });
-    // Products: resting on a category shows its pane. A short delay, cancelled when the
-    // pointer reaches the pane, so cutting diagonally across other categories on the way
-    // to a subcategory doesn't switch the pane under it.
-    document.querySelectorAll('[data-mega-panes]').forEach(function (box) {
-      var links = Array.prototype.slice.call(box.querySelectorAll('[data-pane]'));
-      var panes = box.querySelector('.mega-panes'), timer = null;
-      var show = function (a) {
-        links.forEach(function (l) {
-          var on = l === a;
-          l.classList.toggle('on', on);
-          var pane = document.getElementById(l.getAttribute('data-pane'));
-          if (pane) pane.hidden = !on;
-        });
-      };
-      links.forEach(function (a) {
-        a.addEventListener('mouseenter', function () { clearTimeout(timer); timer = setTimeout(function () { show(a); }, 90); });
-        a.addEventListener('focus', function () { show(a); });
-      });
-      if (panes) panes.addEventListener('mouseenter', function () { clearTimeout(timer); });
-    });
-
-    backdrop.addEventListener('mouseenter', close);
+    backdrop.addEventListener('mouseenter', function () { if (current && !current.hasAttribute('data-mega-click')) close(); });
     backdrop.addEventListener('click', close);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) close(); });
     wide.addEventListener('change', function () { menus.forEach(function (o) { setOpen(o, false); }); close(); });
