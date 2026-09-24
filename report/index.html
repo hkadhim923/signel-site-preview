@@ -33,7 +33,7 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <div class="switch"><p>Show what is broken on</p>
 <div class="seg" role="tablist">
 <button type="button" role="tab" data-view="original" aria-selected="true">signel.ca (original site)<b>159</b></button>
-<button type="button" role="tab" data-view="new" aria-selected="false">New site<b class="zero" title="broken">0 broken</b><b class="left" title="left out because broken on signel.ca">16 left out</b></button>
+<button type="button" role="tab" data-view="new" aria-selected="false">New site<b class="zero" title="broken">0 broken</b><b class="left" title="left out because broken on signel.ca">16 left out</b><b class="left" title="products showing a French document">22 in French</b></button>
 </div></div>
 <section data-panel="original">
 <h1 id="s0">signel.ca — what is broken on the original site</h1>
@@ -283,6 +283,33 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>/news/a-safe-halloween/</td><td>link to <code>/vos-besoins/securite-signaleurs/</code> (the words are kept, the link removed)</td><td>the page it should point to, or confirm it can go</td></tr>
 <tr><td>/news/signel-radar-signs-speed-management-in-your-municipality/</td><td>image <code>rad52_revisé.jpg</code></td><td>the image file</td></tr>
 <tr><td>/news/were-on-the-radio/</td><td>audio file <code>Signel-SIGN_Recrutement_Été21.mp3</code></td><td>the audio file</td></tr>
+</tbody></table>
+<h2 id="s28">Documents shown in French</h2>
+<p>22 products show a French document. <strong>signelsafety.ca has not been read yet</strong> (run <code>tools/fetch-english-docs.mjs</code> where the site is reachable), so some of these may already have an English version there.</p>
+<p>The button says "PDF · in French". Each switches to English once the English PDF is on signelsafety.ca (then run <code>tools/fetch-english-docs.mjs</code>) or Signel supplies it.</p>
+<table><thead><tr><th>Product</th><th>French document shown</th><th>To fix</th></tr></thead><tbody>
+<tr><td>/product/used-radio-frequency-portable-traffic-signals/<br>Used radio-frequency portable traffic signals (UFF10)</td><td>Quick-start guide: <code>GD-FF10_GUIDE_DE_DEMARRAGE_FEUFLEX.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/boss-signals-signel-optimized-flagger-barricade-fbs18-fbs28/<br>BOSS signals (Signel Optimized Flagger Barricade)</td><td>FBS18 – FBS28 (FBS18)</td><td>User manual: <code>MU-FBS18_28-R0.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/digital-arrow-board-control-box-with-built-in-keypad/<br>Digital arrow board control box with built-in keypad (CGE100x)</td><td>User manual: <code>MU-CGE100.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/8-ultra-bright-led-signals/<br>8" ultra-bright LED signals (SPS8xx)</td><td>User manual: <code>MU-SPS8xx.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/rectangular-rapid-flashing-beacons-frcr/<br>Rectangular rapid-flashing beacons</td><td>FRCR (BRF22)</td><td>User manual: <code>MU-BRF22.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/solar-variable-message-sign-30-x-72-pixel-matrix/<br>Solar variable message sign – 30 x 72 pixel matrix (PMV14)</td><td>Product sheet: <code>FP-0062_PMVxx.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/rad54-radar-speed-display-sign-amber/<br>Radar Speed Display RAD54 (RAD54x)</td><td>Product sheet: <code>FP-0065_RAD54.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/feuxflex-pro-three-colour-radio-frequency-portable-traffic-signals/<br>FeuxFlex Pro three-colour radio-frequency portable traffic signals (FFPRO-xxx)</td><td>Quick-start guide: <code>GD-FFPRO-R0.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/rad62-radar-speed-display-sign-amber/<br>Radar Speed Display RAD62 (RAD62)</td><td>User manual: <code>MU-RAD62F.pdf</code><br>Comparison sheet: <code>Fiche_comparative_Radars.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/rad60-rad60l-radar-speed-display-sign/<br>Radar Speed Display RAD60 (RAD60x)</td><td>User manual – RAD60: <code>MU-RAD60.pdf</code><br>User manual – RAD60LF: <code>MU-RAD60LF.pdf</code><br>Comparison sheet: <code>Fiche_comparatif_Radars.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/baliplast-t-rv-2-delineator/<br>BALIPLAST T-RV-2 delineator (BAL12PDx)</td><td>Product sheet: <code>FP-0075_BALIPLAST.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/type-u-post-for-reflectors/<br>Type U post for reflectors (PTD1Mxx)</td><td>Hardware for all U-channel posts, with stiffener or pyramid spacer: <code>Quincaillerie_Signel.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/square-post-baliplast-system/<br>Square post, BALIPLAST system (BAL12Pxx)</td><td>Product sheet: <code>FP-0075_BALIPLAST.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/signage-project-911-marker/<br>Signage project – 911 marker (Borne911-x)</td><td>Form: <code>Contrat_pour_installation_plaquettes_911.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/speed-hump/<br>Speed hump (AR10xx)</td><td>DST technical information sheet: Traffic calming – speed humps and cushions: <code>info_DST_avril_2011-moderation_de_la_circulation.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/variable-message-sign-48-80-pixel-matrix/<br>Variable message sign – 48×80 pixel matrix (PMV16)</td><td>Product sheet: <code>FP-0062_PMVxx.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/variable-message-sign-30-x-56-pixel-matrix/<br>Variable message sign – 30 x 56 pixel matrix (PMV15)</td><td>Product sheet: <code>FP-0062_PMVxx.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/fixed-mount-for-a-separate-arrow-board/<br>Fixed mount for a separate arrow board (SFF20)</td><td>Pin down what you need before buying an arrow board: <code>Questions_essentielles_pour__fleches.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/control-box-4-active-relays/<br>Control box, 4 active relays (CGE120x)</td><td>User manual: <code>MU-CGE80120b.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/control-box-4-outputs/<br>Control box, 4 outputs (CGE80)</td><td>User manual: <code>MU-CGE80120b.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/separate-arrow-board/<br>Separate arrow board (SFS80Sx)</td><td>Quick-start guide: <code>GD-SFS80.pdf</code></td><td>the English version of the PDF</td></tr>
+<tr><td>/product/arrow-board-mtq-compliant/<br>Arrow board (MTQ compliant) (SFS80x)</td><td>Quick-start guide: <code>GD-SFS80.pdf</code><br>PIN DOWN WHAT YOU NEED BEFORE BUYING AN ARROW BOARD – answer this questionnaire: <code>Questions_essentielles_pour__fleches.pdf</code></td><td>the English version of the PDF</td></tr>
 </tbody></table>
 </section>
 </main>
