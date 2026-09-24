@@ -1200,3 +1200,5 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 :is(.prose,.rich) :is(.hl-5,.hl-6){font-family:var(--font-body);text-transform:none;letter-spacing:0;line-height:1.3}
 :is(.prose,.rich) .hl-5{font-size:.83rem}
 :is(.prose,.rich) .hl-6{font-size:.67rem}
+/* GIFs converted to looping videos (tools/optimize-media.mjs) keep their width/height attributes; never wider than the text */
+.prose video,.rich video{max-width:100%;height:auto}

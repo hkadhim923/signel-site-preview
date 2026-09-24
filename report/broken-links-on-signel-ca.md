@@ -20,8 +20,153 @@ Open the page in the **Where to check** column and you will see the problem ther
 
 ## 2. Product documents that are broken
 
-None found so far. (Filled in by `tools/fetch-product-docs.mjs`, which reads the Documentation tab of every product page.)
+143 document links in product Documentation tabs lead nowhere. The rebuild leaves them out.
 
+| Where to check | What to click | What happens |
+|---|---|---|
+| https://www.signel.ca/produit/bouchon-de-verrouillage-boite-de-vanne-usage/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BVx.pdf → 404, file not found |
+| https://www.signel.ca/produit/bouchon-de-verrouillage-boite-de-vanne/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BVx.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/brf22/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2021/09/FT-BRF22-R0.pdf → 404, file not found |
+| https://www.signel.ca/produit/remorque-effia-rss60/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2021/03/FP-0081_RSS60-Remorque-EFFIA.pdf → 404, file not found |
+| https://www.signel.ca/produit/moraillon-bouchon-de-cadenassage/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BVx.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/outil-de-manipulation-bouchons/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BVx.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/outil-de-manupulation-boucliers/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BCxx-1.pdf → 404, file not found |
+| https://www.signel.ca/produit/bouclier-de-cadenassage-ajustable/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BCxx-1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/bouchon-de-cadenassage-compressibles/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/10/MU-NO-BVx.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/base-de-stabilisation-barriere-temporaire-dacces-pietonnier-btap/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/05/FT-SBAR638-R0-Signel-Barrière.pdf → 404, file not found |
+| https://www.signel.ca/produit/barriere-temporaire-dacces-pietonnier-btap/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2018/05/FT-SBAR638-R0-Signel-Barrière.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/base-ronde-pour-bollard-rond/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/05/FP-0020_Bollards_et_bases.pdf → 404, file not found |
+| https://www.signel.ca/produit/balise-baliplast-type-t-rv-2/ | the link **système Baliplast** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → 404, file not found |
+| https://www.signel.ca/produit/balise-baliplast-type-t-rv-2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Systeme_Baliplast-Balismart.pdf → 404, file not found |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-80/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-80/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → not a PDF (opens a web page) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-50-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-30/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-30/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-280/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-2-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-2-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-130-2/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-130-2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-2-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-210-2-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-100-2-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-100-2-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-2-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-2-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-130-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-d-130-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-2-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-2-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-16-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-16-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-16-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-16-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-14/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-14/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-13-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-13-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-13-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-13-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-90-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-81-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-81-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-p/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-p/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-8/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-8/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-3/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-3/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-80-2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-70-1-30/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-70-1-30/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-60/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-60/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-6/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-6/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-8/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-8/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-4/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-4/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-40/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-40/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-3/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-3/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-2/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-50-2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-20/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-20/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-130/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-130/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-3-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-3-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-3-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-3-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-120/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-120/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-1-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-110-1-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-3-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-3-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-3-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-3-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-2-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-2-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-10-lentement/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-10-lentement/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-1-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-1-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-1-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-t-100-1-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-90-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-90-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-270-2-g/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-270-2-g/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-30/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-30/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-270-2-d/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-270-2-d/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/p-60-g-ligne-darret-gauche/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/p-60-g-ligne-darret-gauche/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-60-d-ligne-darret-droite/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-60-d-ligne-darret-droite/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-d-30/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-d-30/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-20-1-cedez-le-passage/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-20-1-cedez-le-passage/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-10-arret/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-10-arret/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-140-1/ | the link **Connaissez-vous les systèmes de poteau BALIPLAST et BALISMART ? »» Cliquez ici** | https://www.signel.ca/web/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/panneaux-enroulables-p-140-1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/MU-ERC.pdf,%20MU-ERF.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/courroies-pour-poteau-rond/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → 404, file not found |
+| https://www.signel.ca/produit/boucle-dattache-de-courroie-pour-poteau-rond/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/espaceur-pour-poteau-en-u/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/adaptateur-enseigne-nom-de-rue-ou-plaque-toponymique-sur-poteau-en-u1-u2-u3/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/espaceur-pyramidal-pour-panneau-sur-poteau-en-u/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/boulons-ecrous-et-rondelles-installation-poteau-u-sur-manchon-u/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/raidisseur-pour-panneau-sur-poteau-en-u/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/kit-de-quincaillerie-pour-poteau-en-u/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Quincaillerie_Signel1.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/attache-amovible-pour-systeme-baliplast/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Fiche_Baliplast-1.pdf → 404, file not found |
+| https://www.signel.ca/produit/support-de-transport-et-rangement-pour-systeme-baliplast/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/Systeme_Baliplast-Balismart.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/pied-en-metal/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-TBXBXXXX-R4-Barrière-en-bois-réfléchissante.pdf → 404, file not found |
+| https://www.signel.ca/produit/barrieres-en-bois-type-tb2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-TBXBXXXX-R4-Barrière-en-bois-réfléchissante.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/barrieres-en-bois-amovibles-type-tb1/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-TBXBXXXX-R4-Barrière-en-bois-réfléchissante.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/bollard-plat-forme-concave/ | the link to `fiche_bollard.pdf` | https://www.signel.ca/web/fiche_bollard.pdf → 404, file not found |
+| https://www.signel.ca/produit/base-rectangulaire-pour-bollard-tuff-post/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FP-0020_Bollards_et_bases.pdf → 404, file not found |
+| https://www.signel.ca/produit/base-carree-pour-bollard-tuff-post/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FP-0020_Bollards_et_bases.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/base-pour-bollard-rectangulaire/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FP-0020_Bollards_et_bases.pdf → dead (see first occurrence) |
+| https://www.signel.ca/produit/installation-sur-toit-dune-barre-a-del/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-SGT25X-R1-Ensemble-d’installation-sur-toit-d’une-barre-à-LEDs.pdf → 404, file not found |
+| https://www.signel.ca/produit/installation-de-barre-a-del-verticale/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-SGT24-R2-Ensemble-de-fixation-de-barre-à-LEDs-sur-support-vertical-2.pdf → 404, file not found |
+| https://www.signel.ca/produit/centre-de-gestion-equipements-3-relais-avec-controle-de-fleche-integre-et-clavier-6-touches/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-CGE90-R3-Centre-de-gestion-des-équipements-3-relais-avec-contrôle-de-flèche-intégré-et-clavier-6-touches.pdf → 404, file not found |
+| https://www.signel.ca/produit/boitier-de-controle-2/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-CGE120B-R3-Centre-de-gestion-des-équipements-8-sorties-avec-contrôle-de-flèche-intégré.pdf → 404, file not found |
+| https://www.signel.ca/produit/boitier-de-controle/ | the link **Télécharger** | https://www.signel.ca/wp-content/uploads/2017/04/FT-CGE80-R3-Centre-de-gestion-des-équipements-4-sorties-avec-contrôle-de-flèche-intégré.pdf → 404, file not found |
 
 ## 3. Images and audio that do not load
 
@@ -125,30 +270,16 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 10. Products with no image
 
-58 products show a blank placeholder in the catalogue.
+35 products show a blank placeholder in the catalogue.
 
 | Product | SKU | Page |
 |---|---|---|
 | Lane merge T-100-10-G | T-100-10-Gx | https://www.signel.ca/produit/fusion-de-voies-t-100-10-g/ |
-| BICYCLE DETOUR T-090-6 | T-90-6x | https://www.signel.ca/produit/detour-bicyclettet-090-6/ |
-| Pedestrian detour to the left T-090-18-G | T-90-18-Gx | https://www.signel.ca/produit/detour-a-gauche-pour-pietons-t-090-18-g/ |
-| $100 fine tab | P-310-P-100x | https://www.signel.ca/produit/panonceau-amende-100/ |
-| Reserved lane – buses and carpools, centre arrow, hours and days | P-250-4-Hx | https://www.signel.ca/produit/voie-reservee-aux-bus-et-covoiturage-fleche-au-centre-heures-et-jours/ |
-| Reserved lane – buses, right arrow, hours and days | P-250-2-Hx | https://www.signel.ca/produit/voie-reservee-aux-bus-fleche-a-droite-heures-et-jours/ |
 | EXCEPT AUTHORIZED VEHICLES | P-100-P-2x | https://www.signel.ca/produit/excepte-vehicules-autorises/ |
-| Stop line, right arrow. Installed on the left. | P-60-Gx | https://www.signel.ca/produit/ligne-darret-fleche-a-droite-installation-a-gauche/ |
-| Stop line, left arrow. Installed on the right. | P-60-Dx | https://www.signel.ca/produit/ligne-darret-fleche-a-gauche-installation-a-droite/ |
 | P-18 DOUBLE-SIDED | P-18x | https://www.signel.ca/produit/p-18-recto-verso/ |
-| Stop sign (English) | P-10Sx | https://www.signel.ca/produit/stop/ |
-| Stop tab, T-intersection (English) | P-10-P-2Sx | https://www.signel.ca/produit/panonceau-stop-a-intersection-en-t/ |
 | Stop sign, Inuktitut | P-10-Ix | https://www.signel.ca/produit/arret-inuit/ |
-| ARRÊT-STOP sign (bilingual) | P-10-ASx | https://www.signel.ca/produit/arret-stop/ |
-| Directions to an off-road cycling route | I-535x | https://www.signel.ca/produit/acheminement-vers-un-itineraire-cyclable-hors-route/ |
 | Dead end, with left arrow | I-375-2-Gx | https://www.signel.ca/produit/route-sans-issue-avec-fleche-a-gauche/ |
 | Hiker parking area | I-350-13x | https://www.signel.ca/produit/aire-de-stationnement-pour-randonneurs/ |
-| Certified airport – pointing at 45 degrees (right) or (left) | I-300-2-G-Dx | https://www.signel.ca/produit/aeroport-homologue-pointant-a-45-degres-droite-ou-gauche/ |
-| Major airport pointing at 45 degrees, right or left | I-300-1-G-Dx | https://www.signel.ca/produit/aeroport-majeur-pointant-a-45-degres-droite-ou-gauche/ |
-| Distance XXX m | I-245-P-2x | https://www.signel.ca/produit/distance-xxxm/ |
 | Diagonal right arrow X km tab | I-240-P-7-D-Vx | https://www.signel.ca/produit/panonceau-fleche-oblique-a-droite-x-km-2/ |
 | Direction tab, diagonal right X km | I-240-P-7-D-BRx | https://www.signel.ca/produit/panonceau-de-direction-oblique-a-droite-x-km/ |
 | Diagonal right arrow X km tab | I-240-P-7-D-BLx | https://www.signel.ca/produit/panonceau-fleche-oblique-a-droite-x-km/ |
@@ -156,14 +287,10 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | Highway exit number, left | I-201-Gx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-gauche/ |
 | Highway exit number, right, with cardinal direction | I-201-DPCx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite-avec-point-cardinal/ |
 | Highway exit number, right | I-201-Dx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite/ |
-| Tourist route marker: Route du fleuve | I-185-3-Bx | https://www.signel.ca/produit/jalonnement-le-long-de-la-route-ou-du-circuit-touristiqueroute-du-fleuve/ |
-| Tourist route marker | I-185-3x | https://www.signel.ca/produit/jalonnement-le-long-de-la-route-ou-du-circuit-touristique/ |
 | Tourist route identification | I-185-2x | https://www.signel.ca/produit/identification-de-la-route-ou-du-circuit-touristique/ |
 | Directions to tourist route: Route des Sommets | I-185-1-Lx | https://www.signel.ca/produit/acheminement-vers-la-route-ou-le-circuit-touristiqueroute-des-sommets/ |
 | Tourist route marker: Chemin des cantons | I-185-1-Jx | https://www.signel.ca/produit/jalonnement-le-long-de-la-route-ou-du-circuit-touristiquechemin-des-cantons/ |
-| Directions to tourist route | I-185-1x | https://www.signel.ca/produit/acheminement-vers-la-route-ou-le-circuit-touristique/ |
 | Crossing location tab, diagonal left arrow (bike paths) | D-270-P-1x | https://www.signel.ca/produit/panonceau-de-localisation-dun-passage-fleche-oblique-a-gauche-voies-cyclables/ |
-| Reserved lane intersection | D-255x | https://www.signel.ca/produit/intersection-dune-voie-reservee/ |
 | Advisory exit speed 85 km/h | D-120-P-85x | https://www.signel.ca/produit/vitesse-recommandee-sortie-85-kmh/ |
 | Advisory exit speed 75 km/h | D-120-P-75x | https://www.signel.ca/produit/vitesse-recommandee-sortie-75-kmh/ |
 | Advisory exit speed 65 km/h | D-120-P-65x | https://www.signel.ca/produit/vitesse-recommandee-sortie-65-kmh/ |
@@ -171,11 +298,6 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | Advisory exit speed 45 km/h | D-120-P-45x | https://www.signel.ca/produit/vitesse-recommandee-sortie-45-kmh/ |
 | Advisory exit speed 35 km/h | D-120-P-35x | https://www.signel.ca/produit/vitesse-recommande-sortie-35-kmh/ |
 | Advisory exit speed 25 km/h | D-120-P-25x | https://www.signel.ca/produit/vitesse-recommande-sortie-25-kmh/ |
-| OSHA standard signs: Fire extinguisher | (none) | https://www.signel.ca/produit/panneaux-norme-osha-extincteur/ |
-| OSHA standard signs: Danger – Electrical hazard, authorized personnel only | (none) | https://www.signel.ca/produit/panneaux-norme-osha-danger-danger-electrique-personnel-autorise-seulement/ |
-| CSA standard signs: Fire cabinet | (none) | https://www.signel.ca/produit/panneaux-norme-csa-cabinet-dincendie-fire-cabinet/ |
-| CSA standard signs: Caution – Obstacle | (none) | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
-| CSA standard signs: No running | (none) | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
 | Placards | DP[M]PN403-3170x | https://www.signel.ca/produit/placards-10/ |
 | OSHA standard signs: Emergency station only | DSO[M][F]0-010x | https://www.signel.ca/produit/panneaux-norme-osha-poste-de-secours-seulement/ |
 | CSA standard signs: Fire extinguisher | DSC[M][F]7-001x | https://www.signel.ca/produit/panneaux-norme-csa-extincteur/ |
