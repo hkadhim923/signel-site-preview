@@ -1,0 +1,161 @@
+{
+ "generated": "2026-09-24T19:28:29.402Z",
+ "results": [
+  {
+   "width": 1440,
+   "name": "search finds a product by name and by SKU",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "search box in the header submits",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "main menu opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "simple product: add to cart, badge, drawer, cart page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "configurable product refuses add until options chosen, then adds",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "quantity + and - work and the cart total follows",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "cart drawer closes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "login (demo) then prices appear",
+   "ok": true,
+   "detail": "price shown: \"Price on request\""
+  },
+  {
+   "width": 1440,
+   "name": "document button opens the PDF",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "product gallery thumbnails switch the picture",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "contact page form or details present",
+   "ok": true,
+   "detail": "1 form(s), 0 phone link(s), 1 email link(s)"
+  },
+  {
+   "width": 1440,
+   "name": "unknown address shows the 404 page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "solutions carousel moves by itself",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "search finds a product by name and by SKU",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "search box in the header submits",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "main menu opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "simple product: add to cart, badge, drawer, cart page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "configurable product refuses add until options chosen, then adds",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "quantity + and - work and the cart total follows",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "cart drawer closes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "login (demo) then prices appear",
+   "ok": true,
+   "detail": "price shown: \"Price on request\""
+  },
+  {
+   "width": 390,
+   "name": "document button opens the PDF",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "product gallery thumbnails switch the picture",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "contact page form or details present",
+   "ok": true,
+   "detail": "1 form(s), 0 phone link(s), 1 email link(s)"
+  },
+  {
+   "width": 390,
+   "name": "unknown address shows the 404 page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "solutions carousel moves by itself",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

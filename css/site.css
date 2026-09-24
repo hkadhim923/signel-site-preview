@@ -756,7 +756,7 @@ ul.tp-cats{margin-top:49px}
 .L-tile-pic{display:block;width:100%}
 .L-tile-pic img{display:block;width:100%;height:auto;border:3px solid var(--ink);border-radius:15px}
 .L-tile p{margin:0;font-size:18px;line-height:1.4;font-weight:500;color:var(--ink)}
-.L-tile 
+.L-tile .ui-btn{margin-top:auto}
 @media (max-width:1024px){
   .L-row{flex-direction:column;align-items:stretch}
   .L-row>*,.L-row>.L-btnw:has(.ui-btn--full){flex:none;width:100%;min-width:0}
@@ -1020,7 +1020,7 @@ ul.tp-cats{margin-top:49px}
 .cd-x:hover{background:var(--ink);color:#fff}
 .cd-body{flex:1;overflow-y:auto;padding:4px 20px}
 .cd-foot{border-top:1px solid var(--line);padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px;background:#fff}
-.cd-foot 
+.cd-foot .ui-btn{width:100%}
 /* cart lines (drawer and page) */
 .cl-list{list-style:none;margin:0;padding:0}
 .cl{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
@@ -1058,7 +1058,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .cartpage-lines{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 24px}
 .cartpage-sum{position:sticky;top:calc(var(--head-h, 0px) + 20px);background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
 .cartpage-sum h2{margin:0 0 4px;font-size:1.25rem}
-.cartpage-sum 
+.cartpage-sum .ui-btn{width:100%}
 /* login */
 .auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:0;max-width:1080px;margin:10px auto 70px;padding:0 !important;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
 .auth-card{padding:clamp(24px,4vw,48px)}
@@ -1130,6 +1130,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .job-apply{position:sticky;top:calc(var(--head-h, 0px) + 20px);display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
 .job-apply h2{margin:0;font-size:1.5rem;text-transform:none}
 .job-apply p{margin:0 0 4px;color:#3d4a52;font-size:15px}
+.job-apply .ui-btn{width:100%}
 .job-apply .job-all{font-size:15px;font-weight:600;text-align:center;margin-top:4px}
 @media (max-width:960px){.job{grid-template-columns:1fr}.job-apply{position:static}}
 /* Narrow screens: long unbroken links wrap, wide tables scroll inside their own box
