@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Signel Services">
+  <rect width="64" height="64" rx="8" fill="#004EA4"/>
+  <rect x="32" y="6" width="36.77" height="36.77" transform="rotate(45 32 6)" fill="#FFD200"/>
+  <path d="M32 18v18M32 42v4" stroke="#0E171B" stroke-width="5" stroke-linecap="round"/>
+</svg>
