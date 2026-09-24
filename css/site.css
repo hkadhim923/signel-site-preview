@@ -429,6 +429,10 @@ a.lang:hover{text-decoration:underline}
 .tile img{width:100%;aspect-ratio:300/281;object-fit:cover;border:2px solid #201D1D;border-radius:15px;display:block}
 .tile span{position:static;display:block;margin-top:12px;padding:0;background:none;color:var(--ink);font-family:var(--font-body);font-size:18px;font-weight:600;text-transform:none}
 .tile:hover span{color:var(--blue)}
+.tile{overflow:visible}
+.tile img{transition:transform .25s ease,box-shadow .25s ease}
+/* Lift rather than zoom: a zoomed picture pushed its own outline out of the tile and it vanished. */
+.tile:hover img{transform:translateY(-6px);box-shadow:0 10px 22px rgba(14,23,27,.16)}
 @media (max-width:1024px){.tiles{grid-template-columns:repeat(3,1fr);padding:0 3%}}
 @media (max-width:767px){.tiles{grid-template-columns:1fr}}
 
@@ -868,7 +872,6 @@ ul.tp-cats{margin-top:49px}
    ===================================================================================== */
 .pinfo .psku{margin:0 0 6px;font-size:.95rem;color:var(--muted)}
 .pinfo .psku b{color:var(--ink)}
-.pinfo .pprice{margin:0 0 16px;font-family:var(--font-cond);font-size:1.25rem;font-weight:700;color:var(--blue)}
 .popts{margin:0 0 18px}
 .ptabs{margin:8px 0 48px}
 .ptabs-bar{display:flex;flex-wrap:wrap;gap:0;border-bottom:2px solid var(--line);margin-bottom:24px}
@@ -886,3 +889,34 @@ ul.tp-cats{margin-top:49px}
 .pdocs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .pdocs a{display:inline-flex;align-items:center;gap:10px;font-weight:600}
 .pdocs a::before{content:"PDF";flex:none;font:700 11px/1 var(--font-cond);color:#fff;background:var(--red);padding:5px 6px;border-radius:3px}
+
+/* =====================================================================================
+   Pricing box - src/components/pricing.js. One frame for every kind: label, price line,
+   then the kind's body and the quote actions.
+   ===================================================================================== */
+.pbox{margin:22px 0 14px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:8px;padding:22px 24px 20px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
+.pbox-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.pbox-label{font:700 12px/1 var(--font-cond);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.pbox-price{margin:0;font:700 26px/1.2 var(--font-cond);color:var(--ink)}
+.pbox-price small{font-size:15px;font-weight:400;color:var(--muted)}
+.pbox-text{margin:0 0 18px;font-size:15px;line-height:1.5;color:#3d4a52}
+.pbox-actions{display:grid;grid-template-columns:1fr;gap:10px}
+.pbox-btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 16px;border-radius:6px;border:2px solid var(--blue);font:600 15px/1.2 var(--font-body);text-align:center;transition:background-color .2s,color .2s,border-color .2s}
+.pbox-btn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pbox-btn--solid{background:var(--blue);color:#fff}
+.pbox-btn--solid:hover{background:var(--ink);border-color:var(--ink);color:#fff;text-decoration:none}
+.pbox-btn--line{background:#fff;color:var(--blue)}
+.pbox-btn--line:hover{background:var(--blue);color:#fff;text-decoration:none}
+.pbox-ref{margin:14px 0 0;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.pbox-ref b{color:var(--ink);font-family:var(--font-cond);letter-spacing:.03em}
+/* parked kinds (options, quantity, account) */
+.pbox-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.pbox-field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.pbox-field select,.pbox-field input{height:42px;border:1px solid #c4ccd3;border-radius:6px;padding:0 12px;font:15px var(--font-body);color:var(--ink);background:#fff}
+.pbox-qty{max-width:160px;margin-bottom:12px}
+.pbox-tiers{width:100%;border-collapse:collapse;margin:0 0 14px;font-size:14px}
+.pbox-tiers th,.pbox-tiers td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+.pbox-tiers th{font:700 12px var(--font-cond);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pbox-tiers tr.on td{background:var(--pale);font-weight:600}
+.pbox-total{margin:0 0 16px;font-size:15px}
+.pbox-total b{font:700 20px var(--font-cond)}
