@@ -1185,3 +1185,15 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .job-main{min-width:0}
 .job-text,.prose,.ptab .rich,.pdesc .rich{overflow-wrap:anywhere}
 .prose table,.pdesc .rich table{display:block;max-width:100%;overflow-x:auto}
+
+/* Product documents - src/components/documents.js: a button per PDF, eye to view. */
+.pdocs2{margin-top:18px}
+.pdocs2-title{margin:0 0 8px;font:700 12px/1 var(--font-cond);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.pdocs2 ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pdoc{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+.pdoc-ico{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:8px;background:#FDECEC;color:var(--red)}
+.pdoc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-weight:600;font-size:15px;line-height:1.25}
+.pdoc-t small{font-weight:500;font-size:12px;color:var(--muted)}
+.pdoc-eye{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:var(--off);color:var(--blue);font-size:14px;font-weight:600;flex:none;transition:background-color .2s,color .2s}
+.pdoc:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(14,23,27,.08);text-decoration:none}
+.pdoc:hover .pdoc-eye{background:var(--blue);color:#fff}

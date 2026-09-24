@@ -1,9 +1,7 @@
-# signel.ca — verified list of what is broken
+# signel.ca — what is broken on the original site
 
 Compiled 2026-09-24. Every link below was fetched from the live site.
 Open the page in the **Where to check** column and you will see the problem there.
-
-A print-ready copy of this page is at **signel-broken-links.pdf** in the same folder.
 
 ## 1. Download links that lead to a missing file
 
@@ -20,7 +18,12 @@ A print-ready copy of this page is at **signel-broken-links.pdf** in the same fo
 | https://www.signel.ca/produit/bollard-plat-forme-concave/ | the link to `fiche_bollard.pdf` | goes to https://www.signel.ca/web/fiche_bollard.pdf → 404 |
 | https://www.signel.ca/telechargements/ | the link to `Ulti-mate_L6X` | goes to https://www.signel.ca/web/Ulti-mate_L6X → 404 |
 
-## 2. Images and audio that do not load
+## 2. Product documents that are broken
+
+None found so far. (Filled in by `tools/fetch-product-docs.mjs`, which reads the Documentation tab of every product page.)
+
+
+## 3. Images and audio that do not load
 
 | Where to check | The file | What happens |
 |---|---|---|
@@ -28,7 +31,7 @@ A print-ready copy of this page is at **signel-broken-links.pdf** in the same fo
 | https://www.signel.ca/sommes-a-radio/ | `Signel-SIGN_Recrutement_Été21.mp3` | https://www.signel.ca/wp-content/uploads/2021/06/Signel-SIGN_Recrutement_Été21.mp3 → 404, so nothing displays |
 | https://www.signel.ca/le-big-bollard/ | `FP-0058_BIGbollard-1.pdf` | https://www.signel.ca/wp-content/uploads/2018/07/FP-0058_BIGbollard-1.pdf → 404, so nothing displays |
 
-## 3. Links to pages that no longer exist
+## 4. Links to pages that no longer exist
 
 16 links inside page and post content point at URLs that return 404.
 
@@ -51,14 +54,14 @@ A print-ready copy of this page is at **signel-broken-links.pdf** in the same fo
 | https://www.signel.ca/location-de-signalisation-temporaire/ | https://www.signel.ca/vos-besoins/securite-signaleurs/ | 404 |
 | https://www.signel.ca/la-rentree-scolaire/ | https://www.signel.ca/vos-besoins/securite-zone-scolaire/ | 404 |
 
-## 4. Catalogue links that are not documents
+## 5. Catalogue links that are not documents
 
 | Where to check | The link | The problem |
 |---|---|---|
 | https://www.signel.ca/telechargements/ | https://www.signel.ca/catalogues/G_Achat-2026.html | This opens a flipbook website, not a file. It cannot be downloaded, printed or emailed to a customer. The source PDF is needed. |
 | https://www.signel.ca/telechargements/ | https://www.signel.ca/catalogues/B_Guide-2025.html | This opens a flipbook website, not a file. It cannot be downloaded, printed or emailed to a customer. The source PDF is needed. |
 
-## 5. Email links that are broken
+## 6. Email links that are broken
 
 Clicking these opens a blank email addressed to something that does not exist, so the message is never sent.
 
@@ -68,7 +71,7 @@ Clicking these opens a blank email addressed to something that does not exist, s
 | https://www.signel.ca/politique-de-confidentialite/ | opens an email to **confidentialité@signel.ca** | - contains an accented character, which most mail servers reject |
 | https://www.signel.ca/signel-services-au-coeur-du-marathon-de-montreal-2025/ | opens an email to **info@signel..ca** | - starts with a space, which many mail apps refuse<br>- the domain has two dots in a row |
 
-## 6. Email addresses customers cannot use
+## 7. Email addresses customers cannot use
 
 Addresses on these pages are stored **backwards** and flipped around with CSS, an old anti-spam trick.
 It stops spammers, and it also stops customers: the address is not a link so it cannot be clicked,
@@ -92,7 +95,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | https://www.signel.ca/les-panneaux-enroulables/ | **info@signel.ca** | Select the address and copy it. You get it reversed. |
 | https://www.signel.ca/14594/ | **marketing@signel.ca** | Select the address and copy it. You get it reversed. |
 
-## 7. Pages showing raw code to visitors
+## 8. Pages showing raw code to visitors
 
 | Where to check | What a visitor sees | Should be |
 |---|---|---|
@@ -110,7 +113,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | https://www.signel.ca/nos-rad50-installation-a-brossard/ | literal text such as `[trx_button type= »square » … ]`, printed on the page | a button |
 | https://www.signel.ca/sommes-a-radio/ | an audio player that does not play | a working player |
 
-## 8. Products with no SKU
+## 9. Products with no SKU
 
 13 products. A customer cannot quote a part number and your team cannot look them up.
 
@@ -130,7 +133,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | CSA standard signs: Caution – Obstacle | 18734 | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
 | CSA standard signs: No running | 17973 | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
 
-## 9. Products with no image
+## 10. Products with no image
 
 64 products show a blank placeholder in the catalogue.
 
@@ -201,7 +204,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | Strap buckle for round posts | AECBxxxx | https://www.signel.ca/produit/boucle-dattache-de-courroie-pour-poteau-rond/ |
 | Flared U-bolt | AECAExxxx | https://www.signel.ca/produit/attache-en-u-evasee/ |
 
-## 10. Products in no category
+## 11. Products in no category
 
 11 products. They cannot be reached by browsing, only by direct link or search.
 
@@ -219,7 +222,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | DP[M]102 (product variation) | DPS102Q2 | https://www.signel.ca/produit/dpm102x-product-variation-5/ |
 | DP[M]102 (product variation) | DPS102Q1 | https://www.signel.ca/produit/dpm102x-product-variation-4/ |
 
-## 11. Pages that are published but show nothing
+## 12. Pages that are published but show nothing
 
 | Page | What is on it | Note |
 |---|---|---|
@@ -228,7 +231,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | https://www.signel.ca/test-typo/ | lorem ipsum placeholder text in four fonts | An internal design test page, public and in the sitemap |
 | https://www.signel.ca/equipe/ | nothing | Three records, all named France Couture, none display |
 
-## 12. Hidden spam injected into product pages
+## 13. Hidden spam injected into product pages
 
 **This looks like a compromised WordPress install.** Thirteen product descriptions contain a block
 of markup that positions a link thousands of pixels off the left of the screen, so a visitor never sees
@@ -253,7 +256,7 @@ and the injected content is a symptom rather than the problem. None of it is car
 | https://www.signel.ca/produit/lampe-halogene/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/lampe-a-del-pour-fleches/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 
-## 13. Other things worth fixing
+## 14. Other things worth fixing
 
 | Where | Problem | Why it matters |
 |---|---|---|
