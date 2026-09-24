@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-24T19:28:29.402Z",
+ "generated": "2026-09-24T20:09:52.600Z",
  "results": [
   {
    "width": 1440,
@@ -65,7 +65,7 @@
    "width": 1440,
    "name": "contact page form or details present",
    "ok": true,
-   "detail": "1 form(s), 0 phone link(s), 1 email link(s)"
+   "detail": "1 form(s), 2 phone link(s), 1 email link(s)"
   },
   {
    "width": 1440,
@@ -143,7 +143,7 @@
    "width": 390,
    "name": "contact page form or details present",
    "ok": true,
-   "detail": "1 form(s), 0 phone link(s), 1 email link(s)"
+   "detail": "1 form(s), 2 phone link(s), 1 email link(s)"
   },
   {
    "width": 390,

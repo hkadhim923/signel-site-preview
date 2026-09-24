@@ -125,13 +125,10 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 10. Products with no image
 
-64 products show a blank placeholder in the catalogue.
+58 products show a blank placeholder in the catalogue.
 
 | Product | SKU | Page |
 |---|---|---|
-| T-160-2 (product variation) | EA7S36T1602Q3 | https://www.signel.ca/produit/t-160-2x-product-variation-3/ |
-| T-160-2 (product variation) | EA7S36T1602Q2 | https://www.signel.ca/produit/t-160-2x-product-variation-2/ |
-| T-160-2 (product variation) | EA7S36T1602Q1 | https://www.signel.ca/produit/t-160-2x-product-variation/ |
 | Lane merge T-100-10-G | T-100-10-Gx | https://www.signel.ca/produit/fusion-de-voies-t-100-10-g/ |
 | BICYCLE DETOUR T-090-6 | T-90-6x | https://www.signel.ca/produit/detour-bicyclettet-090-6/ |
 | Pedestrian detour to the left T-090-18-G | T-90-18-Gx | https://www.signel.ca/produit/detour-a-gauche-pour-pietons-t-090-18-g/ |
@@ -180,9 +177,6 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | CSA standard signs: Caution – Obstacle | (none) | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
 | CSA standard signs: No running | (none) | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
 | Placards | DP[M]PN403-3170x | https://www.signel.ca/produit/placards-10/ |
-| DP[M]102 (product variation) | DPS102Q3 | https://www.signel.ca/produit/dpm102x-product-variation-6/ |
-| DP[M]102 (product variation) | DPS102Q2 | https://www.signel.ca/produit/dpm102x-product-variation-5/ |
-| DP[M]102 (product variation) | DPS102Q1 | https://www.signel.ca/produit/dpm102x-product-variation-4/ |
 | OSHA standard signs: Emergency station only | DSO[M][F]0-010x | https://www.signel.ca/produit/panneaux-norme-osha-poste-de-secours-seulement/ |
 | CSA standard signs: Fire extinguisher | DSC[M][F]7-001x | https://www.signel.ca/produit/panneaux-norme-csa-extincteur/ |
 | CSA standard signs: Use stairs in case of emergency | DSC[M][F]7-006x | https://www.signel.ca/produit/panneaux-norme-csa-utilisez-lescalier-en-cas-durgence/ |
@@ -196,21 +190,15 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 11. Products in no category
 
-11 products. They cannot be reached by browsing, only by direct link or search.
+5 products. They cannot be reached by browsing, only by direct link or search.
 
 | Product | SKU | Page |
 |---|---|---|
-| T-160-2 (product variation) | EA7S36T1602Q3 | https://www.signel.ca/produit/t-160-2x-product-variation-3/ |
-| T-160-2 (product variation) | EA7S36T1602Q2 | https://www.signel.ca/produit/t-160-2x-product-variation-2/ |
-| T-160-2 (product variation) | EA7S36T1602Q1 | https://www.signel.ca/produit/t-160-2x-product-variation/ |
 | OSHA standard signs: Fire extinguisher | (none) | https://www.signel.ca/produit/panneaux-norme-osha-extincteur/ |
 | OSHA standard signs: Danger – Electrical hazard, authorized personnel only | (none) | https://www.signel.ca/produit/panneaux-norme-osha-danger-danger-electrique-personnel-autorise-seulement/ |
 | CSA standard signs: Fire cabinet | (none) | https://www.signel.ca/produit/panneaux-norme-csa-cabinet-dincendie-fire-cabinet/ |
 | CSA standard signs: Caution – Obstacle | (none) | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
 | CSA standard signs: No running | (none) | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
-| DP[M]102 (product variation) | DPS102Q3 | https://www.signel.ca/produit/dpm102x-product-variation-6/ |
-| DP[M]102 (product variation) | DPS102Q2 | https://www.signel.ca/produit/dpm102x-product-variation-5/ |
-| DP[M]102 (product variation) | DPS102Q1 | https://www.signel.ca/produit/dpm102x-product-variation-4/ |
 
 ## 12. Pages that are published but show nothing
 

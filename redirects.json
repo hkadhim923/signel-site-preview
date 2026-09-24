@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-24T19:32:41.758Z",
+  "generated": "2026-09-24T20:10:06.491Z",
   "redirects": [
     {
       "from": "/produit/poteau-axe/",
@@ -1090,24 +1090,6 @@
     {
       "from": "/produit/suivez-ce-vehicule-t-165/",
       "to": "/product/follow-this-vehicle-t-165/",
-      "status": 301,
-      "why": "product"
-    },
-    {
-      "from": "/produit/t-160-2x-product-variation-3/",
-      "to": "/product/t-160-2-product-variation-ea7s36t1602q3/",
-      "status": 301,
-      "why": "product"
-    },
-    {
-      "from": "/produit/t-160-2x-product-variation-2/",
-      "to": "/product/t-160-2-product-variation-ea7s36t1602q2/",
-      "status": 301,
-      "why": "product"
-    },
-    {
-      "from": "/produit/t-160-2x-product-variation/",
-      "to": "/product/t-160-2-product-variation/",
       "status": 301,
       "why": "product"
     },
@@ -6908,24 +6890,6 @@
       "why": "product"
     },
     {
-      "from": "/produit/dpm102x-product-variation-6/",
-      "to": "/product/dp-m-102-product-variation-dps102q3/",
-      "status": 301,
-      "why": "product"
-    },
-    {
-      "from": "/produit/dpm102x-product-variation-5/",
-      "to": "/product/dp-m-102-product-variation-dps102q2/",
-      "status": 301,
-      "why": "product"
-    },
-    {
-      "from": "/produit/dpm102x-product-variation-4/",
-      "to": "/product/dp-m-102-product-variation/",
-      "status": 301,
-      "why": "product"
-    },
-    {
       "from": "/produit/placards-explosifs-1-1-1/",
       "to": "/product/placards-explosives-1-1-1/",
       "status": 301,
@@ -10618,24 +10582,6 @@
     {
       "from": "/product/suivez-ce-vehicule-t-165/",
       "to": "/product/follow-this-vehicle-t-165/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/t-160-2x-product-variation-3/",
-      "to": "/product/t-160-2-product-variation-ea7s36t1602q3/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/t-160-2x-product-variation-2/",
-      "to": "/product/t-160-2-product-variation-ea7s36t1602q2/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/t-160-2x-product-variation/",
-      "to": "/product/t-160-2-product-variation/",
       "status": 301,
       "why": "product (legacy /product/ prefix)"
     },
@@ -16318,24 +16264,6 @@
     {
       "from": "/product/placards-gaz-inninflammable/",
       "to": "/product/placards-non-flammable-gas/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/dpm102x-product-variation-6/",
-      "to": "/product/dp-m-102-product-variation-dps102q3/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/dpm102x-product-variation-5/",
-      "to": "/product/dp-m-102-product-variation-dps102q2/",
-      "status": 301,
-      "why": "product (legacy /product/ prefix)"
-    },
-    {
-      "from": "/product/dpm102x-product-variation-4/",
-      "to": "/product/dp-m-102-product-variation/",
       "status": 301,
       "why": "product (legacy /product/ prefix)"
     },

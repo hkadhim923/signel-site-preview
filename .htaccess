@@ -189,9 +189,6 @@ Redirect 301 /produit/enquete-policiere-t-170-3/ /product/police-investigation-t
 Redirect 301 /produit/merci-t-170-2/ /product/thank-you-t-170-2/
 Redirect 301 /produit/enquete-de-circulation-t-170-1/ /product/traffic-survey-t-170-1/
 Redirect 301 /produit/suivez-ce-vehicule-t-165/ /product/follow-this-vehicle-t-165/
-Redirect 301 /produit/t-160-2x-product-variation-3/ /product/t-160-2-product-variation-ea7s36t1602q3/
-Redirect 301 /produit/t-160-2x-product-variation-2/ /product/t-160-2-product-variation-ea7s36t1602q2/
-Redirect 301 /produit/t-160-2x-product-variation/ /product/t-160-2-product-variation/
 Redirect 301 /produit/travaux-de-marquage-t-160-1/ /product/pavement-marking-work-t-160-1/
 Redirect 301 /produit/dynamitage-t-150/ /product/blasting-zone-t-150/
 Redirect 301 /produit/accotement-surbaisse-a-gauche-t-140-g/ /product/low-shoulder-on-the-left-t-140-g/
@@ -1158,9 +1155,6 @@ Redirect 301 /produit/placards-1001/ /product/placards-1001/
 Redirect 301 /produit/placards-2/ /product/placards-dp-m-201x/
 Redirect 301 /produit/placards/ /product/placards/
 Redirect 301 /produit/placards-gaz-inninflammable/ /product/placards-non-flammable-gas/
-Redirect 301 /produit/dpm102x-product-variation-6/ /product/dp-m-102-product-variation-dps102q3/
-Redirect 301 /produit/dpm102x-product-variation-5/ /product/dp-m-102-product-variation-dps102q2/
-Redirect 301 /produit/dpm102x-product-variation-4/ /product/dp-m-102-product-variation/
 Redirect 301 /produit/placards-explosifs-1-1-1/ /product/placards-explosives-1-1-1/
 Redirect 301 /produit/placards-explosifs-1-1-d-1/ /product/placards-explosives-1-1-d-1/
 Redirect 301 /produit/panneaux-norme-osha-securite-dabord-douche-durgence-emergency-shower/ /product/osha-standard-signs-safety-first-emergency-shower/
@@ -1777,9 +1771,6 @@ Redirect 301 /product/enquete-policiere-t-170-3/ /product/police-investigation-t
 Redirect 301 /product/merci-t-170-2/ /product/thank-you-t-170-2/
 Redirect 301 /product/enquete-de-circulation-t-170-1/ /product/traffic-survey-t-170-1/
 Redirect 301 /product/suivez-ce-vehicule-t-165/ /product/follow-this-vehicle-t-165/
-Redirect 301 /product/t-160-2x-product-variation-3/ /product/t-160-2-product-variation-ea7s36t1602q3/
-Redirect 301 /product/t-160-2x-product-variation-2/ /product/t-160-2-product-variation-ea7s36t1602q2/
-Redirect 301 /product/t-160-2x-product-variation/ /product/t-160-2-product-variation/
 Redirect 301 /product/travaux-de-marquage-t-160-1/ /product/pavement-marking-work-t-160-1/
 Redirect 301 /product/dynamitage-t-150/ /product/blasting-zone-t-150/
 Redirect 301 /product/accotement-surbaisse-a-gauche-t-140-g/ /product/low-shoulder-on-the-left-t-140-g/
@@ -2727,9 +2718,6 @@ Redirect 301 /product/placards-4/ /product/placards-dp-m-203x/
 Redirect 301 /product/placards-3/ /product/placards-dp-m-202x/
 Redirect 301 /product/placards-2/ /product/placards-dp-m-201x/
 Redirect 301 /product/placards-gaz-inninflammable/ /product/placards-non-flammable-gas/
-Redirect 301 /product/dpm102x-product-variation-6/ /product/dp-m-102-product-variation-dps102q3/
-Redirect 301 /product/dpm102x-product-variation-5/ /product/dp-m-102-product-variation-dps102q2/
-Redirect 301 /product/dpm102x-product-variation-4/ /product/dp-m-102-product-variation/
 Redirect 301 /product/placards-explosifs-1-1-1/ /product/placards-explosives-1-1-1/
 Redirect 301 /product/placards-explosifs-1-1-d-1/ /product/placards-explosives-1-1-d-1/
 Redirect 301 /product/panneaux-norme-osha-securite-dabord-douche-durgence-emergency-shower/ /product/osha-standard-signs-safety-first-emergency-shower/
