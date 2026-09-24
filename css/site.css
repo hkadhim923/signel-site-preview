@@ -31,14 +31,6 @@ h3 { font-size: 1.25rem; }
 p { margin: 0 0 1em; }
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-.btn { display: inline-block; font-family: var(--font-cond); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .7rem 1.4rem; border-radius: var(--radius); background: var(--blue); color: #fff; border: 2px solid var(--blue); cursor: pointer; font-size: .95rem; transition: background .15s, color .15s; }
-.btn:hover { background: var(--blue-dark); border-color: var(--blue-dark); text-decoration: none; }
-.btn--yellow { background: var(--yellow); border-color: var(--yellow); color: var(--ink); }
-.btn--yellow:hover { background: #e6bd00; border-color: #e6bd00; }
-.btn--ghost { background: transparent; color: var(--blue); }
-.btn--ghost:hover { background: var(--blue); color: #fff; }
-.btn--red { background: var(--red); border-color: var(--red); }
-.btn--red:hover { background: #c9142a; border-color: #c9142a; }
 
 /* ---------- header ---------- */
 .topbar { background: var(--ink); color: #fff; font-size: .82rem; }
@@ -166,7 +158,7 @@ a.card:hover { text-decoration: none; box-shadow: var(--shadow); }
 .prose ul, .prose ol { padding-left: 1.3em; }
 .prose li { margin-bottom: .35em; }
 .prose img { border-radius: var(--radius); margin: 16px 0; }
-.prose .btn { margin: 8px 8px 8px 0; }
+.prose .ui-btn { margin: 8px 8px 8px 0; }
 .prose iframe { max-width: 100%; aspect-ratio: 16/9; height: auto; width: 100%; border: 0; border-radius: var(--radius); }
 .prose .figure { margin: 24px 0; }
 .two-col { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; }
@@ -193,8 +185,8 @@ a.card:hover { text-decoration: none; box-shadow: var(--shadow); }
 .footer { background: var(--ink); color: #c9d1d8; padding: 48px 0 24px; margin-top: 48px; font-size: .9rem; }
 .footer .cols { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr; gap: 32px; }
 .footer h4 { color: #fff; font-family: var(--font-cond); text-transform: uppercase; margin: 0 0 12px; font-size: .95rem; border-bottom: 2px solid var(--yellow); display: inline-block; padding-bottom: 4px; }
-.footer a { color: #c9d1d8; display: block; padding: 3px 0; }
-.footer a:hover { color: #fff; }
+.footer a:not(.ui-btn) { color: #c9d1d8; display: block; padding: 3px 0; }
+.footer a:not(.ui-btn):hover { color: #fff; }
 .footer .logo img { height: 44px; filter: brightness(0) invert(1); margin-bottom: 14px; }
 .footer .bottom { border-top: 1px solid rgba(255,255,255,.12); margin-top: 32px; padding-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: .8rem; color: #8a959e; }
 .footer .bottom a { display: inline; padding: 0 10px 0 0; }
@@ -456,23 +448,7 @@ a.lang:hover{text-decoration:underline}
   padding:30px 40px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:-91px}
 .newsletter h3{margin:0 0 8px;font-size:26px;color:#fff;text-transform:none}
 .newsletter p{margin:0;color:#e4ecf6;max-width:59%}
-/* Their two footer buttons are not the same button, which is why ours looked wrong in
-   the account row. The newsletter plaque's is off-white on a dark outline with a 10px
-   radius; the "Create your account" one is yellow with a light outline and square
-   corners. Both are Red Hat Display 600, not our condensed uppercase. */
-.btn--news{background:#F8F8F8;color:var(--ink);border:2px solid var(--ink);border-radius:10px;
-  padding:14px 30px 10px;font-family:var(--font-body,inherit);font-weight:600;text-transform:none;
-  letter-spacing:0;white-space:nowrap}
-.btn--news:hover{background:var(--yellow);color:var(--ink);border-color:var(--ink)}
-/* "Create your account", measured on signel.ca (eael creative button): amber #F5A400 (not the
-   brand yellow), 2px #F8F8F8 border, square, 10px 30px, Red Hat Display 18px, FA chevron-right 18px.
-   Hover: off-white fill, ink text, ink border and chevron. Scoped under .footer so the generic
-   `.footer a` rule (block, 3px 0 padding, grey text) cannot override it - that was the broken look. */
-.footer .btn--account{display:inline-flex;align-items:center;gap:10px;background:var(--amber);color:#F8F8F8;border:2px solid #F8F8F8;border-radius:0;
-  padding:10px 30px;font-family:var(--font-body,inherit);font-size:18px;line-height:1.4;font-weight:400;text-transform:none;
-  letter-spacing:0;white-space:nowrap;transition:background .3s,color .3s,border-color .3s}
-.footer .btn--account svg{fill:currentColor;flex:none}
-.footer .btn--account:hover{background:#F8F8F8;color:var(--ink);border-color:var(--ink);text-decoration:none}
+/* The footer's two buttons are Button elements: newsletter = light/pill, account = cta/md. */
 @media (max-width:860px){.newsletter .wrap{flex-direction:column;min-height:0;padding:24px;margin-bottom:-60px}.newsletter p{max-width:100%}}
 
 /* --- footer: 20/80, plain phone, real social icons, black centred legal strip --- */
@@ -656,10 +632,6 @@ ul.tp-cats{margin-top:49px}
 .tp-feature .tp-copy{flex:0 1 704px;min-width:0}
 .tp-btns{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end}
 .tp-btns--between{justify-content:space-between}
-.tp-btn{display:inline-block;font-family:var(--font-body);font-size:18px;line-height:1.4;font-weight:400;padding:7.4px 20px;border:2px solid #004EA4;border-radius:0;transition:color .3s,background-color .3s}
-.tp-btn--line{background:#fff;color:var(--ink)}
-.tp-btn--solid{background:#004EA4;color:#F8F8F8}
-.tp-btn:hover{background:var(--ink);color:#F8F8F8;text-decoration:none}
 
 /* hours strip (Contact, Support) */
 .tp-hours .wrap{display:flex;justify-content:center;gap:20px}
@@ -689,8 +661,7 @@ ul.tp-cats{margin-top:49px}
 .tp-form ::placeholder{color:var(--ink);opacity:1}
 .tp-file{font-size:15px;color:var(--ink)}
 .tp-file span{display:block;margin-bottom:4px}
-.tp-send{height:40px;margin-bottom:0;border:2px solid #004EA4;background:#004EA4;color:#fff;font-family:"Almarai",var(--font-body);font-size:15px;font-weight:700;text-transform:uppercase;cursor:pointer;margin-left:5px;margin-right:5px;flex-basis:calc(100% - 10px)}
-.tp-send:hover{background:var(--ink);border-color:var(--ink)}
+.tp-send{min-height:40px;margin:0 5px;flex-basis:calc(100% - 10px)}
 .tp-form .msg:empty{display:none}
 .tp-page main>section.tp-map{margin-top:20px;height:450px}
 .tp-map iframe{display:block;width:100%;height:100%;border:0}
@@ -713,8 +684,7 @@ ul.tp-cats{margin-top:49px}
 .tp-job h3{margin:0;font:700 18px/1.4 var(--font-body);text-transform:uppercase}
 .tp-job h3 a{color:var(--ink)}
 .tp-job p{margin:0;font-size:18px;line-height:1.4;color:var(--ink)}
-.tp-job-btn{margin-top:auto;background:#004EA4;color:#F8F8F8;font:700 18px/1.4 var(--font-body);padding:5px 20px}
-.tp-job-btn:hover{background:var(--ink);color:#F8F8F8;text-decoration:none}
+.tp-job-btn{margin-top:auto;align-self:flex-start}
 
 @media (max-width:1024px){
   .tp-h2{font-size:38px}.tp-h3{font-size:28px}
@@ -752,7 +722,7 @@ ul.tp-cats{margin-top:49px}
 .L-grid{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:var(--gr) var(--gc)}
 .L-row>*{flex:0 1 var(--w,100%);min-width:0}
 .L-row>.L-btnw{flex:0 0 auto}
-.L-row>.L-btnw:has(.L-btn--full){flex:0 1 var(--w,auto);min-width:fit-content}
+.L-row>.L-btnw:has(.ui-btn--full){flex:0 1 var(--w,auto);min-width:fit-content}
 .L-w{min-width:0;max-width:100%}
 .L-h{margin:0;font-size:var(--fs);line-height:1.3;letter-spacing:0}
 .L-h--almarai{line-height:1.6}
@@ -766,13 +736,6 @@ ul.tp-cats{margin-top:49px}
 .L-text td,.L-text th{border:1px solid #0E171B33;padding:6px 10px;text-align:left;vertical-align:top}
 .L-imgw img{display:block;width:100%;max-width:var(--iw,100%);height:auto;margin:0 auto;object-fit:cover}
 .L-col>.L-imgw{align-self:center;width:min(100%,var(--iw,100%))}
-.L-btn{display:inline-block;font:400 18px/1.2 var(--font-body);padding:20px;border:2px solid #004EA4;border-radius:0;text-align:center;transition:color .3s,background-color .3s,border-color .3s}
-.L-btn--line{background:#fff;color:var(--ink)}
-.L-btn--solid{background:#004EA4;color:#F8F8F8}
-.L-btn--line:hover,.L-btn--solid:hover{background:var(--ink);border-color:var(--ink);color:#F8F8F8;text-decoration:none}
-.L-btn--el{background:#fff;color:#004EA4;font-weight:600;font-size:16px;padding:12px 24px;border-width:1px}
-.L-btn--el:hover{background:#004EA4;color:#fff;text-decoration:none}
-.L-btn--full{display:block;width:100%}
 .L-gallery{display:flex;flex-wrap:wrap;justify-content:center;gap:20px}
 .L-gallery img{width:var(--gw);height:var(--gh);object-fit:contain;background:#fff}
 .L-videow{align-self:center}
@@ -793,14 +756,13 @@ ul.tp-cats{margin-top:49px}
 .L-tile-pic{display:block;width:100%}
 .L-tile-pic img{display:block;width:100%;height:auto;border:3px solid var(--ink);border-radius:15px}
 .L-tile p{margin:0;font-size:18px;line-height:1.4;font-weight:500;color:var(--ink)}
-.L-tile .L-btn{margin-top:auto}
-
+.L-tile 
 @media (max-width:1024px){
   .L-row{flex-direction:column;align-items:stretch}
-  .L-row>*,.L-row>.L-btnw:has(.L-btn--full){flex:none;width:100%;min-width:0}
+  .L-row>*,.L-row>.L-btnw:has(.ui-btn--full){flex:none;width:100%;min-width:0}
   .L-row>.L-imgw{align-self:center;width:min(100%,var(--iw,100%))}
   .L-row>.L-btnw{align-self:flex-start;width:auto}
-  .L-row>.L-btnw:has(.L-btn--full){width:100%}
+  .L-row>.L-btnw:has(.ui-btn--full){width:100%}
   .L-grid,.L-tiles,.L-products{grid-template-columns:repeat(2,minmax(0,1fr))}
   .L-h{font-size:calc(var(--fs) * .76)}
   .L-text{max-width:none !important}
@@ -813,8 +775,7 @@ ul.tp-cats{margin-top:49px}
   .L-text{font-size:17px;text-align:left !important}
   .L-sec{margin-top:min(var(--mt,0px),50px);padding-top:min(var(--pt,10px),30px);padding-bottom:min(var(--pb,10px),30px)}
   .L-in{padding-left:20px;padding-right:20px}
-  .L-btn{padding:14px 18px}
-}
+  }
 
 /* =====================================================================================
    Category tiles - src/components/tiles.js. One look everywhere a category is a picture
@@ -854,12 +815,6 @@ ul.tp-cats{margin-top:49px}
 .pbox-price small{font-size:15px;font-weight:400;color:var(--muted)}
 .pbox-text{margin:0 0 18px;font-size:15px;line-height:1.5;color:#3d4a52}
 .pbox-actions{display:grid;grid-template-columns:1fr;gap:10px}
-.pbox-btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:10px 16px;border-radius:6px;border:2px solid var(--blue);font:600 15px/1.2 var(--font-body);text-align:center;transition:background-color .2s,color .2s,border-color .2s}
-.pbox-btn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.pbox-btn--solid{background:var(--blue);color:#fff}
-.pbox-btn--solid:hover{background:var(--ink);border-color:var(--ink);color:#fff;text-decoration:none}
-.pbox-btn--line{background:#fff;color:var(--blue)}
-.pbox-btn--line:hover{background:var(--blue);color:#fff;text-decoration:none}
 .pbox-ref{margin:14px 0 0;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
 .pbox-ref b{color:var(--ink);font-family:var(--font-cond);letter-spacing:.03em}
 /* parked kinds (options, quantity, account) */
@@ -1065,8 +1020,7 @@ ul.tp-cats{margin-top:49px}
 .cd-x:hover{background:var(--ink);color:#fff}
 .cd-body{flex:1;overflow-y:auto;padding:4px 20px}
 .cd-foot{border-top:1px solid var(--line);padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px;background:#fff}
-.cd-foot .pbox-btn{width:100%}
-
+.cd-foot 
 /* cart lines (drawer and page) */
 .cl-list{list-style:none;margin:0;padding:0}
 .cl{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
@@ -1104,8 +1058,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .cartpage-lines{background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px 24px}
 .cartpage-sum{position:sticky;top:calc(var(--head-h, 0px) + 20px);background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:12px}
 .cartpage-sum h2{margin:0 0 4px;font-size:1.25rem}
-.cartpage-sum .pbox-btn{width:100%}
-
+.cartpage-sum 
 /* login */
 .auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:0;max-width:1080px;margin:10px auto 70px;padding:0 !important;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
 .auth-card{padding:clamp(24px,4vw,48px)}
@@ -1177,8 +1130,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .job-apply{position:sticky;top:calc(var(--head-h, 0px) + 20px);display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
 .job-apply h2{margin:0;font-size:1.5rem;text-transform:none}
 .job-apply p{margin:0 0 4px;color:#3d4a52;font-size:15px}
-.job-apply .pbox-btn{width:100%}
-.job-all{font-size:15px;font-weight:600;text-align:center;margin-top:4px}
+.job-apply .job-all{font-size:15px;font-weight:600;text-align:center;margin-top:4px}
 @media (max-width:960px){.job{grid-template-columns:1fr}.job-apply{position:static}}
 /* Narrow screens: long unbroken links wrap, wide tables scroll inside their own box
    instead of pushing the page sideways (found by tools/visual-audit.mjs at 390px). */
@@ -1197,3 +1149,33 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .pdoc-eye{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:var(--off);color:var(--blue);font-size:14px;font-weight:600;flex:none;transition:background-color .2s,color .2s}
 .pdoc:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(14,23,27,.08);text-decoration:none}
 .pdoc:hover .pdoc-eye{background:var(--blue);color:#fff}
+
+/* =====================================================================================
+   Button element - src/components/button.js. The only button style on the site.
+   A variant sets colours (and hover colours) through custom properties; a size sets the
+   shape. Nothing inline sets a button colour, so hover can never go dark-on-dark.
+   ===================================================================================== */
+.ui-btn{--bg:var(--blue);--fg:#fff;--bd:var(--blue);--bg-h:var(--blue-dark);--fg-h:#fff;--bd-h:var(--blue-dark);
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;
+  background:var(--bg);color:var(--fg);border:2px solid var(--bd);
+  transition:background-color .25s,color .25s,border-color .25s;text-decoration:none}
+.ui-btn:hover,.ui-btn:focus-visible{background:var(--bg-h);color:var(--fg-h);border-color:var(--bd-h);text-decoration:none}
+.ui-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.ui-btn svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ui-btn--full{display:flex;width:100%}
+/* variants */
+.ui-btn--primary{--bg:var(--blue);--fg:#fff;--bd:var(--blue);--bg-h:var(--blue-dark);--fg-h:#fff;--bd-h:var(--blue-dark)}
+.ui-btn--secondary{--bg:#fff;--fg:var(--ink);--bd:var(--blue);--bg-h:var(--blue);--fg-h:#fff;--bd-h:var(--blue)}
+.ui-btn--outline{--bg:#fff;--fg:var(--blue);--bd:var(--blue);--bg-h:var(--blue);--fg-h:#fff;--bd-h:var(--blue)}
+.ui-btn--accent{--bg:var(--yellow);--fg:var(--ink);--bd:var(--yellow);--bg-h:#e6bd00;--fg-h:var(--ink);--bd-h:#e6bd00}
+.ui-btn--cta{--bg:var(--amber);--fg:var(--ink);--bd:#F8F8F8;--bg-h:#F8F8F8;--fg-h:var(--ink);--bd-h:var(--ink)}
+.ui-btn--light{--bg:#F8F8F8;--fg:var(--ink);--bd:var(--ink);--bg-h:var(--yellow);--fg-h:var(--ink);--bd-h:var(--ink)}
+/* sizes */
+.ui-btn--caps{font:700 .95rem/1.2 var(--font-cond);text-transform:uppercase;letter-spacing:.04em;padding:.7rem 1.4rem;border-radius:var(--radius)}
+.ui-btn--sm{font:400 18px/1.4 var(--font-body);padding:7.4px 20px;border-radius:0}
+.ui-btn--md{font:400 18px/1.4 var(--font-body);padding:10px 30px;border-radius:0;white-space:nowrap}
+.ui-btn--lg{font:400 18px/1.2 var(--font-body);padding:20px;border-radius:0}
+.ui-btn--app{font:600 15px/1.2 var(--font-body);min-height:48px;padding:10px 16px;border-radius:6px}
+.ui-btn--pill{font:600 16px/1.2 var(--font-body);padding:14px 30px 10px;border-radius:10px;white-space:nowrap}
+.ui-btn--md svg{fill:currentColor;stroke:none}
+@media (max-width:767px){.ui-btn--lg{padding:14px 18px}}

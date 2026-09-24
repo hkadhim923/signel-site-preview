@@ -84,16 +84,16 @@
     if (s.hidden) rows += '<div class="cs-row cs-q"><a class="cl-tag cl-tag--login" href="' + ROOT + '/login/">' + esc(t('hidden_count', s.hidden)) + '</a></div>';
     var note = '<p class="cs-note">' + esc(t('taxes')) + (s.ranged ? ' ' + esc('* ' + t('range_note')) : '') + '</p>';
     var actions = page
-      ? '<button type="button" class="pbox-btn pbox-btn--solid" data-send>' + esc(t('send_request')) + '</button><p class="cs-hint">' + esc(t('send_hint')) + '</p>' +
-        (s.hidden ? '<a class="pbox-btn pbox-btn--line" href="' + ROOT + '/login/">' + esc(t('login_cta')) + '</a>' : '') +
+      ? '<button type="button" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" data-send>' + esc(t('send_request')) + '</button><p class="cs-hint">' + esc(t('send_hint')) + '</p>' +
+        (s.hidden ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + ROOT + '/login/">' + esc(t('login_cta')) + '</a>' : '') +
         '<div class="cs-links"><a href="' + ROOT + '/products/">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
-      : '<a class="pbox-btn pbox-btn--solid" href="' + ROOT + '/cart/">' + esc(t('view_cart')) + '</a><button type="button" class="pbox-btn pbox-btn--line" data-cart-close>' + esc(t('continue')) + '</button>';
+      : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + ROOT + '/cart/">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
     return (page ? '<h2>' + esc(t('summary')) + '</h2>' : '') + rows + note + actions;
   }
 
   function emptyHtml() {
     return '<div class="cart-empty"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M6 6 5 3H2"/></svg>' +
-      '<p class="cart-empty-t">' + esc(t('empty')) + '</p><p>' + esc(t('empty_hint')) + '</p><a class="pbox-btn pbox-btn--solid" href="' + ROOT + '/products/">' + esc(t('browse')) + '</a></div>';
+      '<p class="cart-empty-t">' + esc(t('empty')) + '</p><p>' + esc(t('empty_hint')) + '</p><a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + ROOT + '/products/">' + esc(t('browse')) + '</a></div>';
   }
 
   /* ---------- render everything that shows the cart or prices ---------- */
