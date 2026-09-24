@@ -119,31 +119,6 @@
     });
   }
 
-  /* ---- product tabs: sections become a tab strip; without this script all stay visible ---- */
-  document.querySelectorAll('[data-tabs]').forEach(function (box) {
-    var bar = box.querySelector('[role="tablist"]');
-    var tabs = Array.prototype.slice.call(box.querySelectorAll('[data-tab]'));
-    if (!bar || tabs.length < 2) return;
-    box.classList.add('is-tabbed');
-    bar.hidden = false;
-    function show(tab) {
-      tabs.forEach(function (t) {
-        var on = t === tab;
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
-        t.tabIndex = on ? 0 : -1;
-        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
-      });
-    }
-    tabs.forEach(function (t, i) {
-      t.addEventListener('click', function () { show(t); });
-      t.addEventListener('keydown', function (e) {
-        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-        if (d) { var n = tabs[(i + d + tabs.length) % tabs.length]; show(n); n.focus(); }
-      });
-    });
-    show(tabs[0]);
-  });
-
   /* ---- search (header + category filter) ---- */
   var ROOT = document.documentElement.getAttribute('data-root') || '';
   var index = null, loading = null;

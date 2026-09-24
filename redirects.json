@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-24T15:14:06.007Z",
+  "generated": "2026-09-24T15:39:17.134Z",
   "redirects": [
     {
       "from": "/produit/poteau-axe/",
@@ -19977,7 +19977,7 @@
     },
     {
       "from": "/connexion/",
-      "to": "/contact/",
+      "to": "/login/",
       "status": 301,
       "why": "login needs a backend"
     },
@@ -19989,7 +19989,7 @@
     },
     {
       "from": "/inscription/",
-      "to": "/contact/",
+      "to": "/login/",
       "status": 301,
       "why": "registration needs a backend"
     },
@@ -20043,7 +20043,7 @@
     },
     {
       "from": "/mon-compte/",
-      "to": "/contact/",
+      "to": "/login/",
       "status": 301,
       "why": "account needs a backend"
     },
@@ -20067,15 +20067,15 @@
     },
     {
       "from": "/commande/",
-      "to": "/contact/",
+      "to": "/cart/",
       "status": 301,
       "why": "checkout needs a backend"
     },
     {
       "from": "/panier/",
-      "to": "/contact/",
+      "to": "/cart/",
       "status": 301,
-      "why": "cart needs a backend"
+      "why": "cart (client-side until a backend exists)"
     },
     {
       "from": "/boutique/",

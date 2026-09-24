@@ -3336,9 +3336,9 @@ Redirect 301 /carriere/assembleur-de-remorques/ /careers/outdoor-yard-clerk-rent
 Redirect 301 /support-technique/ /technical-support/
 Redirect 301 /resultat-de-la-recherche/ /search/
 Redirect 301 /nos-videos/ /videos/
-Redirect 301 /connexion/ /contact/
+Redirect 301 /connexion/ /login/
 Redirect 301 /politique-de-cookies/ /cookie-policy/
-Redirect 301 /inscription/ /contact/
+Redirect 301 /inscription/ /login/
 Redirect 301 /carrieres/ /careers/
 Redirect 301 /politique-de-confidentialite/ /privacy-policy/
 Redirect 301 /retour-de-marchandises/ /returns/
@@ -3347,12 +3347,12 @@ Redirect 301 /besoins/ /solutions/
 Redirect 301 /actualites/ /news/
 Redirect 301 /conditions-generales-de-vente/ /terms-and-conditions/
 Redirect 301 /infolettre/ /newsletter/
-Redirect 301 /mon-compte/ /contact/
+Redirect 301 /mon-compte/ /login/
 Redirect 301 /nous-joindre/ /contact/
 Redirect 301 /a-propos/ /about/
 Redirect 301 /produits/ /products/
-Redirect 301 /commande/ /contact/
-Redirect 301 /panier/ /contact/
+Redirect 301 /commande/ /cart/
+Redirect 301 /panier/ /cart/
 Redirect 301 /boutique/ /products/
 Redirect 301 /remboursements_retours/ /returns/
 Redirect 301 /nos-services/reparation-support-technique/ /services/repair/

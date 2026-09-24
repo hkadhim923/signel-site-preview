@@ -3327,9 +3327,9 @@
 /support-technique/  /technical-support/  301
 /resultat-de-la-recherche/  /search/  301
 /nos-videos/  /videos/  301
-/connexion/  /contact/  301
+/connexion/  /login/  301
 /politique-de-cookies/  /cookie-policy/  301
-/inscription/  /contact/  301
+/inscription/  /login/  301
 /carrieres/  /careers/  301
 /politique-de-confidentialite/  /privacy-policy/  301
 /retour-de-marchandises/  /returns/  301
@@ -3338,12 +3338,12 @@
 /actualites/  /news/  301
 /conditions-generales-de-vente/  /terms-and-conditions/  301
 /infolettre/  /newsletter/  301
-/mon-compte/  /contact/  301
+/mon-compte/  /login/  301
 /nous-joindre/  /contact/  301
 /a-propos/  /about/  301
 /produits/  /products/  301
-/commande/  /contact/  301
-/panier/  /contact/  301
+/commande/  /cart/  301
+/panier/  /cart/  301
 /boutique/  /products/  301
 /remboursements_retours/  /returns/  301
 /nos-services/reparation-support-technique/  /services/repair/  301
