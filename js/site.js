@@ -15,9 +15,9 @@
   document.documentElement.classList.add('js');
 
   /* ---- mega menus (desktop). All three open on hover after a short delay, so crossing
-     the header doesn't flash a panel. Products then stays open when the pointer leaves,
-     so it can't vanish on the way to a category; it closes on a click on the dimmed page,
-     the X, Esc, or hovering another menu. Services and Solutions close after a short grace
+     the header doesn't flash a panel. Products then stays open while the pointer wanders
+     sideways in the header, so it can't vanish on the way to a category; it closes when
+     the pointer moves below it onto the dimmed page, on the X, Esc, or another menu. Services and Solutions close after a short grace
      period, or as soon as the pointer moves onto the dimmed page. On touch, the first tap
      opens a panel instead of following the link. ---- */
   var menus = Array.prototype.slice.call(document.querySelectorAll('.has-menu'));
@@ -64,7 +64,7 @@
       var x = m.querySelector('[data-mega-close]');
       if (x) x.addEventListener('click', close);
     });
-    backdrop.addEventListener('mouseenter', function () { if (current && !current.hasAttribute('data-mega-sticky')) close(); });
+    backdrop.addEventListener('mouseenter', close);   // below the panel = done with the menu, Products included
     backdrop.addEventListener('click', close);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && current) close(); });
     wide.addEventListener('change', function () { menus.forEach(function (o) { setOpen(o, false); }); close(); });

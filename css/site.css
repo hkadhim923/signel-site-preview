@@ -1157,3 +1157,31 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .pinfo{order:2;grid-area:auto;grid-column:1}
   .pcard-info{order:3;grid-column:1}
 }
+
+/* =====================================================================================
+   Job posting - src/pages/toppages.js renderJob.
+   ===================================================================================== */
+.tp-page.job-page main{padding-top:40px}
+.job{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:clamp(32px,4vw,64px);align-items:start;max-width:1320px}
+.job-meta{list-style:none;margin:0 0 28px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.job-meta li{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:15px;font-weight:500}
+.job-ico{display:inline-flex;color:var(--blue)}
+.job-ico svg{width:16px;height:16px;fill:currentColor}
+.job-sec{padding:26px 0;border-top:1px solid var(--line)}
+.job-sec:first-of-type{border-top:0;padding-top:0}
+.job-sec h2{margin:0 0 12px;font-size:1.5rem}
+.job-text{font-size:17px;line-height:1.6}
+.job-text p{margin:0 0 12px}
+.job-text ul{padding-left:4px}
+.job-text li{margin:0 0 6px;padding-left:24px;text-indent:-21px}
+.job-apply{position:sticky;top:calc(var(--head-h, 0px) + 20px);display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
+.job-apply h2{margin:0;font-size:1.5rem;text-transform:none}
+.job-apply p{margin:0 0 4px;color:#3d4a52;font-size:15px}
+.job-apply .pbox-btn{width:100%}
+.job-all{font-size:15px;font-weight:600;text-align:center;margin-top:4px}
+@media (max-width:960px){.job{grid-template-columns:1fr}.job-apply{position:static}}
+/* Narrow screens: long unbroken links wrap, wide tables scroll inside their own box
+   instead of pushing the page sideways (found by tools/visual-audit.mjs at 390px). */
+.job-main{min-width:0}
+.job-text,.prose,.ptab .rich,.pdesc .rich{overflow-wrap:anywhere}
+.prose table,.pdesc .rich table{display:block;max-width:100%;overflow-x:auto}
