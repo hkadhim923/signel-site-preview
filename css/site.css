@@ -332,8 +332,6 @@ a.lang:hover{text-decoration:underline}
 .ncard .body{padding:20px 20px 24px;display:flex;flex-direction:column;gap:8px;flex:1}
 .ncard .date{margin:0;font-family:var(--font-cond);font-size:16px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--blue)}
 .ncard h3{margin:0;font-size:20px;font-weight:700;line-height:1.3;text-transform:none;color:var(--ink)}
-/* text-only cards are the common case: give them a coloured spine so the grid reads evenly */
-.ncard--text .body{border-top:4px solid var(--yellow)}
 .ncard--text h3{font-size:22px}
 
 /* --- news post, matching signel.ca's single-post layout --- */
@@ -872,7 +870,7 @@ ul.tp-cats{margin-top:49px}
    Pricing box - src/components/pricing.js. One frame for every kind: label, price line,
    then the kind's body and the quote actions.
    ===================================================================================== */
-.pbox{margin:22px 0 14px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:8px;padding:22px 24px 20px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
+.pbox{margin:22px 0 14px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px 24px 20px;box-shadow:0 1px 2px rgba(14,23,27,.04),0 8px 24px rgba(14,23,27,.06)}
 .pbox-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
 .pbox-label{font:700 12px/1 var(--font-cond);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .pbox-price{margin:0;font:700 26px/1.2 var(--font-cond);color:var(--ink)}
