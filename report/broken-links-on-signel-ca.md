@@ -1,6 +1,6 @@
 # signel.ca — what is broken on the original site
 
-Compiled 2026-09-24. Every link below was fetched from the live site.
+Compiled 2026-09-25. Every link below was fetched from the live site.
 Open the page in the **Where to check** column and you will see the problem there.
 
 ## 1. Download links that lead to a missing file
@@ -270,7 +270,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 10. Products with no image
 
-35 products show a blank placeholder in the catalogue.
+21 products show a blank placeholder in the catalogue.
 
 | Product | SKU | Page |
 |---|---|---|
@@ -278,26 +278,12 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | EXCEPT AUTHORIZED VEHICLES | P-100-P-2x | https://www.signel.ca/produit/excepte-vehicules-autorises/ |
 | P-18 DOUBLE-SIDED | P-18x | https://www.signel.ca/produit/p-18-recto-verso/ |
 | Stop sign, Inuktitut | P-10-Ix | https://www.signel.ca/produit/arret-inuit/ |
-| Dead end, with left arrow | I-375-2-Gx | https://www.signel.ca/produit/route-sans-issue-avec-fleche-a-gauche/ |
 | Hiker parking area | I-350-13x | https://www.signel.ca/produit/aire-de-stationnement-pour-randonneurs/ |
-| Diagonal right arrow X km tab | I-240-P-7-D-Vx | https://www.signel.ca/produit/panonceau-fleche-oblique-a-droite-x-km-2/ |
-| Direction tab, diagonal right X km | I-240-P-7-D-BRx | https://www.signel.ca/produit/panonceau-de-direction-oblique-a-droite-x-km/ |
-| Diagonal right arrow X km tab | I-240-P-7-D-BLx | https://www.signel.ca/produit/panonceau-fleche-oblique-a-droite-x-km/ |
 | Highway exit number, left, with cardinal direction | I-201-GPCx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-gauche-avec-point-cardinal/ |
 | Highway exit number, left | I-201-Gx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-gauche/ |
 | Highway exit number, right, with cardinal direction | I-201-DPCx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite-avec-point-cardinal/ |
 | Highway exit number, right | I-201-Dx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite/ |
-| Tourist route identification | I-185-2x | https://www.signel.ca/produit/identification-de-la-route-ou-du-circuit-touristique/ |
-| Directions to tourist route: Route des Sommets | I-185-1-Lx | https://www.signel.ca/produit/acheminement-vers-la-route-ou-le-circuit-touristiqueroute-des-sommets/ |
-| Tourist route marker: Chemin des cantons | I-185-1-Jx | https://www.signel.ca/produit/jalonnement-le-long-de-la-route-ou-du-circuit-touristiquechemin-des-cantons/ |
 | Crossing location tab, diagonal left arrow (bike paths) | D-270-P-1x | https://www.signel.ca/produit/panonceau-de-localisation-dun-passage-fleche-oblique-a-gauche-voies-cyclables/ |
-| Advisory exit speed 85 km/h | D-120-P-85x | https://www.signel.ca/produit/vitesse-recommandee-sortie-85-kmh/ |
-| Advisory exit speed 75 km/h | D-120-P-75x | https://www.signel.ca/produit/vitesse-recommandee-sortie-75-kmh/ |
-| Advisory exit speed 65 km/h | D-120-P-65x | https://www.signel.ca/produit/vitesse-recommandee-sortie-65-kmh/ |
-| Advisory exit speed 55 km/h | D-120-P-55x | https://www.signel.ca/produit/vitesse-recommandee-sortie-55-kmh/ |
-| Advisory exit speed 45 km/h | D-120-P-45x | https://www.signel.ca/produit/vitesse-recommandee-sortie-45-kmh/ |
-| Advisory exit speed 35 km/h | D-120-P-35x | https://www.signel.ca/produit/vitesse-recommande-sortie-35-kmh/ |
-| Advisory exit speed 25 km/h | D-120-P-25x | https://www.signel.ca/produit/vitesse-recommande-sortie-25-kmh/ |
 | Placards | DP[M]PN403-3170x | https://www.signel.ca/produit/placards-10/ |
 | OSHA standard signs: Emergency station only | DSO[M][F]0-010x | https://www.signel.ca/produit/panneaux-norme-osha-poste-de-secours-seulement/ |
 | CSA standard signs: Fire extinguisher | DSC[M][F]7-001x | https://www.signel.ca/produit/panneaux-norme-csa-extincteur/ |
