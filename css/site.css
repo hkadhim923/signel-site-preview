@@ -185,8 +185,8 @@ a.card:hover { text-decoration: none; box-shadow: var(--shadow); }
 .footer { background: var(--ink); color: #c9d1d8; padding: 48px 0 24px; margin-top: 48px; font-size: .9rem; }
 .footer .cols { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr; gap: 32px; }
 .footer h4 { color: #fff; font-family: var(--font-cond); text-transform: uppercase; margin: 0 0 12px; font-size: .95rem; border-bottom: 2px solid var(--yellow); display: inline-block; padding-bottom: 4px; }
-.footer a:not(.ui-btn) { color: #c9d1d8; display: block; padding: 3px 0; }
-.footer a:not(.ui-btn):hover { color: #fff; }
+.footer a:where(:not(.ui-btn)) { color: #c9d1d8; display: block; padding: 3px 0; }
+.footer a:where(:not(.ui-btn)):hover { color: #fff; }
 .footer .logo img { height: 44px; filter: brightness(0) invert(1); margin-bottom: 14px; }
 .footer .bottom { border-top: 1px solid rgba(255,255,255,.12); margin-top: 32px; padding-top: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: .8rem; color: #8a959e; }
 .footer .bottom a { display: inline; padding: 0 10px 0 0; }
