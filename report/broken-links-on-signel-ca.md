@@ -270,12 +270,11 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 10. Products with no image
 
-21 products show a blank placeholder in the catalogue.
+12 products show a blank placeholder in the catalogue.
 
 | Product | SKU | Page |
 |---|---|---|
 | Lane merge T-100-10-G | T-100-10-Gx | https://www.signel.ca/produit/fusion-de-voies-t-100-10-g/ |
-| EXCEPT AUTHORIZED VEHICLES | P-100-P-2x | https://www.signel.ca/produit/excepte-vehicules-autorises/ |
 | P-18 DOUBLE-SIDED | P-18x | https://www.signel.ca/produit/p-18-recto-verso/ |
 | Stop sign, Inuktitut | P-10-Ix | https://www.signel.ca/produit/arret-inuit/ |
 | Hiker parking area | I-350-13x | https://www.signel.ca/produit/aire-de-stationnement-pour-randonneurs/ |
@@ -284,14 +283,6 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | Highway exit number, right, with cardinal direction | I-201-DPCx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite-avec-point-cardinal/ |
 | Highway exit number, right | I-201-Dx | https://www.signel.ca/produit/numero-de-sortie-dautoroute-a-droite/ |
 | Crossing location tab, diagonal left arrow (bike paths) | D-270-P-1x | https://www.signel.ca/produit/panonceau-de-localisation-dun-passage-fleche-oblique-a-gauche-voies-cyclables/ |
-| Placards | DP[M]PN403-3170x | https://www.signel.ca/produit/placards-10/ |
-| OSHA standard signs: Emergency station only | DSO[M][F]0-010x | https://www.signel.ca/produit/panneaux-norme-osha-poste-de-secours-seulement/ |
-| CSA standard signs: Fire extinguisher | DSC[M][F]7-001x | https://www.signel.ca/produit/panneaux-norme-csa-extincteur/ |
-| CSA standard signs: Use stairs in case of emergency | DSC[M][F]7-006x | https://www.signel.ca/produit/panneaux-norme-csa-utilisez-lescalier-en-cas-durgence/ |
-| CSA standard signs: Emergency exit | DSC[M][F]7-005x | https://www.signel.ca/produit/panneaux-norme-csa-sortie-durgence/ |
-| CSA standard signs: Opening this door will trigger an alarm | DSC[M][F]7-004x | https://www.signel.ca/produit/panneaux-norme-csa-ouvrir-cette-porte-declenche-un-systeme-dalarme/ |
-| CSA standard signs: Water intake | DSC[M][F]7-003x | https://www.signel.ca/produit/panneaux-norme-csa-prise-deau/ |
-| CSA standard signs: Cartridge respirator required | DSC[M][F]2-025x | https://www.signel.ca/produit/panneaux-norme-csa-respirateur-a-cartouche-obligatoire/ |
 | Straps for round posts | AECCxxx30x | https://www.signel.ca/produit/courroies-pour-poteau-rond/ |
 | Strap buckle for round posts | AECBxxxx | https://www.signel.ca/produit/boucle-dattache-de-courroie-pour-poteau-rond/ |
 | Flared U-bolt | AECAExxxx | https://www.signel.ca/produit/attache-en-u-evasee/ |
