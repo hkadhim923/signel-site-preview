@@ -1,6 +1,7 @@
 /* Signel Services — site behaviour. No dependencies. */
 (function () {
   'use strict';
+  window.__signelSite = true;   // /diagnostics/ checks that this script arrived
 
   /* ---- mobile nav ---- */
   var burger = document.querySelector('.burger');
@@ -88,6 +89,30 @@
     sync();
   }
 
+  /* ---- background videos (the home header): the autoplay attribute alone can be held back
+     (battery saver, a tab opened in the background, a slow start). Ask for playback
+     ourselves, and again when the tab shows, the video can play, or on the first click, key
+     or scroll; each refusal goes to the log with the browser's reason. ---- */
+  Array.prototype.forEach.call(document.querySelectorAll('video[autoplay]'), function (v) {
+    v.muted = true; v.playsInline = true;   // the property, not only the attribute: required to autoplay
+    var reported = false;
+    var kick = function (why) {
+      if (!v.paused || document.visibilityState === 'hidden') return;
+      var p = v.play();
+      if (p && p.catch) p.catch(function (e) {
+        if (!reported) { reported = true; (window.signelLog || function () {})('video', 'playback held back (' + why + '): ' + (e && e.name) + ' ' + (e && e.message)); }
+      });
+    };
+    v.addEventListener('canplay', function () { kick('canplay'); });
+    v.addEventListener('error', function () { (window.signelLog || function () {})('video', 'video error ' + (v.error && v.error.code)); });
+    document.addEventListener('visibilitychange', function () { kick('tab shown'); });
+    ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(function (t) {
+      window.addEventListener(t, function () { kick(t); }, { once: true, passive: true });
+    });
+    setTimeout(function () { kick('4 s check'); if (v.readyState === 0) (window.signelLog || function () {})('video', 'no video data after 4 s (' + (v.currentSrc || 'no source chosen') + ')'); }, 4000);
+    kick('page load');
+  });
+
   /* ---- careers: category filter over the job cards (signel.ca's "Tous / Administration /
      ..." strip). Without JavaScript every card simply stays visible. ---- */
   var jf = document.querySelector('[data-job-filters]');
@@ -122,12 +147,27 @@
   /* ---- search (header + category filter) ---- */
   var ROOT = document.documentElement.getAttribute('data-root') || '';
   var index = null, loading = null;
+  var log = window.signelLog || function () {};
+  // The product list (~270 KB) search reads. A download that fails (a weak or filtered
+  // network) is tried again 3 times, a moment apart, and a failure is not remembered: the
+  // next search tries again instead of staying broken until the page is reloaded.
   function loadIndex() {
     if (index) return Promise.resolve(index);
     if (loading) return loading;
-    loading = fetch(ROOT + '/search-index.json').then(function (r) { return r.json(); }).then(function (d) { index = d; return d; });
+    var attempt = function (n) {
+      return fetch(ROOT + '/search-index.json').then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).catch(function (e) {
+        log('search-index', 'try ' + n + ' failed: ' + (e && e.message));
+        if (n >= 3) throw e;
+        return new Promise(function (ok) { setTimeout(ok, n * 1500); }).then(function () { return attempt(n + 1); });
+      });
+    };
+    loading = attempt(1).then(function (d) { index = d; return d; }, function (e) { loading = null; throw e; });
     return loading;
   }
+  window.addEventListener('online', function () { if (!index) loadIndex().catch(function () {}); });
   function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function score(item, q, terms) {
     var name = norm(item.n), sku = norm(item.s), cat = norm(item.c);
@@ -185,11 +225,21 @@
     var qi = page.querySelector('input[name=q]'); if (qi) qi.value = q;
     var target = page.querySelector('.grid');
     var count = page.querySelector('[data-count]');
-    loadIndex().then(function () {
-      var items = search(q, 200);
-      if (count) count.textContent = items.length + ' result' + (items.length === 1 ? '' : 's') + (q ? ' for "' + q + '"' : '');
-      target.innerHTML = items.map(card).join('');
-    });
+    var show = function () {
+      if (count) count.textContent = '';
+      loadIndex().then(function () {
+        var items = search(q, 200);
+        if (count) count.textContent = items.length + ' result' + (items.length === 1 ? '' : 's') + (q ? ' for "' + q + '"' : '');
+        target.innerHTML = items.map(card).join('');
+      }, function () {
+        // never a silent empty page: say so, and offer to try again
+        target.innerHTML = '<p class="search-failed">The product list could not be loaded (the connection may be weak). ' +
+          '<button type="button" class="ui-btn ui-btn--outline" data-search-retry>Try again</button></p>';
+      });
+    };
+    target.addEventListener('click', function (e) { if (e.target.closest('[data-search-retry]')) show(); });
+    window.addEventListener('online', function () { if (target.querySelector('[data-search-retry]')) show(); });
+    show();
   }
   /* client-side filter inside a category listing */
   var filter = document.querySelector('[data-filter]');

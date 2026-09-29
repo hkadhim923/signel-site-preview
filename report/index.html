@@ -33,11 +33,11 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <div class="switch"><p>Show what is broken on</p>
 <div class="seg" role="tablist">
 <button type="button" role="tab" data-view="original" aria-selected="true">signel.ca (original site)<b>244</b></button>
-<button type="button" role="tab" data-view="new" aria-selected="false">New site<b class="zero" title="broken">0 broken</b><b class="left" title="left out because broken on signel.ca">166 left out</b><b class="left" title="products showing a French document">157 in French</b><b class="left" title="products without a picture">12 no picture</b></button>
+<button type="button" role="tab" data-view="new" aria-selected="false">New site<b class="zero" title="broken">0 broken</b><b class="left" title="left out because broken on signel.ca">166 left out</b><b class="left" title="products showing a French document">76 in French</b><b class="left" title="products without a picture">12 no picture</b></button>
 </div></div>
 <section data-panel="original">
 <h1 id="s0">signel.ca — what is broken on the original site</h1>
-<p>Compiled 2026-09-28. Every link below was fetched from the live site.</p>
+<p>Compiled 2026-09-29. Every link below was fetched from the live site.</p>
 <p>Open the page in the <strong>Where to check</strong> column and you will see the problem there.</p>
 <h2 id="s3">1. Download links that lead to a missing file</h2>
 <p>8 documents are linked from the site but return "not found".</p>
@@ -344,9 +344,9 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 </section>
 <section data-panel="new" hidden>
 <h1 id="s0">The new site — what is broken</h1>
-<p>Compiled 2026-09-28 from the build's own checks. Page addresses are on the new site.</p>
+<p>Compiled 2026-09-29 from the build's own checks. Page addresses are on the new site.</p>
 <h2 id="s2">Build checks (verify.js)</h2>
-<p class="ok">All 1853 pages pass: every product and SKU present, no broken internal links, no missing images, no French left, no dead buttons. Checked 2026-09-28.</p>
+<p class="ok">All 1854 pages pass: every product and SKU present, no broken internal links, no missing images, no French left, no dead buttons. Checked 2026-09-29.</p>
 <h2 id="s4">What a visitor sees (visual audit)</h2>
 <p class="ok">desktop (1440px): all 1852 pages clean. Checked 2026-09-28.</p>
 <p class="ok">tablet (900px): all 1852 pages clean. Checked 2026-09-28.</p>
@@ -538,33 +538,23 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td><a href="/signel-site-preview/product/lane-merge-t-100-10-g/">Lane merge T-100-10-G</a></td><td>T-100-10-Gx</td><td>a steel post photo (wrong picture)</td></tr>
 </tbody></table>
 <h2 id="s194">Documents shown in French</h2>
-<p>157 products show a French document because no English version was found on signelsafety.ca (read 2026-09-24).</p>
+<p>76 products show a French document because no English version was found on signelsafety.ca (read 2026-09-24).</p>
 <p>The button says "PDF · in French". Each switches to English once the English PDF is on signelsafety.ca (then run <code>tools/fetch-english-docs.mjs</code>) or Signel supplies it.</p>
 <table><thead><tr><th>Product</th><th>French document shown</th><th>To fix</th></tr></thead><tbody>
 <tr><td>/product/axe-post/<br>AXE post</td><td>Product sheet: <code>FP-0165_PTRx-R0.pdf</code><br>Technical sheet: <code>FT-PTR-R0.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/high-visibility-medallion/<br>High-visibility medallion</td><td>Product sheet: <code>FP-0166-MSxx-R1.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/used-variable-message-sign-48-x-80-pixel-matrix/<br>Used variable message sign – 48 x 80 pixel matrix (UPVM16)</td><td>Product sheet: <code>FP-0062_PMVxx-R2.pdf</code><br>Technical sheet: <code>FT-PMV16-R1.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/used-variable-message-sign-30-x-56-pixel-matrix/<br>Used variable message sign – 30 x 56 pixel matrix (UPMV15)</td><td>Product sheet: <code>FP-0062_PMVxx-R2.pdf</code><br>Technical sheet: <code>FT-PMV15-PMV_30x56.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/used-profil-plus-three-colour-radio-frequency-portable-traffic-signals/<br>Used PROFIL+ three-colour radio-frequency portable traffic signals (UFPP-FEU)</td><td>Product sheet: <code>FP-0055_FFPROFIL-R0.pdf</code><br>Technical sheet: <code>FT-FPP-R1.pdf</code><br>Quick-start guide: <code>GD-FPP-FEU-R4.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/used-radio-frequency-portable-traffic-signals/<br>Used radio-frequency portable traffic signals (UFF10)</td><td>Product sheet: <code>FP-0050_FeuFlexPro_R6.pdf</code><br>Technical sheet: <code>FT-FEUFLEX10_Feux_de_chantier_Radio_Frequence.pdf</code><br>User manual: <code>MU-FF10.pdf</code><br>Quick-start guide: <code>GD-FF10_GUIDE_DE_DEMARRAGE_FEUFLEX.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/used-signel-temporary-crowd-control-barrier/<br>Used Signel temporary crowd control barrier (UAB1022)</td><td>Product sheet: <code>FP-0028_BARRIERE-SIGNEL.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/ultraflex-t-rv-10-bollard/<br>UltraFlex T-RV-10 bollard</td><td>Product sheet: <code>FP-0103_BOLLARD-ULTRAFLEX-TRAVAUX-1.pdf</code><br>Technical sheet: <code>FT-BOLO439WO-R0.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/ultraflex-bollard/<br>UltraFlex bollard</td><td>Product sheet: <code>FP-0102_BOLLARD-ULTRAFLEX-1.pdf</code><br>Technical sheet: <code>FT-BOLN434Y3-R0.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/fire-hydrant-marker/<br>Fire hydrant marker (BAL15P)</td><td>Technical sheet: <code>FT-BAL15P-R1.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/36-cone-fluorescent-yellow-green/<br>36" cone, fluorescent yellow-green (AR2018)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/28-t-rv-3-cone-with-orange-base/<br>28" T-RV-3 cone with orange base (AR2005PB2)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/lora-remote-control-for-flagger-signal/<br>LORA remote control for flagger signal (FBOP-MAN)</td><td>User manual: <code>MU-FBS10_LoRa_FR-R0.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/signel-temporary-crowd-control-barrier/<br>Signel temporary crowd control barrier (AB1022)</td><td>Product sheet: <code>FP-0028_BARRIERE-SIGNEL.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/digital-arrow-board-control-box-with-built-in-keypad/<br>Digital arrow board control box with built-in keypad (CGE100x)</td><td>Technical sheet: <code>FT-CGE100-R2.pdf</code><br>User manual 1: <code>MU-CGE100-R4.pdf</code><br>User manual 2: <code>MU-CGE100.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/horizontal-portable-traffic-signals/<br>Horizontal portable traffic signals (RMF12)</td><td>Technical sheet: <code>FT-RMF12-R1.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/signel-guard-tl1-and-tl-2-miniguard-type-safety-barrier/<br>Signel Guard TL1 and TL-2 – MINIGUARD-type safety barrier (AB5002)</td><td>Product sheet: <code>FP-0037_SignelGuard-TL1-TL2.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/signel-standard-steel-square-posts/<br>SIGNEL STANDARD steel square posts (PTJxxxxx)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/installation-pole-for-temporary-signs/<br>Installation pole for temporary signs (AETPI)</td><td>Product sheet: <code>FP-0021_Panneau-Lexan-avec-Crochet.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/fastener-for-no-parking-sign/<br>Fastener for No Parking sign (AEQNOP)</td><td>Product sheet: <code>FP-0021_Panneau-Lexan-avec-Crochet.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/temporary-no-parking-sign/<br>Temporary No Parking sign (EL3E3x2EUxx)</td><td>Product sheet: <code>FP-0021_Panneau-Lexan-avec-Crochet.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/group-lockout-cabinets-with-windows/<br>Group lockout cabinets with windows (NO-CPxx)</td><td>Product sheet: <code>FP_BoitesCadPortative.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/led-beacon-24-7/<br>LED beacon – 24/7 (SPH08xx)</td><td>Product sheet: <code>FP-0074_PanneauxComplementaire-SPS8xx-SPHxx-BRF20-R3.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/group-lockout-boxes-with-windows/<br>Group lockout boxes with windows (NO-BPxx)</td><td>Product sheet: <code>FP_BoitesCadPortative.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/sbm22-motorized-mount-low-profile/<br>SBM22 motorized mount (low profile) (SBM22)</td><td>Product sheet: <code>FP-0064_SBM.pdf</code><br>Technical sheet: <code>FT-SBM22-R0.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/pyramid-concrete-base-with-u-channel-post/<br>Pyramid concrete base with U-channel post (AP2007)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/bollard-with-handle/<br>Bollard with handle (BOLO410W1)</td><td>Document: <code>Fiche_Bollard-Travaux.pdf</code></td><td>the English version of the PDF</td></tr>
@@ -577,74 +567,13 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>/product/in-street-speed-reduction-sign-bollard/<br>In-street speed reduction sign / bollard (BOLPB4X2XVSPECx)</td><td>Product sheet: <code>FP-0025-Balise_ou_bollard_pour_reduction_de_vitesse.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/psp-power-supply-unit/<br>PSP – Power supply unit (PSPxxx)</td><td>Technical sheet: <code>FT-PSP100-Bloc-d-alimentation-solaire-100W.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/rural-911-address-plate-installation-kit/<br>Rural 911 address plate installation kit (AE6018G)</td><td>Product sheet: <code>FP-0010_projet-911-R2.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/fence-foot/<br>Fence foot (AB1007P)</td><td>Product sheet: <code>FP-0027-Barriere-de-gestion-de-foule-et-de-circulation-cloture1.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/temporary-fence/<br>Temporary fence (AB1007)</td><td>Product sheet: <code>FP-0027-Barriere-de-gestion-de-foule-et-de-circulation-cloture1.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/framed-construction-fence/<br>Framed construction FENCE (AB1002-6C)</td><td>Product sheet: <code>FP-0027-Barriere-de-gestion-de-foule-et-de-circulation-cloture1.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/fence-for-new-jersey-concrete-barrier/<br>Fence for NEW JERSEY concrete barrier (AB1008x)</td><td>Product sheet: <code>FP-0027-Barriere-de-gestion-de-foule-et-de-circulation-cloture1.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/school-crossing-guard-kit/<br>School crossing guard kit (BAL24BRx)</td><td>Product sheet: <code>FP-0023_kit_pour_brigadier-1.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/runway-closure-trailer/<br>Runway closure trailer (RFP10)</td><td>Technical sheet: <code>FT-RFP10-R0-Remorque-Fermeture-de-Piste.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/baliplast-t-rv-2-delineator/<br>BALIPLAST T-RV-2 delineator (BAL12PDx)</td><td>Product sheet: <code>FP-0075_BALIPLAST.pdf</code><br>Technical sheet: <code>FT-BAL12PDX_TRV2_avec_systeme_Baliplast.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/balismart-t-rv-2-delineator/<br>BALISMART T-RV-2 delineator (BAL14PDx)</td><td>Technical sheet: <code>FT-BAL14PDX-R3.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/mini-u-channel-post/<br>Mini U-channel post (PTU5xx)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-80/<br>Roll-up signs T-D-80 (T-D-80-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-50-1/<br>Roll-up signs T-D-50-1 (T-D-50-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-30/<br>Roll-up signs T-D-30 (T-D-30-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-280/<br>Roll-up signs T-D-280 (T-D-280-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-210-2-g/<br>Roll-up signs T-D-210-2-G (T-D-210-2-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-210-2-d/<br>Roll-up signs T-D-210-2-D (T-D-210-2-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-210-1/<br>Roll-up signs T-D-210-1 (T-D-210-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-130-2/<br>Roll-up signs T-D-130-2 (T-D-130-2-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-130-1/<br>Roll-up signs T-D-130-1 (T-D-130-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-d-100-2-g/<br>Roll-up signs T-D-100-2-G (T-D-100-2-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-2-g/<br>Roll-up signs T-90-2-G (T-90-2-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-2-d/<br>Roll-up signs T-90-2-D (T-90-2-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-16-g/<br>Roll-up signs T-90-16-G (T-90-16-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-16-d/<br>Roll-up signs T-90-16-D (T-90-16-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-14/<br>Roll-up signs T-90-14 (T-90-14-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-13-g/<br>Roll-up signs T-90-13-G (T-90-13-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-13-d/<br>Roll-up signs T-90-13-D (T-90-13-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-90-1/<br>Roll-up signs T-90-1 (T-90-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-81-1/<br>Roll-up signs T-81-1 (T-81-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-80-p/<br>Roll-up signs T-80-P (T-80-P-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-80-8/<br>Roll-up signs T-80-8 (T-80-8-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-80-3/<br>Roll-up signs T-80-3 (T-80-3-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-80-2/<br>Roll-up signs T-80-2 (T-80-2-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-80-1/<br>Roll-up signs T-80-1 (T-80-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-70-1-30/<br>Roll-up signs T-70-1-30 (T-70-1-30-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-60/<br>Roll-up signs T-60 (T-60-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-8/<br>Roll-up signs T-50-8 (T-50-8-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-6/<br>Roll-up signs T-50-6 (T-50-6-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-4/<br>Roll-up signs T-50-4 (T-50-4-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-3/<br>Roll-up signs T-50-3 (T-50-3-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-2/<br>Roll-up signs T-50-2 (T-50-2-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-50-1/<br>Roll-up signs T-50-1 (T-50-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-40/<br>Roll-up signs T-40 (T-40-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-20/<br>Roll-up signs T-20 (T-20-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-130/<br>Roll-up signs T-130 (T-130-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-120/<br>Roll-up signs T-120 (T-120-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-110-3-g/<br>Roll-up signs T-110-3-G (T-110-3-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-110-3-d/<br>Roll-up signs T-110-3-D (T-110-3-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-110-1-g/<br>Roll-up signs T-110-1-G (T-110-1-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-100-3-g/<br>Roll-up signs T-100-3-G (T-100-3-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-100-3-d/<br>Roll-up signs T-100-3-D (T-100-3-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-100-2-d/<br>Roll-up signs T-100-2-D (T-100-2-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-100-1-g/<br>Roll-up signs T-100-1-G (T-100-1-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-100-1-d/<br>Roll-up signs T-100-1-D (T-100-1-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-t-10-slow/<br>Roll-up signs T-10 Slow (T-10-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-90-d/<br>Roll-up signs P-90-D (P-90-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/p-60-g-stop-line-left/<br>P-60-G Stop line, left (P-60-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-60-d-stop-line-right/<br>Roll-up signs P-60-D Stop line, right (P-60-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-30/<br>Roll-up signs P-30 (P-30-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-270-2-g/<br>Roll-up signs P-270-2-G (P-270-2-G-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-270-2-d/<br>Roll-up signs P-270-2-D (P-270-2-D-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-20-1-yield/<br>Roll-up signs P-20-1 Yield (P-20-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-140-1/<br>Roll-up signs P-140-1 (P-140-1-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-p-10-stop/<br>Roll-up signs P-10 Stop (P-10-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/roll-up-signs-d-30/<br>Roll-up signs D-30 (D-30-Erx)</td><td>Product sheet: <code>FP-0016_Panneaux_enroulables.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/illuminated-flagger-paddle/<br>Illuminated flagger paddle (Palette-de-signaleur-lumineuse-x)</td><td>User manual: <code>MU_PALETTE_signaleur.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/flagger-paddle/<br>Flagger paddle (AD200x)</td><td>Technical sheet: <code>FT-AD2003X_Palette_de_signaleur.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/quadraflex-system/<br>Quadraflex system (AQ3005x)</td><td>Product sheet: <code>FP-0014_Supports-type-FLEX.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/twinflex-system/<br>Twinflex system (AQ3004)</td><td>Product sheet: <code>FP-0014_Supports-type-FLEX.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/duratube-post/<br>DURATUBE post (AE6068)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/ulti-mate-steel-square-posts/<br>ULTI-MATE steel square posts (PTCxxxxx)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code><br>Document: <code>Ulti-mate_L6X_-2018_S-004.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/type-u-post-for-reflectors/<br>Type U post for reflectors (PTD1Mxx)</td><td>Product sheet: <code>FP-0004_PoteauxSignel.pdf</code><br>Technical sheet: <code>FT-PTD-R0-Poteau-catadioptre.pdf</code><br>Document: <code>Quincaillerie_Signel.pdf</code></td><td>the English version of the PDF</td></tr>
@@ -655,19 +584,11 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>/product/folding-sign-to-conceal-the-pictogram/<br>Folding sign to conceal the pictogram (EGPxx)</td><td>Technical sheet: <code>FT-EGPXX-R0.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/signage-project-911-marker/<br>Signage project – 911 marker (Borne911-x)</td><td>Product sheet: <code>FP-0010_projet-911-R2.pdf</code><br>Form: <code>Contrat_pour_installation_plaquettes_911.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/countdown-display-for-portable-traffic-signals/<br>Countdown display for portable traffic signals (SOP10x)</td><td>Technical sheet: <code>FT-SOP10X_Decompte_a_Dels.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-additional-solar-panel/<br>VMS option: additional solar panel (PMVXXOP-SOL)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-doppler-radar/<br>VMS option: Doppler radar (PMVXXOP-RAD)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-hspa-3g-gps-modem/<br>VMS option: HSPA 3G/GPS modem (PMVXXOP-MOD)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-20a-charger-upgrade/<br>VMS option: 20A charger upgrade (PMVXXOP-CHG)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-8-additional-batteries/<br>VMS option: 8 additional batteries (PMVXXOP-BAT8)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/vms-option-4-additional-batteries/<br>VMS option: 4 additional batteries (PMVXXOP-BAT4)</td><td>Technical sheet: <code>FT-PMV11_Panneau_a_messages_variables_PMV.pdf</code><br>User manual: <code>MU-PMV11.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/solar-arrow-board-trailer/<br>Solar arrow board trailer (RSS56)</td><td>Product sheet: <code>FP-0163_RSS56-R0.pdf</code><br>Technical sheet: <code>FT-RSS56-R0.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/absorb-350-type-crash-cushion/<br>Absorb 350 type crash cushion (AB1014x)</td><td>Technical sheet: <code>FT-AB101XX_Attenuateur_d_impact_type_ABSORB350.pdf</code><br>Document: <code>ABSORB-_350_Signel_FR.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/crash-cushions-sand-barrels/<br>Crash cushions – sand barrels (AB1013-x)</td><td>Technical sheet: <code>FT-AB1013_attenuateur_d_impact_baril_de_sable.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/road-runner-plastic-jersey-barrier/<br>Road-Runner plastic Jersey barrier (AB1005/A)</td><td>Technical sheet: <code>FT-AB1005-A_Barricade_de_plastique.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/crowd-control-barrier-with-fixed-or-reversible-feet/<br>Crowd control barrier with fixed or reversible feet (AB1003x)</td><td>Technical sheet: <code>FT-AB1003X_Barriere_anti-emeute.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/concrete-parking-barriers/<br>Concrete parking barriers (AB1011-x)</td><td>Technical sheet: <code>FT-AB1011-X_Barricade_de_beton.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/concrete-jersey-barrier-safety-barrier/<br>Concrete (Jersey) barrier – safety barrier (AB1011)</td><td>Technical sheet: <code>FT-AB1011-X_Barricade_de_beton.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/cone-mounted-barricade/<br>Cone-mounted barricade (AR2008)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/aluminum-barricade-with-removable-feet-type-tb1/<br>Aluminum barricade with removable feet, type TB1 (TB1Axxx)</td><td>Technical sheet: <code>FT-TB1AXXXX_Barriere_aluminium_demontable.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/sliding-barricades-with-4-folding-feet-type-tb1/<br>Sliding barricades with 4 folding feet, type TB1 (TB1Ax65CPx)</td><td>Technical sheet: <code>FT-TB1AXXXXPX_Barriere_aluminium_demontable.pdf</code></td><td>the English version of the PDF</td></tr>
@@ -678,8 +599,6 @@ code{background:var(--off);padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>/product/28-cone-with-wheels/<br>28″ cone with wheels (AR2010PB2)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/18-cone-type-t-rv-3/<br>18″ cone, type T-RV-3 (AR2002NB1)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/28-four-season-pvc-cone-with-handle-t-rv-3/<br>28″ four-season PVC cone with handle, T-RV-3 (AR2005B2)</td><td>Product sheet: <code>FP-0019_Cones-Signel.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/ballasts-for-t-rv-7/<br>Ballasts for T-RV-7 (AP1010x)</td><td>Technical sheet: <code>FT-AR1002A_baril_TRV7.pdf</code><br>Document: <code>Fiche_AP1010D.pdf</code></td><td>the English version of the PDF</td></tr>
-<tr><td>/product/conical-drum-type-t-rv-7/<br>Conical drum, type T-RV-7 (AR1002x)</td><td>Technical sheet: <code>FT-AR1002A_baril_TRV7.pdf</code><br>Document: <code>AR1002A_balise_TRV7.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/fixed-mount-for-a-separate-arrow-board/<br>Fixed mount for a separate arrow board (SFF20)</td><td>Technical sheet: <code>FT-SFF20_Ensemble_de_2_supports_de_demi-fleches.pdf</code><br>Document: <code>Questions_essentielles_pour__fleches.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/roof-installation-for-the-sfb1xx-arrow-board-mount/<br>Roof installation for the SFB1xx arrow board mount (SGT12x)</td><td>Technical sheet: <code>FT-SGT12X_Ensemble_pour_installation_sur_toit.pdf</code></td><td>the English version of the PDF</td></tr>
 <tr><td>/product/roof-installation-for-sbm20/<br>Roof installation for SBM20 (SGT15x)</td><td>Technical sheet: <code>FT-SGT15X_Ensemble_pour_installation_sur_toit.pdf</code></td><td>the English version of the PDF</td></tr>

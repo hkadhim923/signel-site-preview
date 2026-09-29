@@ -1202,3 +1202,18 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 :is(.prose,.rich) .hl-6{font-size:.67rem}
 /* GIFs converted to looping videos (tools/optimize-media.mjs) keep their width/height attributes; never wider than the text */
 .prose video,.rich video{max-width:100%;height:auto}
+
+/* /diagnostics/ */
+.diag section{margin:28px 0}
+.diag h2{margin:0 0 8px}
+.diag-check{list-style:none;padding:0;margin:12px 0;display:grid;gap:6px}
+.diag-check li{padding:10px 14px;border-radius:8px;background:#f1f3f5}
+.diag-check li.ok{background:#e6f4ea}
+.diag-check li.bad{background:#fde8e8}
+.diag-check li.warn{background:#fff4d6}
+.diag-table{overflow-x:auto}
+.diag-table table{width:100%;border-collapse:collapse;font-size:14px}
+.diag-table th,.diag-table td{text-align:left;padding:6px 8px;border-bottom:1px solid #e3e6ea;vertical-align:top}
+.diag-table small{color:#666}
+.diag pre{white-space:pre-wrap;font-size:13px;background:#f6f7f8;padding:12px;border-radius:8px}
+.search-failed{padding:20px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
