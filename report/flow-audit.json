@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29T14:15:24.541Z",
+ "generated": "2026-09-29T19:57:22.508Z",
  "results": [
   {
    "width": 1440,
@@ -66,6 +66,12 @@
    "name": "contact page form or details present",
    "ok": true,
    "detail": "1 form(s), 2 phone link(s), 1 email link(s)"
+  },
+  {
+   "width": 1440,
+   "name": "downloads: search finds a manual, a QR link opens its application",
+   "ok": true,
+   "detail": ""
   },
   {
    "width": 1440,
@@ -144,6 +150,12 @@
    "name": "contact page form or details present",
    "ok": true,
    "detail": "1 form(s), 2 phone link(s), 1 email link(s)"
+  },
+  {
+   "width": 390,
+   "name": "downloads: search finds a manual, a QR link opens its application",
+   "ok": true,
+   "detail": ""
   },
   {
    "width": 390,
