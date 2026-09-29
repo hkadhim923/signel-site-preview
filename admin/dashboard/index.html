@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-root="/signel-site-preview">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard | Signel admin</title>
+<link rel="stylesheet" href="/signel-site-preview/css/site.css?v=2ce7d5f1bb">
+<link rel="stylesheet" href="/signel-site-preview/css/admin.css?v=93e4be0fdd">
+<link rel="icon" href="/signel-site-preview/favicon.svg" type="image/svg+xml">
+</head>
+<body class="admin">
+<div class="adm" data-admin-app data-new-id-from="900001">
+<header class="adm-top">
+<a class="adm-brand" href="/signel-site-preview/admin/dashboard/"><img src="/signel-site-preview/img/2024/08/Signel-Services-logo-noir.png" alt="" width="120"><span>Admin</span></a>
+<div class="adm-top-actions">
+<button type="button" class="adm-btn" data-admin-changes>Changes <b data-admin-count>0</b></button>
+<button type="button" class="adm-btn adm-btn--primary" data-admin-export>Export changes</button>
+<label class="adm-btn adm-file">Import<input type="file" accept="application/json" data-admin-import hidden></label>
+<a class="adm-btn" href="/signel-site-preview/" target="_blank" rel="noopener">View site</a>
+<button type="button" class="adm-btn" data-admin-logout>Sign out</button>
+</div>
+</header>
+<div class="adm-body">
+<aside class="adm-list">
+<div class="adm-list-head">
+<button type="button" class="ui-btn ui-btn--accent ui-btn--app ui-btn--full" data-admin-new>+ New product</button>
+<input type="search" placeholder="Search name, SKU or internal ID" data-admin-search>
+<select data-admin-cat><option value="">All categories</option></select>
+<label class="adm-check"><input type="checkbox" data-admin-only-changed> Changed only</label>
+<p class="adm-muted adm-small" data-admin-listcount></p>
+</div>
+<ul class="adm-rows" data-admin-rows></ul>
+</aside>
+<main class="adm-edit" data-admin-editor>
+<div class="adm-empty"><h2>Products</h2><p>Choose a product on the left to edit it, or add a new one.</p>
+<p class="adm-muted">Changes are kept in this browser until you <b>export</b> them. The exported file (catalog.json) is applied by the next build: new products appear in their categories, category pages and search. Once the back end is connected, Save will publish directly.</p></div>
+</main>
+</div>
+</div>
+<script src="/signel-site-preview/js/admin.js?v=cca4e2f3aa" defer></script>
+</body>
+</html>

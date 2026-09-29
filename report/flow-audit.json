@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-29T19:57:22.508Z",
+ "generated": "2026-09-29T20:11:32.665Z",
  "results": [
   {
    "width": 1440,
@@ -70,6 +70,12 @@
   {
    "width": 1440,
    "name": "downloads: search finds a manual, a QR link opens its application",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "admin: sign-in, open a product, save a change",
    "ok": true,
    "detail": ""
   },
@@ -154,6 +160,12 @@
   {
    "width": 390,
    "name": "downloads: search finds a manual, a QR link opens its application",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "admin: sign-in, open a product, save a change",
    "ok": true,
    "detail": ""
   },

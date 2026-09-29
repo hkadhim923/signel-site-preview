@@ -113,6 +113,26 @@
     kick('page load');
   });
 
+  /* ---- product page on a phone: the purchase box sits under the pictures, so a slim bar
+     pinned to the bottom keeps the price (the same text as the box, updated with it) and a
+     button that brings the box into view. It hides while the box itself is on screen. ---- */
+  var buyBox = document.querySelector('.pinfo .pbox[data-buy]');
+  if (buyBox && 'IntersectionObserver' in window) {
+    var slot = buyBox.querySelector('[data-price-slot]');
+    var addBtn = buyBox.querySelector('[data-add-to-cart]');
+    var bar = document.createElement('div');
+    bar.className = 'pbar'; bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML = '<span class="pbar-price"></span><button type="button" class="ui-btn ui-btn--primary ui-btn--app" tabindex="-1"></button>';
+    var barPrice = bar.querySelector('.pbar-price'), barBtn = bar.querySelector('button');
+    var paint = function () { barPrice.textContent = slot ? slot.textContent.trim() : ''; barBtn.textContent = addBtn ? addBtn.textContent.trim() : 'Buy'; };
+    paint();
+    if (slot && 'MutationObserver' in window) new MutationObserver(paint).observe(slot, { childList: true, subtree: true, characterData: true });
+    barBtn.addEventListener('click', function () { buyBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    document.body.appendChild(bar);
+    // shown while the price itself (not just the box's edge) is off screen
+    new IntersectionObserver(function (es) { bar.classList.toggle('on', !es[0].isIntersecting); }).observe(slot || buyBox);
+  }
+
   /* ---- careers: category filter over the job cards (signel.ca's "Tous / Administration /
      ..." strip). Without JavaScript every card simply stays visible. ---- */
   var jf = document.querySelector('[data-job-filters]');

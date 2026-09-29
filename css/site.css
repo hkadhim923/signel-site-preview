@@ -1295,3 +1295,20 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .dl-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .dl-tabs a { white-space: nowrap; flex: none; }
 }
+.pcard-info .pdocs2{margin:0 0 16px}
+.pcard-info .pdocs2 + .pspecs{border-top:1px solid var(--line);padding-top:6px}
+
+/* product page on phones: the product first, the category list after it; the price bar
+   (src/js/site.js) keeps the price in view while the purchase box is off screen */
+.pbar { display: none; }
+@media (max-width: 860px) {
+  .product-page .cat-layout > .cat-side { order: 2; position: static; }
+  .product-page .cat-layout > .cat-main { order: 1; }
+  .pbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; align-items: center; justify-content: space-between; gap: 12px;
+          padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--line);
+          box-shadow: 0 -6px 20px rgba(14,23,27,.08); transform: translateY(110%); transition: transform .2s ease; }
+  .pbar.on { transform: none; }
+  .pbar-price { font-weight: 700; font-size: 16px; }
+  .pbar .ui-btn { flex: none; }
+  .product-page .footer { padding-bottom: 72px; }
+}
