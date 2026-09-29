@@ -39,7 +39,7 @@
   var DATA = null, byId = {}, catById = {};
   // changes: { products: { id: {field: value} }, new: [ {...} ] } — the catalog.json shape
   var changes = store.get(CHANGES, { products: {}, new: [] });
-  var FIELDS = ['name', 'sku', 'internalId', 'categories', 'summary', 'description', 'images', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
+  var FIELDS = ['name', 'sku', 'internalId', 'categories', 'highlights', 'summary', 'description', 'images', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
   var current = null;   // { id, isNew }
 
   fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }).then(function (d) {
@@ -87,7 +87,7 @@
     // after every id in use: the catalogue's own (products added before) and this browser's
     var ids = changes.new.map(function (n) { return n.id; }).concat(DATA.products.map(function (p) { return p.id; }));
     var id = Math.max.apply(null, [Number(app.getAttribute('data-new-id-from')) - 1].concat(ids)) + 1;
-    changes.new.unshift({ id: id, name: 'New product', sku: '', internalId: '', categories: [], summary: '', description: '', images: [], documents: [],
+    changes.new.unshift({ id: id, name: 'New product', sku: '', internalId: '', categories: [], highlights: [], summary: '', description: '', images: [], documents: [],
                           options: [], specs: [], weight: '', dimensions: { length: '', width: '', height: '' }, pricing: { mode: 'quote', price: '', priceMax: '' } });
     save(); open(id);
   });
@@ -139,7 +139,11 @@
         '<div class="adm-add"><input type="text" placeholder="Picture address, e.g. /img/2026/05/photo.jpg" data-img-url><button type="button" class="adm-btn" data-img-add>Add</button>' +
         '<label class="adm-btn adm-file">Choose file…<input type="file" accept="image/*" data-img-file hidden></label></div>') +
 
-      sec('Descriptions', fld('Summary <small>(short, shown near the name)</small>', '<textarea name="summary" rows="3">' + esc(v.summary) + '</textarea>') +
+      sec('Short description', '<p class="adm-muted adm-small">The key points shown between the name and the price (“About this item”), one per line. Leave empty to show the automatic ones.</p>' +
+        fld('Key points <small>(one per line, up to 5 is best)</small>', '<textarea name="highlights" rows="5" placeholder="' + esc((v.autoHighlights || []).join('\n')) + '">' + esc((v.highlights || []).join('\n')) + '</textarea>') +
+        ((v.autoHighlights || []).length && !(v.highlights || []).length ? '<p class="adm-muted adm-small">Shown now (automatic, from the product’s existing text): the grey lines in the box. Type your own to replace them.</p>' : '')) +
+
+      sec('Descriptions', fld('Summary <small>(optional opening sentence, shown above the key points)</small>', '<textarea name="summary" rows="3">' + esc(v.summary) + '</textarea>') +
         fld('Full description <small>(HTML; shown folded with “Read full description” when long)</small>', '<textarea name="description" rows="10">' + esc(v.description) + '</textarea>') +
         '<button type="button" class="adm-btn" data-preview>Preview description</button><div class="adm-preview rich" data-preview-out hidden></div>') +
 
@@ -202,6 +206,7 @@
     return {
       name: f.name.value.trim(), sku: f.sku.value.trim(), internalId: f.internalId.value.trim(), hidden: f.hidden.checked,
       categories: $$('[data-cats] input:checked', f).map(function (i) { return Number(i.value); }),
+      highlights: f.highlights.value.split('\n').map(function (t) { return t.trim(); }).filter(Boolean),
       summary: f.summary.value, description: f.description.value,
       images: $$('[data-imgs] .adm-rowedit', f).map(function (r) { var i = $('[data-img]', r); return i.getAttribute('data-file') || i.value.trim(); }).filter(Boolean),
       documents: $$('[data-docs] .adm-rowedit', f).map(function (r) {

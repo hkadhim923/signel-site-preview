@@ -1312,3 +1312,12 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .pbar .ui-btn { flex: none; }
   .product-page .footer { padding-bottom: 72px; }
 }
+
+/* Highlights block (src/components/highlights.js): the short description above the price */
+.hl-block { margin: 6px 0 16px; }
+.hl-title { font: 700 12px/1 var(--font-cond); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.hl-intro { margin: 0 0 8px; }
+.hl-intro p { margin: 0 0 6px; }
+.hl-list { margin: 0; padding: 0 0 0 18px; display: grid; gap: 5px; }
+.hl-list li { line-height: 1.45; }
+.hl-list li::marker { color: var(--blue); }
