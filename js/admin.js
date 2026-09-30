@@ -93,6 +93,13 @@
   });
 
   /* ---------- the editor ---------- */
+  var EMPTY = $('[data-admin-editor]').innerHTML;   // the "choose a product" panel, restored on close
+  function closeEditor() {
+    current = null; closePreview();
+    $('[data-admin-editor]').innerHTML = EMPTY;
+    var u = new URL(location.href); u.searchParams.delete('edit'); history.replaceState(null, '', u);
+    renderList();
+  }
   function find(id) { return changes.new.filter(function (n) { return n.id === id; })[0] || byId[id]; }
   function open(id) {
     var p = find(id); if (!p) return;
@@ -121,7 +128,11 @@
     return '<form class="adm-form" data-admin-form>' +
       '<div class="adm-form-head"><div><p class="adm-muted adm-small">' + (isNew ? 'New product · id ' + v.id : 'Product id ' + v.id) + '</p><h2>' + esc(v.name) + '</h2></div>' +
       '<div class="adm-form-actions">' + (v.url && !isNew ? '<a class="adm-btn" href="' + ROOT + v.url + '" target="_blank" rel="noopener">View on site</a>' : '') +
-      '<button type="button" class="adm-btn" data-revert>' + (isNew ? 'Delete' : 'Undo my changes') + '</button><button type="submit" class="adm-btn adm-btn--primary">Save</button></div></div>' +
+      '<button type="button" class="adm-btn" data-preview-toggle aria-pressed="false">Preview</button>' +
+      '<button type="button" class="adm-btn" data-revert>' + (isNew ? 'Delete' : 'Undo my changes') + '</button>' +
+      '<button type="button" class="adm-btn" data-backup title="Keep a copy of every change made so far, to go back to it if anything breaks">Backup current version</button>' +
+      '<button type="submit" class="adm-btn adm-btn--primary">Save</button>' +
+      '<button type="button" class="adm-x" data-editor-close title="Close this product" aria-label="Close this product">×</button></div></div>' +
       '<p class="adm-saved" data-saved hidden>Saved in this browser. Export the changes to publish them.</p>' +
 
       sec('Product', '<div class="adm-grid3">' + fld('Name *', '<input type="text" name="name" required value="' + esc(v.name) + '">') +
@@ -183,6 +194,9 @@
       if (t.closest('[data-opt-add]')) { $('[data-opts]', f).insertAdjacentHTML('beforeend', pairRow('opt', { label: '', values: [] })); return; }
       if (t.closest('[data-spec-add]')) { $('[data-specs]', f).insertAdjacentHTML('beforeend', pairRow('spec', { label: '', values: [] })); return; }
       if (t.closest('[data-preview]')) { var o = $('[data-preview-out]', f); o.innerHTML = f.description.value; o.hidden = !o.hidden; return; }
+      if (t.closest('[data-editor-close]')) { closeEditor(); return; }
+      if (t.closest('[data-preview-toggle]')) { app.classList.contains('is-preview') ? closePreview() : openPreview(); return; }
+      if (t.closest('[data-backup]')) { backup(); return; }
       if (t.closest('[data-revert]')) {
         if (current.isNew) { if (!confirm('Delete this new product?')) return; changes.new = changes.new.filter(function (n) { return n.id !== current.id; }); }
         else delete changes.products[current.id];
@@ -195,6 +209,11 @@
     $('[data-catfilter]', f).addEventListener('input', function (e) { var q = norm(e.target.value); $$('[data-catpath]', f).forEach(function (l) { l.hidden = q && l.getAttribute('data-catpath').indexOf(q) < 0; }); });
     $$('input[name=pmode]', f).forEach(function (r) { r.addEventListener('change', function () { $('[data-prices]', f).hidden = f.pmode.value !== 'priced'; }); });
     f.addEventListener('submit', function (e) { e.preventDefault(); commit(f); });
+    // the preview follows every edit (typing, adding or removing a row, a new file)
+    ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, schedulePreview); });
+    f.addEventListener('click', function () { setTimeout(schedulePreview, 0); });
+    new MutationObserver(schedulePreview).observe(f, { childList: true, subtree: true });
+    if (app.classList.contains('is-preview')) schedulePreview();
   }
 
   function pairs(f, kind) {
@@ -219,14 +238,17 @@
     };
   }
   var same = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
-  function commit(f) {
+  function commit(f, quiet) {   // quiet: a backup saving first; an incomplete product is left out, said with a note
     var v = collect(f), problems = [];
     if (!v.name) problems.push('a name');
     if (!v.categories.length) problems.push('at least one category');
     if (v.pricing.mode === 'priced' && !(v.pricing.price > 0)) problems.push('a price (or choose “Price on request”)');
     var badOpt = pairs(f, 'opt').filter(function (o) { return o.values.length < 2; });
     if (badOpt.length) problems.push('two values or more for option “' + badOpt[0].label + '”');
-    if (problems.length) { alert('Please add ' + problems.join(', ') + '.'); return; }
+    if (problems.length) {
+      if (quiet) { toast('This product still needs ' + problems.join(', ') + ': its unsaved edits are not in the backup.'); return; }
+      alert('Please add ' + problems.join(', ') + '.'); return;
+    }
     if (current.isNew) {
       var n = changes.new.filter(function (x) { return x.id === current.id; })[0];
       Object.assign(n, v);
@@ -271,4 +293,184 @@
     current = null; renderList();
   });
   $('[data-admin-editor]').addEventListener('click', function (e) { var b = e.target.closest('.adm-changes [data-admin-open]'); if (b) open(Number(b.getAttribute('data-admin-open'))); });
+
+  /* ---------- live preview: the product's real page (header, styles, scripts) with its
+     product area drawn from the form, in a frame at a laptop's size (1366x768, scaled to
+     the panel) or a phone's (390x844). Opening it hides the product list for room. ---------- */
+  var PV = { device: 'laptop', timer: null, tpl: {} };
+  var DEVICES = { laptop: [1366, 768], phone: [390, 844] };
+  var DOC_LABEL = { 'product-sheet': 'Product sheet', 'technical-sheet': 'Technical sheet', manual: 'User manual', guide: 'Quick-start guide',
+                    brochure: 'Brochure', comparison: 'Comparison sheet', form: 'Form', document: 'Document' };
+  var panel = $('[data-admin-preview]'), frame = $('[data-pv-frame]'), stage = $('[data-pv-stage]');
+  function openPreview() {
+    app.classList.add('is-preview'); panel.hidden = false;
+    var b = $('[data-preview-toggle]'); if (b) { b.setAttribute('aria-pressed', 'true'); b.classList.add('on'); }
+    fit(); renderPreview();
+  }
+  function closePreview() {
+    app.classList.remove('is-preview', 'is-preview-wide'); panel.hidden = true;
+    var b = $('[data-preview-toggle]'); if (b) { b.setAttribute('aria-pressed', 'false'); b.classList.remove('on'); }
+    $('[data-pv-expand]').textContent = 'Expand';
+  }
+  function schedulePreview() {
+    if (!current || !app.classList.contains('is-preview')) return;
+    clearTimeout(PV.timer); PV.timer = setTimeout(renderPreview, 250);
+  }
+  function fit() {
+    var d = DEVICES[PV.device], w = stage.clientWidth - 2, h = stage.clientHeight - 2;
+    var k = Math.min(1, w / d[0], PV.device === 'phone' ? h / d[1] : 1);
+    frame.style.width = d[0] + 'px'; frame.style.height = d[1] + 'px';
+    frame.style.transform = 'scale(' + k + ')';
+    // a scaled frame keeps its full size in the layout: a box of the scaled size holds it
+    var box = frame.parentNode.classList.contains('adm-pv-sizer') ? frame.parentNode : null;
+    if (!box) { box = document.createElement('div'); box.className = 'adm-pv-sizer'; stage.insertBefore(box, frame); box.appendChild(frame); }
+    box.style.width = Math.round(d[0] * k) + 'px'; box.style.height = Math.round(d[1] * k) + 'px';
+  }
+  window.addEventListener('resize', function () { if (!panel.hidden) fit(); });
+  $$('[data-pv-device]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      PV.device = b.getAttribute('data-pv-device');
+      $$('[data-pv-device]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      fit();
+    });
+  });
+  $('[data-pv-expand]').addEventListener('click', function (e) {
+    var wide = app.classList.toggle('is-preview-wide');
+    e.currentTarget.textContent = wide ? 'Shrink' : 'Expand';
+    setTimeout(fit, 0);
+  });
+  $('[data-pv-close]').addEventListener('click', closePreview);
+
+  function template(url) {
+    if (!PV.tpl[url]) PV.tpl[url] = fetch(ROOT + url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+    return PV.tpl[url];
+  }
+  var money = function (n) { return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n); };
+  function productHtml(v, doc) {
+    var imgs = v.images || [];
+    var gallery = '<div class="gallery"><div class="main">' + (imgs[0] ? '<img src="' + esc(src(imgs[0])) + '" alt="">' : '<div class="noimg" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center">Picture coming soon</div>') + '</div>' +
+      (imgs.length > 1 ? '<div class="thumbs">' + imgs.map(function (s, i) { return '<button type="button" data-src="' + esc(src(s)) + '"' + (i ? '' : ' class="on"') + '><img src="' + esc(src(s)) + '" alt="" width="72" height="72"></button>'; }).join('') + '</div>' : '') + '</div>';
+    var docs = (v.documents || []).map(function (d) {
+      return '<li><a class="pdoc" href="' + esc(src(d.href)) + '" target="_blank" rel="noopener"><span class="pdoc-t">' + esc(d.label || DOC_LABEL[d.type] || 'Document') + '<small>' + (d.lang === 'fr' ? 'PDF · in French' : 'PDF') + '</small></span><span class="pdoc-eye"><span>View</span></span></a></li>';
+    }).join('');
+    var dm = v.dimensions || {}, dims = [dm.length, dm.width, dm.height].filter(Boolean).join(' × ');
+    var specs = (v.specs || []).concat(v.weight ? [{ label: 'Weight', values: [v.weight] }] : [], dims ? [{ label: 'Dimensions', values: [dims] }] : []);
+    var info = (docs || specs.length) ? '<section class="pcard-info"><h2>Additional information</h2>' +
+      (docs ? '<div class="pdocs2"><p class="pdocs2-title">Documentation</p><ul>' + docs + '</ul></div>' : '') +
+      (specs.length ? '<dl class="pspecs">' + specs.map(function (x) { return '<div><dt>' + esc(x.label) + '</dt><dd>' + (x.values.length > 1 ? '<ul class="chips">' + x.values.map(function (y) { return '<li class="chip">' + esc(y) + '</li>'; }).join('') + '</ul>' : esc(x.values[0])) + '</dd></div>'; }).join('') + '</dl>' : '') + '</section>' : '';
+    // the short description: the points typed in, else the automatic ones the site shows now
+    var items = (v.highlights && v.highlights.length) ? v.highlights : (v.autoHighlights || []);
+    var intro = v.highlights && v.highlights.length ? v.summary : '';
+    var folds = items.length > 2 || (items.join(' ') + intro.replace(/<[^>]+>/g, '')).length > 150;
+    var hl = (items.length || intro) ? '<section class="hl-block' + (folds ? ' is-folded' : '') + '"' + (folds ? ' data-fold' : '') + '><h2 class="hl-title">About this item</h2><div class="hl-body">' +
+      (intro ? '<div class="hl-intro rich">' + intro + '</div>' : '') + (items.length ? '<ul class="hl-list">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +
+      (folds ? '<button type="button" class="hl-more" data-fold-toggle aria-expanded="false" data-more="Read more" data-less="Show less">Read more</button>' : '') + '</section>' : '';
+    // the purchase card, with the same compact rules as the site (src/components/pricing.js)
+    var opts = v.options || [], total = opts.reduce(function (n, o) { return n + o.values.length; }, 0), compact = opts.length >= 3 || total > 9;
+    var wide = function (o) { return o.values.length > 5 || o.values.reduce(function (n, x) { return n + x.length + 5; }, 0) > 62; };
+    var group = function (o, i, drop) {
+      return '<fieldset class="pbox-opt" data-opt="' + esc(o.label) + '"><legend>' + esc(o.label) + '<span class="pbox-opt-val" data-opt-val></span></legend>' +
+        (drop ? '<select name="opt-' + i + '" data-opt-select><option value="">Choose…</option>' + o.values.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>'
+              : '<div class="pbox-chips">' + o.values.map(function (x) { return '<label class="pbox-chip"><input type="radio" name="opt-' + i + '" value="' + esc(x) + '"><span>' + esc(x) + '</span></label>'; }).join('') + '</div>') +
+        '<p class="pbox-err" data-opt-err hidden>Choose a ' + esc(o.label.toLowerCase()) + ' first.</p></fieldset>';
+    };
+    var pr = v.pricing || {}, priced = pr.mode === 'priced' && pr.price > 0;
+    var price = priced ? money(pr.price) + (pr.priceMax > pr.price ? ' – ' + money(pr.priceMax) : '') : 'Price on request';
+    var after = doc.querySelector('.pbox-after');
+    var box = '<aside class="pbox pbox--buy" data-buy data-id="' + v.id + '"><div class="pbox-head"><p class="pbox-price" data-price-slot>' + esc(price) + '</p>' +
+      (priced ? '<p class="pbox-note">Shown to signed-in customers; visitors see “Log in to see your price”.</p>' : '') + '</div>' +
+      (compact ? '<div class="pbox-opts--compact">' + opts.map(function (o, i) { return group(o, i, true); }).join('') + '</div>' : opts.map(function (o, i) { return group(o, i, wide(o)); }).join('')) +
+      '<div class="pbox-buyrow"><div class="qty"><button type="button" data-qty-dec>&minus;</button><input name="qty" type="number" value="1" min="1"><button type="button" data-qty-inc>+</button></div>' +
+      '<button type="button" class="ui-btn ui-btn--primary ui-btn--app pbox-add" data-add-to-cart><span>Add to cart</span></button></div></aside>' + (after ? after.outerHTML : '');
+    var plain = (v.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    var desc = v.description ? '<div class="pdesc' + (plain.length > 400 ? ' is-folded' : '') + '" data-fold><div class="rich">' + v.description + '</div>' +
+      (plain.length > 400 ? '<button type="button" class="pdesc-more" data-fold-toggle aria-expanded="false">Read the full description</button>' : '') + '</div>' : '';
+    var cats = (v.categories || []).map(function (id) { return catById[id] ? esc(catById[id].path) : ''; }).filter(Boolean);
+    return '<div class="product"><div class="pgal">' + gallery + info + '</div><div class="pinfo" data-product-id="' + v.id + '">' +
+      '<h1>' + esc(v.name) + '</h1>' + (v.sku ? '<p class="psku">SKU: <b>' + esc(v.sku) + '</b></p>' : '') + hl + box + desc +
+      (cats.length ? '<p class="cats">Categories: ' + cats.join(', ') + '</p>' : '') + '</div></div>';
+  }
+  function renderPreview() {
+    var f = $('[data-admin-form]'); if (!f || !current) return;
+    var v = collect(f), orig = find(current.id) || {};
+    v.id = current.id; v.autoHighlights = orig.autoHighlights || [];
+    var url = (byId[current.id] || {}).url || DATA.products[0].url;   // a new product borrows any product page's frame
+    template(url).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html'), prod = doc.querySelector('.product');
+      if (!prod) return;
+      prod.outerHTML = productHtml(v, doc);
+      $$('.related', doc).forEach(function (x) { x.remove(); });
+      var last = doc.querySelector('.crumbs span:last-child'); if (last) last.textContent = v.name;
+      var base = doc.createElement('base'); base.target = '_blank'; doc.head.prepend(base);   // links open outside the preview
+      var y = frame.contentWindow ? frame.contentWindow.scrollY : 0;
+      frame.onload = function () { try { frame.contentWindow.scrollTo(0, y); } catch (e) {} };
+      frame.srcdoc = '<!DOCTYPE html>' + doc.documentElement.outerHTML;
+    }).catch(function () { frame.srcdoc = '<p style="font:16px sans-serif;padding:20px">The preview could not load the page frame.</p>'; });
+  }
+
+  /* ---------- backups: "Backup current version" keeps a copy of every change made so far
+     (up to 20, in this browser) and downloads it with the published catalogue, so the
+     dashboard can go back to it if anything breaks. Backups lists them to restore. ---------- */
+  var BACKUPS = 'signel.admin.backups';
+  function toast(msg) {
+    var t = $('.adm-toast') || document.body.appendChild(Object.assign(document.createElement('div'), { className: 'adm-toast', role: 'status' }));
+    t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('on'); }, 3500);
+  }
+  function download(name, obj) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type: 'application/json' }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function backup() {
+    var f = $('[data-admin-form]');
+    if (f && current) {
+      var before = JSON.stringify(changes); commit(f, true);
+      if (JSON.stringify(changes) !== before) toast('Your edits to this product were saved first.');
+    }
+    var n = Object.keys(changes.products).length + changes.new.length;
+    var at = new Date(), snap = { id: at.getTime(), at: at.toISOString(), label: 'Backup of ' + at.toLocaleString('en-CA'), count: n, catalogBuilt: DATA.generated, changes: JSON.parse(JSON.stringify(changes)) };
+    var list = store.get(BACKUPS, []); list.unshift(snap);
+    var kept = store.set(BACKUPS, list.slice(0, 20));
+    download('signel-backup-' + at.toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.json',
+             { kind: 'signel-admin-backup', at: snap.at, catalogBuilt: DATA.generated, changes: snap.changes, publishedCatalog: DATA.products });
+    toast(kept ? 'Backup made (' + n + ' changed products) and downloaded.' : 'Backup downloaded (this browser is full, so it is not in the Backups list).');
+  }
+  $('[data-admin-backups]').addEventListener('click', showBackups);
+  function showBackups() {
+    closePreview(); current = null; renderList();
+    var list = store.get(BACKUPS, []);
+    $('[data-admin-editor]').innerHTML = '<div class="adm-empty adm-backups"><div class="adm-bk-head"><h2>Backups</h2><button type="button" class="adm-x" data-editor-close aria-label="Close">×</button></div>' +
+      '<p class="adm-muted">Each backup is every change made in the dashboard at that moment. Restoring one replaces the current changes with it. Each is also downloaded as a file, with the whole catalogue as published then.</p>' +
+      '<p><button type="button" class="adm-btn adm-btn--primary" data-backup>Backup current version</button> <label class="adm-btn adm-file">Restore from a file…<input type="file" accept="application/json" data-bk-file hidden></label></p>' +
+      (list.length ? '<ul class="adm-bk-list">' + list.map(function (b) {
+        return '<li><div><b>' + esc(b.label) + '</b><small>' + b.count + ' changed products · catalogue of ' + esc((b.catalogBuilt || '').slice(0, 16).replace('T', ' ')) + '</small></div>' +
+          '<span><button type="button" class="adm-btn" data-bk-restore="' + b.id + '">Restore</button><button type="button" class="adm-btn" data-bk-download="' + b.id + '">Download</button><button type="button" class="adm-x" data-bk-delete="' + b.id + '" title="Delete this backup">×</button></span></li>';
+      }).join('') + '</ul>' : '<p>No backups yet.</p>') +
+      '<p class="adm-muted adm-small">The published website keeps every version it has ever had; a published version can be restored too if needed.</p></div>';
+    var box = $('.adm-backups');
+    box.addEventListener('click', function (e) {
+      var t = e.target, id;
+      if (t.closest('[data-editor-close]')) return closeEditor();
+      if (t.closest('[data-backup]')) { backup(); return showBackups(); }
+      var all = store.get(BACKUPS, []), pick = function (x) { return all.filter(function (b) { return String(b.id) === x; })[0]; };
+      if ((id = t.getAttribute('data-bk-restore'))) {
+        var b = pick(id); if (!b || !confirm('Replace the current changes with “' + b.label + '”? Make a backup first if you may want them back.')) return;
+        changes = JSON.parse(JSON.stringify(b.changes)); save(); renderList(); toast('Restored: ' + b.label); return;
+      }
+      if ((id = t.getAttribute('data-bk-download'))) { var d = pick(id); if (d) download('signel-backup-' + id + '.json', { kind: 'signel-admin-backup', at: d.at, catalogBuilt: d.catalogBuilt, changes: d.changes }); return; }
+      if ((id = t.getAttribute('data-bk-delete'))) { if (!confirm('Delete this backup?')) return; store.set(BACKUPS, all.filter(function (b) { return String(b.id) !== id; })); showBackups(); }
+    });
+    $('[data-bk-file]', box).addEventListener('change', function (e) {
+      var file = e.target.files[0]; if (!file) return;
+      var r = new FileReader();
+      r.onload = function () {
+        try {
+          var d = JSON.parse(r.result), c = d.kind === 'signel-admin-backup' ? d.changes : d;
+          if (!c || (!c.products && !c.new)) throw new Error('no changes');
+          if (!confirm('Replace the current changes with the ones in this file?')) return;
+          changes = { products: c.products || {}, new: c.new || [] }; save(); renderList(); toast('Restored from ' + file.name);
+        } catch (err) { alert('This is not a Signel backup or catalog.json file.'); }
+      };
+      r.readAsText(file);
+    });
+  }
 })();

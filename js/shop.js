@@ -185,7 +185,8 @@
         var chip = inp.closest('.pbox-chip'); if (chip) chip.classList.toggle('is-off', !ok);
       });
     });
-    var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box), text = $('[data-price-text]', box);
+    var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box),
+        text = $('[data-price-text]', box) || (box.nextElementSibling && $('[data-price-text]', box.nextElementSibling)) || document.createElement('p');   // the line sits under the card
     if (box.hasAttribute('data-priced')) {
       var p = priceOf(box.getAttribute('data-id'));
       if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = true; }
@@ -219,7 +220,8 @@
     b.addEventListener('click', function () {
       var box = b.closest('[data-fold]'), open = box.classList.toggle('is-open');
       b.setAttribute('aria-expanded', open ? 'true' : 'false');
-      b.textContent = open ? t('read_less_desc') : t('read_more_desc');
+      // a block may name its own labels ("Read more" for the short description)
+      b.textContent = open ? (b.getAttribute('data-less') || t('read_less_desc')) : (b.getAttribute('data-more') || t('read_more_desc'));
       if (!open) box.scrollIntoView({ block: 'nearest' });
     });
   });

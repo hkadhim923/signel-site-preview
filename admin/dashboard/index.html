@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Dashboard | Signel admin</title>
-<link rel="stylesheet" href="/signel-site-preview/css/site.css?v=6114fafab1">
-<link rel="stylesheet" href="/signel-site-preview/css/admin.css?v=93e4be0fdd">
+<link rel="stylesheet" href="/signel-site-preview/css/site.css?v=1411997985">
+<link rel="stylesheet" href="/signel-site-preview/css/admin.css?v=86223b449f">
 <link rel="icon" href="/signel-site-preview/favicon.svg" type="image/svg+xml">
 </head>
 <body class="admin">
@@ -15,6 +15,7 @@
 <a class="adm-brand" href="/signel-site-preview/admin/dashboard/"><img src="/signel-site-preview/img/2024/08/Signel-Services-logo-noir.png" alt="" width="120"><span>Admin</span></a>
 <div class="adm-top-actions">
 <button type="button" class="adm-btn" data-admin-changes>Changes <b data-admin-count>0</b></button>
+<button type="button" class="adm-btn" data-admin-backups>Backups</button>
 <button type="button" class="adm-btn adm-btn--primary" data-admin-export>Export changes</button>
 <label class="adm-btn adm-file">Import<input type="file" accept="application/json" data-admin-import hidden></label>
 <a class="adm-btn" href="/signel-site-preview/" target="_blank" rel="noopener">View site</a>
@@ -36,8 +37,16 @@
 <div class="adm-empty"><h2>Products</h2><p>Choose a product on the left to edit it, or add a new one.</p>
 <p class="adm-muted">Changes are kept in this browser until you <b>export</b> them. The exported file (catalog.json) is applied by the next build: new products appear in their categories, category pages and search. Once the back end is connected, Save will publish directly.</p></div>
 </main>
+<aside class="adm-preview" data-admin-preview hidden aria-label="Preview">
+<div class="adm-pv-head"><b>Preview</b>
+<div class="adm-pv-tools" role="group" aria-label="Screen"><button type="button" class="adm-seg on" data-pv-device="laptop">Laptop</button><button type="button" class="adm-seg" data-pv-device="phone">Phone</button></div>
+<button type="button" class="adm-btn" data-pv-expand title="Give the preview more room">Expand</button>
+<button type="button" class="adm-x" data-pv-close title="Close the preview" aria-label="Close the preview">×</button></div>
+<p class="adm-pv-note">Live: updates as you type. Not published until the changes are exported and built.</p>
+<div class="adm-pv-stage" data-pv-stage><iframe data-pv-frame title="Product page preview"></iframe></div>
+</aside>
 </div>
 </div>
-<script src="/signel-site-preview/js/admin.js?v=d21b3420e6" defer></script>
+<script src="/signel-site-preview/js/admin.js?v=89d4125bf5" defer></script>
 </body>
 </html>
