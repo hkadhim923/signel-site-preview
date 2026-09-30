@@ -150,12 +150,13 @@
         '<div class="adm-add"><input type="text" placeholder="Picture address, e.g. /img/2026/05/photo.jpg" data-img-url><button type="button" class="adm-btn" data-img-add>Add</button>' +
         '<label class="adm-btn adm-file">Choose file…<input type="file" accept="image/*" data-img-file hidden></label></div>') +
 
-      sec('Short description', '<p class="adm-muted adm-small">The key points shown between the name and the price (“About this item”), one per line. Leave empty to show the automatic ones.</p>' +
-        fld('Key points <small>(one per line, up to 5 is best)</small>', '<textarea name="highlights" rows="5" placeholder="' + esc((v.autoHighlights || []).join('\n')) + '">' + esc((v.highlights || []).join('\n')) + '</textarea>') +
-        ((v.autoHighlights || []).length && !(v.highlights || []).length ? '<p class="adm-muted adm-small">Shown now (automatic, from the product’s existing text): the grey lines in the box. Type your own to replace them.</p>' : '')) +
+      sec('Short description', '<p class="adm-muted adm-small">“About this item”, between the name and the price. It is taken from the full description: the opening sentences and the main list of points move to the top, and are no longer repeated below. To choose the split yourself, put the cursor in the full description and press <b>Split here</b>. Or type your own key points here; the full description then stays whole.</p>' +
+        fld('Key points <small>(optional, one per line, up to 5 is best)</small>', '<textarea name="highlights" rows="5" placeholder="' + esc(autoLines(v.auto)) + '">' + esc((v.highlights || []).join('\n')) + '</textarea>') +
+        (v.auto && !(v.highlights || []).length ? '<p class="adm-muted adm-small">Shown now: ' + (AUTO_SAYS[v.auto.source] || '') + ' (the grey lines in the box).</p>' : '')) +
 
       sec('Descriptions', fld('Summary <small>(optional opening sentence, shown above the key points)</small>', '<textarea name="summary" rows="3">' + esc(v.summary) + '</textarea>') +
-        fld('Full description <small>(HTML; shown folded with “Read full description” when long)</small>', '<textarea name="description" rows="10">' + esc(v.description) + '</textarea>') +
+        fld('Full description <small>(HTML; the top part goes to the short description, the rest shows folded with “Read the full description”)</small>', '<textarea name="description" rows="10">' + esc(v.description) + '</textarea>') +
+        '<button type="button" class="adm-btn" data-split title="Everything above the cursor becomes the short description">Split here</button> ' +
         '<button type="button" class="adm-btn" data-preview>Preview description</button><div class="adm-preview rich" data-preview-out hidden></div>') +
 
       sec('Documents', '<p class="adm-muted adm-small">Shown under Additional information. Types set the label (product-sheet → “Product sheet”).</p><div data-docs>' + (v.documents || []).map(docRow).join('') + '</div>' +
@@ -193,6 +194,16 @@
       if (t.closest('[data-doc-add]')) { $('[data-docs]', f).insertAdjacentHTML('beforeend', docRow({ type: 'product-sheet', href: '', lang: 'en' })); return; }
       if (t.closest('[data-opt-add]')) { $('[data-opts]', f).insertAdjacentHTML('beforeend', pairRow('opt', { label: '', values: [] })); return; }
       if (t.closest('[data-spec-add]')) { $('[data-specs]', f).insertAdjacentHTML('beforeend', pairRow('spec', { label: '', values: [] })); return; }
+      if (t.closest('[data-split]')) {
+        // one split marker: the part above the cursor is the short description (src/model/highlights.js)
+        var d = f.description, at = d.selectionStart || 0, txt = d.value;
+        var before = txt.slice(0, at).replace(/<!--\s*more\s*-->/gi, ''), after = txt.slice(at).replace(/<!--\s*more\s*-->/gi, '');
+        // never inside a tag: move to the end of the element the cursor is in
+        var close = after.search(/<\/(p|ul|ol|h\d|div|table)>/i), open = after.search(/<(p|ul|ol|h\d|div|table)\b/i);
+        if (close >= 0 && (open < 0 || close < open)) { var end = after.indexOf('>', close) + 1; before += after.slice(0, end); after = after.slice(end); }
+        d.value = before.replace(/\s+$/, '') + '\n<!--more-->\n' + after.replace(/^\s+/, '');
+        d.dispatchEvent(new Event('input', { bubbles: true })); return;
+      }
       if (t.closest('[data-preview]')) { var o = $('[data-preview-out]', f); o.innerHTML = f.description.value; o.hidden = !o.hidden; return; }
       if (t.closest('[data-editor-close]')) { closeEditor(); return; }
       if (t.closest('[data-preview-toggle]')) { app.classList.contains('is-preview') ? closePreview() : openPreview(); return; }
@@ -358,9 +369,12 @@
     var info = (docs || specs.length) ? '<section class="pcard-info"><h2>Additional information</h2>' +
       (docs ? '<div class="pdocs2"><p class="pdocs2-title">Documentation</p><ul>' + docs + '</ul></div>' : '') +
       (specs.length ? '<dl class="pspecs">' + specs.map(function (x) { return '<div><dt>' + esc(x.label) + '</dt><dd>' + (x.values.length > 1 ? '<ul class="chips">' + x.values.map(function (y) { return '<li class="chip">' + esc(y) + '</li>'; }).join('') + '</ul>' : esc(x.values[0])) + '</dd></div>'; }).join('') + '</dl>' : '') + '</section>' : '';
-    // the short description: the points typed in, else the automatic ones the site shows now
-    var items = (v.highlights && v.highlights.length) ? v.highlights : (v.autoHighlights || []);
-    var intro = v.highlights && v.highlights.length ? v.summary : '';
+    // the short description, by the site's own rule (src/model/highlights.js, served as /admin/highlights.js)
+    var h = HL ? HL.highlightsOf({ highlights: v.highlights }, {
+      description: v.description || '', summary: v.summary || '', specs: v.specs || [],
+      options: (v.options || []).map(function (o) { return { label: o.label, values: o.values.map(function (x) { return { label: x }; }) }; })
+    }) : { intro: '', items: v.highlights || [], rest: null };
+    var items = h.items, intro = h.intro || '', rest = h.rest == null ? (v.description || '') : h.rest;
     var folds = items.length > 2 || (items.join(' ') + intro.replace(/<[^>]+>/g, '')).length > 150;
     var hl = (items.length || intro) ? '<section class="hl-block' + (folds ? ' is-folded' : '') + '"' + (folds ? ' data-fold' : '') + '><h2 class="hl-title">About this item</h2><div class="hl-body">' +
       (intro ? '<div class="hl-intro rich">' + intro + '</div>' : '') + (items.length ? '<ul class="hl-list">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +
@@ -382,18 +396,30 @@
       (compact ? '<div class="pbox-opts--compact">' + opts.map(function (o, i) { return group(o, i, true); }).join('') + '</div>' : opts.map(function (o, i) { return group(o, i, wide(o)); }).join('')) +
       '<div class="pbox-buyrow"><div class="qty"><button type="button" data-qty-dec>&minus;</button><input name="qty" type="number" value="1" min="1"><button type="button" data-qty-inc>+</button></div>' +
       '<button type="button" class="ui-btn ui-btn--primary ui-btn--app pbox-add" data-add-to-cart><span>Add to cart</span></button></div></aside>' + (after ? after.outerHTML : '');
-    var plain = (v.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    var desc = v.description ? '<div class="pdesc' + (plain.length > 400 ? ' is-folded' : '') + '" data-fold><div class="rich">' + v.description + '</div>' +
+    var plain = rest.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    var desc = rest ? '<div class="pdesc' + (plain.length > 400 ? ' is-folded' : '') + '" data-fold><div class="rich">' + rest + '</div>' +
       (plain.length > 400 ? '<button type="button" class="pdesc-more" data-fold-toggle aria-expanded="false">Read the full description</button>' : '') + '</div>' : '';
     var cats = (v.categories || []).map(function (id) { return catById[id] ? esc(catById[id].path) : ''; }).filter(Boolean);
     return '<div class="product"><div class="pgal">' + gallery + info + '</div><div class="pinfo" data-product-id="' + v.id + '">' +
       '<h1>' + esc(v.name) + '</h1>' + (v.sku ? '<p class="psku">SKU: <b>' + esc(v.sku) + '</b></p>' : '') + hl + box + desc +
       (cats.length ? '<p class="cats">Categories: ' + cats.join(', ') + '</p>' : '') + '</div></div>';
   }
+  // the short-description rule, loaded once for the preview
+  var HL = null, HL_LOAD = null;
+  function loadRule() {
+    return HL_LOAD || (HL_LOAD = import(ROOT + '/admin/highlights.js').then(function (m) { HL = m; }).catch(function () { HL = { highlightsOf: function (p, w) { return { intro: '', items: p.highlights || [], rest: null }; } }; }));
+  }
+  var AUTO_SAYS = { auto: 'taken from the full description', split: 'the part above the split in the full description', specs: 'made from the options and specifications' };
+  function autoLines(a) {
+    if (!a) return '';
+    var t = (a.intro || '').replace(/<\/(p|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+    return (t ? t + '\n' : '') + (a.items || []).join('\n');
+  }
   function renderPreview() {
     var f = $('[data-admin-form]'); if (!f || !current) return;
     var v = collect(f), orig = find(current.id) || {};
-    v.id = current.id; v.autoHighlights = orig.autoHighlights || [];
+    v.id = current.id;
+    if (!HL) { loadRule().then(renderPreview); return; }
     var url = (byId[current.id] || {}).url || DATA.products[0].url;   // a new product borrows any product page's frame
     template(url).then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html'), prod = doc.querySelector('.product');
