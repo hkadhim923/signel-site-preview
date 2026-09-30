@@ -445,11 +445,12 @@
         return '<li><div><b>' + esc(b.label) + '</b><small>' + b.count + ' changed products · catalogue of ' + esc((b.catalogBuilt || '').slice(0, 16).replace('T', ' ')) + '</small></div>' +
           '<span><button type="button" class="adm-btn" data-bk-restore="' + b.id + '">Restore</button><button type="button" class="adm-btn" data-bk-download="' + b.id + '">Download</button><button type="button" class="adm-x" data-bk-delete="' + b.id + '" title="Delete this backup">×</button></span></li>';
       }).join('') + '</ul>' : '<p>No backups yet.</p>') +
-      '<p class="adm-muted adm-small">The published website keeps every version it has ever had; a published version can be restored too if needed.</p></div>';
+      '<p class="adm-muted adm-small">The published website keeps every version it has had: see <button type="button" class="adm-link" data-go-versions>Website versions</button> to roll the whole site back.</p></div>';
     var box = $('.adm-backups');
     box.addEventListener('click', function (e) {
       var t = e.target, id;
       if (t.closest('[data-editor-close]')) return closeEditor();
+      if (t.closest('[data-go-versions]')) return showVersions();
       if (t.closest('[data-backup]')) { backup(); return showBackups(); }
       var all = store.get(BACKUPS, []), pick = function (x) { return all.filter(function (b) { return String(b.id) === x; })[0]; };
       if ((id = t.getAttribute('data-bk-restore'))) {
@@ -472,5 +473,45 @@
       };
       r.readAsText(file);
     });
+  }
+
+  /* ---------- website versions: every published version of the site, newest first, to roll
+     the whole site back to (pages, products, prices). The list is real (the site's history,
+     admin/versions.json); rolling back is switched on at launch, when a back end can restore a
+     version. Until then the button explains that and changes nothing. ---------- */
+  $('[data-admin-versions]').addEventListener('click', showVersions);
+  function showVersions() {
+    closePreview(); current = null; renderList();
+    var ed = $('[data-admin-editor]');
+    ed.innerHTML = '<div class="adm-empty adm-versions"><p class="adm-muted">Loading the versions…</p></div>';
+    fetch(ROOT + '/admin/versions.json').then(function (r) { return r.json(); }).then(function (d) {
+      var when = function (iso) { var t = new Date(iso); return t.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) + ' · ' + t.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' }); };
+      ed.innerHTML = '<div class="adm-empty adm-versions"><div class="adm-bk-head"><h2>Website versions</h2><button type="button" class="adm-x" data-editor-close aria-label="Close">×</button></div>' +
+        '<p class="adm-muted">Every version of the website that was published, newest first. Rolling back puts the whole site (pages, products, pictures, prices) back as it was in that version; the versions after it are kept, so a rollback can itself be undone.</p>' +
+        '<p class="adm-launch">Rollback is switched on when the site goes live. Until then you can browse the versions; nothing is changed.</p>' +
+        (d.versions.length ? '<ol class="adm-ver-list">' + d.versions.map(function (v, i) {
+          return '<li' + (i ? '' : ' class="is-current"') + '><div><b>' + esc(v.title) + '</b><small>' + esc(when(v.at)) + ' · version ' + esc(v.id) + '</small></div>' +
+            (i ? '<button type="button" class="adm-btn" data-roll="' + esc(v.id) + '">Roll back to this version</button>' : '<em class="adm-tag adm-tag--new">Live now</em>') + '</li>';
+        }).join('') + '</ol>' : '<p>No versions available in this build.</p>') +
+        '<dialog class="adm-dialog" data-roll-dialog><form method="dialog"><h3>Roll the website back?</h3><p data-roll-what></p>' +
+        '<p class="adm-muted adm-small">The site will look and work exactly as it did in that version. Changes published since stay in the history and can be brought back with another rollback. Dashboard changes not yet published are not affected.</p>' +
+        '<p class="adm-launch" data-roll-note hidden>Rollback is switched on when the site goes live. Nothing was changed.</p>' +
+        '<div class="adm-dialog-actions"><button value="cancel" class="adm-btn">Cancel</button><button type="button" class="adm-btn adm-btn--danger" data-roll-confirm>Roll back</button></div></form></dialog></div>';
+      var box = $('.adm-versions'), dlg = $('[data-roll-dialog]', box);
+      box.addEventListener('click', function (e) {
+        if (e.target.closest('[data-editor-close]')) return closeEditor();
+        var b = e.target.closest('[data-roll]');
+        if (b) {
+          var v = d.versions.filter(function (x) { return x.id === b.getAttribute('data-roll'); })[0];
+          $('[data-roll-what]', dlg).innerHTML = 'Back to <b>' + esc(v.title) + '</b>, published ' + esc(when(v.at)) + '.';
+          $('[data-roll-note]', dlg).hidden = true; $('[data-roll-confirm]', dlg).hidden = false;
+          dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+        }
+        if (e.target.closest('[data-roll-confirm]')) {
+          // at launch: ask the back end to publish this version again (POST /api/versions/<id>/restore)
+          $('[data-roll-note]', dlg).hidden = false; $('[data-roll-confirm]', dlg).hidden = true;
+        }
+      });
+    }).catch(function () { ed.innerHTML = '<div class="adm-empty"><p>The list of versions could not be loaded.</p></div>'; });
   }
 })();

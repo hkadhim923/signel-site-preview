@@ -112,3 +112,16 @@ body.admin { background: #F3F5F8; min-height: 100vh; }
 .adm-bk-list li > span { display: flex; gap: 6px; align-items: center; }
 .adm-toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; z-index: 60; max-width: min(560px, calc(100vw - 32px)); padding: 12px 18px; border-radius: 10px; background: var(--ink); color: var(--white); font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px rgba(14,23,27,.3); transition: opacity .2s, transform .2s; pointer-events: none; }
 .adm-toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* website versions (rollback) */
+.adm-launch { margin: 10px 0; padding: 10px 14px; border-radius: 8px; background: #FFF1CC; color: #6B4800; font-weight: 600; font-size: 14px; }
+.adm-ver-list { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
+.adm-ver-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.adm-ver-list li.is-current { border-color: #9BD3AA; background: #F4FBF6; }
+.adm-ver-list li > div { display: grid; min-width: 0; }
+.adm-ver-list small { color: var(--muted); }
+.adm-dialog { width: min(520px, calc(100vw - 32px)); border: 0; border-radius: 14px; padding: 22px; box-shadow: 0 20px 60px rgba(14,23,27,.3); }
+.adm-dialog::backdrop { background: rgba(14,23,27,.5); }
+.adm-dialog h3 { margin: 0 0 8px; }
+.adm-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.adm-btn--danger { background: var(--red); border-color: var(--red); color: var(--white); }
+.adm-btn--danger:hover { background: #C4121F; color: var(--white); }
