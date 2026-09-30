@@ -503,7 +503,7 @@
         var b = e.target.closest('[data-roll]');
         if (b) {
           var v = d.versions.filter(function (x) { return x.id === b.getAttribute('data-roll'); })[0];
-          $('[data-roll-what]', dlg).innerHTML = 'Back to <b>' + esc(v.title) + '</b>, published ' + esc(when(v.at)) + '.';
+          $('[data-roll-what]', dlg).innerHTML = 'Back to <b>' + esc(v.title) + '</b>, published ' + esc(when(v.at));
           $('[data-roll-note]', dlg).hidden = true; $('[data-roll-confirm]', dlg).hidden = false;
           dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
         }
