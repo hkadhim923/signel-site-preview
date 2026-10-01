@@ -1561,3 +1561,38 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .srun-tile { padding: 8px 6px 7px; gap: 6px; }
   .srun-size { font-size: 18px; }
 }
+
+/* Every uploaded picture shows whole in its box: scaled down until it fits, never cropped.
+   Backgrounds (hero, banners, the video header) still fill their band. */
+.tile img, .card img, .ncard .img img, .scard-split .pic img, .tp-square img, .L-imgw img, .mlink img, .guide-img img { object-fit: contain; background: #fff; }
+.mlink img, .guide-img img { background: var(--off); }
+
+/* Downloads: the three big entries (manuals, applications, catalogues) */
+.downloads-page .dl-intro { text-align: center; margin: 8px auto 22px; }
+.dl-pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; max-width: 1080px; margin: 0 auto 28px; }
+.dl-pillar { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 30px 22px 22px; border-radius: 20px; background: #fff; color: var(--ink);
+  box-shadow: 0 1px 2px rgba(14,23,27,.05), 0 18px 40px -18px rgba(0,58,125,.28); transition: transform .2s ease, box-shadow .2s ease; overflow: hidden; }
+.dl-pillar::before { content: ""; position: absolute; inset: 0 0 auto; height: 96px; background: radial-gradient(120% 100% at 50% 0, var(--pill-tint) 0, transparent 70%); pointer-events: none; }
+.dl-pillar--manuals { --pill-tint: #E6EFFA; --pill-ink: var(--blue); }
+.dl-pillar--apps { --pill-tint: #FFF4CC; --pill-ink: #8A6A00; }
+.dl-pillar--guides { --pill-tint: #FDE5E7; --pill-ink: #B3121F; }
+.dl-pillar:hover { text-decoration: none; transform: translateY(-4px); box-shadow: 0 1px 2px rgba(14,23,27,.05), 0 26px 48px -18px rgba(0,58,125,.38); }
+.dl-pillar:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.dl-pillar-ic { position: relative; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 24px; background: var(--pill-tint); color: var(--pill-ink); margin-bottom: 8px; }
+.dl-pillar-t { position: relative; font: 700 30px/1.05 var(--font-cond); text-transform: uppercase; letter-spacing: .01em; }
+.dl-pillar-l { color: var(--muted); font-size: 15px; }
+.dl-pillar-n { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font: 600 13px var(--font-body); color: var(--pill-ink); background: var(--pill-tint); padding: 7px 14px; border-radius: 99px; }
+.dl-pillar-n i { font-style: normal; transition: transform .2s; }
+.dl-pillar:hover .dl-pillar-n i { transform: translateX(3px); }
+@media (max-width: 760px) {
+  .dl-pillars { grid-template-columns: 1fr; gap: 12px; }
+  .dl-pillar { flex-direction: row; flex-wrap: wrap; text-align: left; align-items: center; gap: 2px 16px; padding: 16px; }
+  .dl-pillar::before { display: none; }
+  .dl-pillar-ic { width: 60px; height: 60px; border-radius: 18px; margin: 0; grid-row: span 2; }
+  .dl-pillar-ic svg { width: 32px; height: 32px; }
+  .dl-pillar-t { font-size: 22px; flex: 1; }
+  .dl-pillar-l { flex-basis: 100%; padding-left: 76px; margin-top: -24px; font-size: 13.5px; }
+  .dl-pillar-n { margin: 6px 0 0 76px; padding: 5px 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .dl-pillar, .dl-pillar-n i { transition: none; } }
+.dl-pillar::before { display: none; }
