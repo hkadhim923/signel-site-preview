@@ -33,7 +33,14 @@
       .then(function (d) { prices = d; return d; }).catch(function () { return null; });
     return pricesLoading;
   }
-  var priceOf = function (id) { return prices && prices[id] ? { min: prices[id][0], max: prices[id][1] || prices[id][0] } : null; };
+  var priceOf = function (id, key) {
+    var lp = key ? linePrice(key) : null;
+    if (lp != null) return { min: lp, max: lp };
+    return prices && prices[id] ? { min: prices[id][0], max: prices[id][1] || prices[id][0] } : null;
+  };
+  // the price of one exact version, when the price list has it (prices.json "lines":
+  // { "<id>|<options as JSON>": price }, from the back end)
+  var linePrice = function (key) { return prices && prices.lines && prices.lines[key] != null ? prices.lines[key] : null; };
   var priceText = function (p) { return p.max > p.min ? t('from') + ' ' + money(p.min) : money(p.min); };
 
   /* ---------- cart store ---------- */
@@ -52,7 +59,7 @@
   function totals(lines) {
     var out = { subtotal: 0, ranged: false, quoted: 0, hidden: 0, priced: 0 };
     lines.forEach(function (l) {
-      var p = priceOf(l.id);
+      var p = priceOf(l.id, l.key);
       if (p) { out.priced += l.qty; out.subtotal += p.min * l.qty; if (p.max > p.min) out.ranged = true; }
       else if (l.priced && !account()) out.hidden += l.qty;
       else out.quoted += l.qty;
@@ -62,7 +69,7 @@
 
   /* ---------- line + summary markup (drawer and cart page share it) ---------- */
   function lineHtml(l, big) {
-    var p = priceOf(l.id);
+    var p = priceOf(l.id, l.key);
     var opts = (l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
       : (l.priced && !account() ? '<a class="cl-tag cl-tag--login" href="' + ROOT + '/login/">' + esc(t('login_for_price_short')) + '</a>' : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
@@ -121,6 +128,7 @@
       el.classList.toggle('is-price', !!p);
     });
     $$('[data-buy]').forEach(paintBuy);
+    $$('[data-pt]').forEach(paintTable);
   }
 
   /* ---------- drawer ---------- */
@@ -193,6 +201,108 @@
       else { slot.innerHTML = '<a href="' + ROOT + '/login/">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; text.hidden = false; }
     }
   }
+  /* ---------- price table and size run (src/components/price-table.js) ---------- */
+  function paintHead(box) {
+    if (!box.hasAttribute('data-priced')) return;
+    var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box), p = priceOf(box.getAttribute('data-id'));
+    if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); }
+    else { slot.innerHTML = '<a href="' + ROOT + '/login/">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; }
+  }
+  var keyOf = function (box, line) { return box.getAttribute('data-id') + '|' + line.getAttribute('data-line'); };
+  var qtyOf = function (line) { return Math.max(0, parseInt($('[data-q]', line).value, 10) || 0); };
+  function paintTable(box) {
+    paintHead(box);
+    var any = false;
+    $$('.pt-line', box).forEach(function (line) {
+      var cell = $('[data-line-price]', line), lp = linePrice(keyOf(box, line));
+      if (cell) { cell.hidden = lp == null; cell.textContent = lp == null ? '' : money(lp); }
+      if (lp != null) any = true;
+    });
+    $$('th[data-line-price]', box).forEach(function (th) { th.hidden = !any; });
+    sumTable(box);
+  }
+  function sumTable(box) {
+    var lines = $$('.pt-line', box).filter(function (l) { return qtyOf(l) > 0; }), n = 0, total = 0, known = true;
+    lines.forEach(function (l) {
+      var q = qtyOf(l), p = priceOf(box.getAttribute('data-id'), keyOf(box, l)); n += q;
+      if (p && p.min === p.max) total += p.min * q; else known = false;
+      l.classList.add('is-on');
+    });
+    $$('.pt-line', box).forEach(function (l) { if (!qtyOf(l)) l.classList.remove('is-on'); });
+    var sum = $('[data-pt-sum]', box), btn = $('[data-pt-add]', box), label = $('span', btn);
+    sum.textContent = !lines.length ? sum.getAttribute('data-hint')
+      : (lines.length === 1 ? (n === 1 ? t('line_sum_one') : t('line_sum', n)) : t('lines_sum', n).replace('{l}', lines.length)) + (known && total ? ' · ' + money(total) : '');
+    sum.classList.toggle('is-on', !!lines.length);
+    btn.disabled = !lines.length;
+    if (!btn.classList.contains('is-added')) label.textContent = lines.length > 1 ? t('add_lines', lines.length) : t('add_to_cart');
+  }
+  $$('[data-pt]').forEach(function (box) {
+    box.addEventListener('click', function (e) {
+      var step = e.target.closest('[data-q-dec], [data-q-inc]');
+      if (step) {
+        var inp = $('[data-q]', step.parentNode), q = parseInt(inp.value, 10) || 0;
+        q = step.hasAttribute('data-q-inc') ? q + 1 : Math.max(0, q - 1);
+        inp.value = q || ''; sumTable(box); return;
+      }
+      var chip = e.target.closest('[data-pt-filter]');
+      if (chip) {
+        var g = chip.getAttribute('data-pt-filter');
+        $$('[data-pt-filter]', box).forEach(function (c) { c.classList.toggle('on', c === chip); });
+        $$('tbody[data-group]', box).forEach(function (b) { b.hidden = !!g && b.getAttribute('data-group') !== g; });
+        return;
+      }
+      var btn = e.target.closest('[data-pt-add]'); if (!btn || btn.disabled) return;
+      var added = 0;
+      $$('.pt-line', box).forEach(function (l) {
+        var q = qtyOf(l); if (!q) return;
+        var opts = JSON.parse(l.getAttribute('data-line'));
+        add({ key: keyOf(box, l), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
+              url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: box.hasAttribute('data-priced'), opts: opts, qty: q });
+        $('[data-q]', l).value = ''; added++;
+      });
+      if (!added) return;
+      btn.classList.add('is-added'); var label = $('span', btn); label.textContent = t('added');
+      setTimeout(function () { btn.classList.remove('is-added'); sumTable(box); }, 1600);
+      sumTable(box); openDrawer();
+    });
+    box.addEventListener('input', function (e) { if (e.target.matches('[data-q]')) sumTable(box); });
+    box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('[data-q]')) { e.preventDefault(); var b = $('[data-pt-add]', box); if (!b.disabled) b.click(); } });
+  });
+
+  /* ---------- rent or buy (src/components/rent-compare.js) ---------- */
+  $$('[data-rb]').forEach(function (rb) {
+    rb.addEventListener('click', function (e) {
+      var tab = e.target.closest('[data-rb-tab]');
+      if (tab) {
+        var name = tab.getAttribute('data-rb-tab');
+        $$('[data-rb-tab]', rb).forEach(function (b) { b.setAttribute('aria-selected', b === tab ? 'true' : 'false'); });
+        $$('[data-rb-pane]', rb).forEach(function (p) { p.hidden = p.getAttribute('data-rb-pane') !== name; });
+        rb.classList.toggle('is-rent', name === 'rent');
+        return;
+      }
+      var btn = e.target.closest('[data-rent-add]'); if (!btn) return;
+      var box = $('[data-rent]', rb), from = $('[data-rent-from]', box).value, to = $('[data-rent-to]', box).value, site = $('[data-rent-site]', box).value.trim();
+      var err = $('[data-rent-err]', box);
+      if (!from || !to || to < from) { err.hidden = false; $('[data-rent-from]', box).focus(); return; }
+      err.hidden = true;
+      var opts = [[t('rent_line'), from + ' → ' + to]]; if (site) opts.push([t('rent_where'), site]);
+      add({ key: box.getAttribute('data-id') + '|rent|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
+            url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: false, rental: true, opts: opts, qty: Math.max(1, parseInt($('[data-rent-qty]', box).value, 10) || 1) });
+      btn.classList.add('is-added'); var label = $('span', btn), was = label.textContent; label.textContent = t('added');
+      setTimeout(function () { btn.classList.remove('is-added'); label.textContent = was; }, 1600);
+      openDrawer();
+    });
+    rb.addEventListener('change', function (e) {
+      if (e.target.matches('[data-rent-from]')) { var to = $('[data-rent-to]', rb); to.min = e.target.value; if (to.value && to.value < e.target.value) to.value = e.target.value; }
+    });
+  });
+
+  /* ---------- model comparison: only the rows where models differ ---------- */
+  $$('[data-cmp]').forEach(function (c) {
+    var sw = $('[data-cmp-diff]', c);
+    sw.addEventListener('change', function () { c.classList.toggle('is-diff-only', sw.checked); });
+  });
+
   $$('[data-buy]').forEach(function (box) {
     var qty = $('input[name=qty]', box);
     box.addEventListener('change', function (e) {
@@ -226,11 +336,34 @@
     });
   });
 
+  /* ---------- description fold: the description under the price card shows down to where
+     the pictures column ends (then "Read more"), so Related products follows the product
+     instead of a long column of text. Phones fold at a fixed height. ---------- */
+  function fitFolds() {
+    $$('[data-fold-auto]').forEach(function (box) {
+      var rich = $('.rich', box), btn = $('[data-fold-toggle]', box), gal = $('.product .pgal');
+      if (!rich || box.classList.contains('is-open')) return;
+      var wide = window.matchMedia('(min-width: 1101px)').matches;
+      var room = wide && gal ? gal.getBoundingClientRect().bottom - rich.getBoundingClientRect().top : 220;
+      room = Math.max(wide ? 150 : 220, Math.round(room));
+      var fits = rich.scrollHeight <= room + 90;   // never fold away just a line or two
+      box.classList.toggle('is-folded', !fits);
+      btn.hidden = fits;
+      rich.style.setProperty('--fold', room + 'px');
+    });
+  }
+  if ($('[data-fold-auto]')) {
+    fitFolds();
+    window.addEventListener('load', fitFolds);
+    window.addEventListener('resize', function () { clearTimeout(fitFolds.t); fitFolds.t = setTimeout(fitFolds, 150); });
+    $$('.product .pgal img').forEach(function (im) { if (!im.complete) im.addEventListener('load', fitFolds); });
+  }
+
   /* ---------- send the cart: an email with every line ---------- */
   function sendRequest() {
     var lines = cart(), acc = account(), s = totals(lines);
     var body = lines.map(function (l) {
-      var p = priceOf(l.id);
+      var p = priceOf(l.id, l.key);
       return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name +
         (l.opts && l.opts.length ? ' (' + l.opts.map(function (o) { return o[0] + ': ' + o[1]; }).join(', ') + ')' : '') +
         ' - ' + (p ? priceText(p) + ' ' + t('each') : t('price_on_request_tag')) + '\n   ' + location.origin + ROOT + l.url;

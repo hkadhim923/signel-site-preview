@@ -1350,7 +1350,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .product-page .pinfo > .psku { order: 2; }
   .product-page .pinfo > .hl-block { order: 3; }
   .product-page .pgal .gallery { order: 4; }
-  .product-page .pinfo > .pbox { order: 5; }
+  .product-page .pinfo > .pbox, .product-page .pinfo > .rb { order: 5; }
   .product-page .pinfo > .pdesc { order: 6; }
   .product-page .pinfo > .cats { order: 7; }
   .product-page .pcard-info { order: 8; }
@@ -1396,4 +1396,168 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .product-page .product { row-gap: 6px; }
   .product-page .pgal .gallery { margin: 8px 0 4px; }
   .product-page .pcard-info { margin-top: 24px; }
+}
+
+/* ===== Price styles (src/components/price-table.js, rent-compare.js) =====================
+   One look for the four blocks: a white card lifted by a soft blue-tinted shadow instead of
+   a border, generous rounding, pill controls, prices in the condensed face with lining
+   figures, and one tint (--pt-tint) for "chosen". */
+.product-page { --pt-tint: #EEF4FC; --pt-soft: #F5F7FA; --pt-hair: #E9EDF2; --pt-shadow: 0 1px 2px rgba(14,23,27,.05), 0 14px 34px -12px rgba(0,58,125,.22); }
+.pt, .pbox--rent { background: #fff; border: 0; border-radius: 16px; box-shadow: var(--pt-shadow); padding: 0; overflow: hidden; margin: 12px 0 10px; }
+.pt-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px 20px 10px; }
+.pt-head .pbox-price { font: 700 26px/1.15 var(--font-cond); font-variant-numeric: lining-nums tabular-nums; }
+.pt-head .pbox-note { margin-top: 2px; }
+.pt-count { flex: none; font: 600 12px/1 var(--font-body); color: var(--blue); background: var(--pt-tint); padding: 7px 11px; border-radius: 99px; white-space: nowrap; }
+
+/* size chips: one row that scrolls sideways when long */
+.pt-chips { display: flex; gap: 6px; padding: 0 20px 12px; overflow-x: auto; scrollbar-width: none; }
+.pt-chips::-webkit-scrollbar { display: none; }
+.pt-chip { flex: none; border: 0; background: var(--pt-soft); color: var(--ink); font: 600 13px/1 var(--font-body); padding: 9px 13px; border-radius: 99px; cursor: pointer; transition: background-color .15s, color .15s; font-variant-numeric: tabular-nums; }
+.pt-chip:hover { background: #E7EDF5; }
+.pt-chip.on { background: var(--ink); color: #fff; }
+.pt-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* the table scrolls inside the card, so the head and Add stay in view on a laptop */
+.pt-scroll { max-height: max(170px, calc(100vh - 540px)); overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--pt-hair); }
+.pt-t { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14.5px; }
+.pt-t thead th { position: sticky; top: 0; z-index: 2; background: #fff; text-align: left; font: 600 11px/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); padding: 11px 12px 10px; border-bottom: 1px solid var(--pt-hair); white-space: nowrap; }
+.pt-t thead th:first-child, .pt-t td:first-child { padding-left: 20px; }
+.pt-t th.pt-q, .pt-t td.pt-q { text-align: right; padding-right: 16px; width: 1%; }
+.pt-t th.pt-pr, .pt-t td.pt-pr { text-align: right; white-space: nowrap; }
+.pt-t td.pt-pr { font: 700 16px var(--font-cond); font-variant-numeric: tabular-nums; }
+.pt-g th { position: sticky; top: 33px; z-index: 1; background: var(--pt-soft); text-align: left; padding: 8px 12px 8px 14px; font: 700 15px/1 var(--font-cond); letter-spacing: .02em; color: var(--ink); border-bottom: 1px solid var(--pt-hair); }
+.pt-g th > * { vertical-align: middle; }
+.pt-g small { margin-left: 8px; font: 500 12px var(--font-body); color: var(--muted); }
+.pt-line td { padding: 8px 12px; border-bottom: 1px solid var(--pt-hair); vertical-align: middle; transition: background-color .15s; }
+.pt-line:last-child td { border-bottom: 0; }
+.pt-line:hover td { background: #FAFBFD; }
+.pt-line.is-on td { background: var(--pt-tint); }
+.pt-line td > * { vertical-align: middle; }
+.pt-line td span { white-space: nowrap; }
+.pt-glyph { display: inline-block; margin-right: 8px; flex: none; }
+.pt-glyph polygon { fill: var(--yellow); stroke: var(--ink); stroke-width: 1.3; }
+.pt-glyph rect { fill: #fff; stroke: var(--ink); stroke-width: 1.3; }
+/* sheeting grades read as tags */
+.pt-line td[data-col="Sheeting"] span { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 99px; background: var(--pt-soft); }
+.pt-line.is-on td[data-col="Sheeting"] span { background: #fff; }
+
+/* quantity stepper: a pill with round buttons */
+.pt-step { display: inline-flex; align-items: center; gap: 2px; height: 34px; padding: 2px; border-radius: 99px; background: #fff; box-shadow: inset 0 0 0 1px #D3DAE2; transition: box-shadow .15s; }
+.pt-line.is-on .pt-step { box-shadow: inset 0 0 0 1.5px var(--blue); }
+.pt-step button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 17px; line-height: 1; cursor: pointer; transition: background-color .15s; }
+.pt-step button:hover { background: var(--pt-tint); color: var(--blue); }
+.pt-step input { width: 34px; border: 0; background: transparent; text-align: center; font: 700 14.5px var(--font-body); color: var(--ink); -moz-appearance: textfield; padding: 0; }
+.pt-step input::placeholder { color: #9AA6B0; font-weight: 500; }
+.pt-step input::-webkit-outer-spin-button, .pt-step input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.pt-line.is-on .pt-step input { color: var(--blue); }
+
+/* footer: what is chosen, and one button for all of it */
+.pt-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 12px 20px; border-top: 1px solid var(--pt-hair); background: #fff; }
+.pt-sum { margin: 0; font-size: 13px; line-height: 1.35; color: var(--muted); }
+.pt-sum.is-on { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pt-add { min-height: 44px; border-radius: 99px; padding: 8px 20px; gap: 8px; flex: none; transition: transform .12s, opacity .15s, background-color .15s; }
+.pt-add:disabled { opacity: .4; cursor: default; }
+.pt-add:not(:disabled):active { transform: scale(.97); }
+.pt-add.is-added { background: #1E8A3A; border-color: #1E8A3A; }
+
+/* the table takes the wider column: sign pictures need less room than ten lines of prices */
+@media (min-width: 1101px) { .product-page .product--table { grid-template-columns: minmax(0, .72fr) minmax(440px, 1fr); } }
+
+/* size run */
+.pbox--sizes .srun { padding: 4px 20px 14px; }
+.pbox--sizes .srun + .srun { border-top: 1px solid var(--pt-hair); padding-top: 14px; }
+.srun-row { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.srun-row b { color: var(--ink); }
+.srun-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.srun-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 6px 10px; border-radius: 14px; background: var(--pt-soft); transition: background-color .15s, box-shadow .15s; cursor: default; }
+.srun-tile.is-on { background: var(--pt-tint); box-shadow: inset 0 0 0 1.5px var(--blue); }
+.srun-size { font: 700 20px/1 var(--font-cond); letter-spacing: .02em; }
+.srun-tile.is-on .srun-size { color: var(--blue); }
+
+/* buy / rent: a segmented pill with a sliding thumb */
+.rb { margin: 12px 0 10px; }
+.rb-seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; max-width: 320px; padding: 4px; border-radius: 99px; background: #EBEFF4; }
+.rb-seg button { position: relative; z-index: 1; height: 36px; border: 0; background: none; font: 600 14px var(--font-body); color: var(--muted); cursor: pointer; border-radius: 99px; transition: color .2s; }
+.rb-seg button[aria-selected="true"] { color: var(--ink); }
+.rb-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 99px; background: #fff; box-shadow: 0 1px 3px rgba(14,23,27,.12); transition: transform .25s cubic-bezier(.3,.7,.3,1); }
+.rb.is-rent .rb-thumb { transform: translateX(100%); }
+.rb [data-rb-pane] > .pbox, .rb [data-rb-pane] > .pt { margin-top: 10px; }
+.pbox--rent { padding: 18px 20px; display: grid; gap: 12px; }
+.pbox--rent .pbox-price { font: 700 24px/1.15 var(--font-cond); }
+.rb-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rb-dates label, .rb-field { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.pbox--rent input { height: 42px; border: 0; border-radius: 10px; padding: 0 12px; font: 15px var(--font-body); color: var(--ink); background: var(--pt-soft); box-shadow: inset 0 0 0 1px #DCE2E8; }
+.pbox--rent input:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--blue); background: #fff; }
+.rb-row { display: flex; gap: 10px; align-items: end; }
+.rb-qty { width: 96px; flex: none; }
+.rb-row .ui-btn { flex: 1; border-radius: 99px; min-height: 42px; }
+.rb-row .ui-btn.is-added { background: #1E8A3A; border-color: #1E8A3A; }
+.rb-text { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .rb-thumb, .pt-add, .pt-line td { transition: none; } }
+
+/* model comparison */
+.cmp { margin: 8px 0 48px; }
+.cmp-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.cmp-head h2 { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.cmp-head h2 small { font: 500 14px var(--font-body); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.cmp-switch { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; }
+.cmp-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cmp-switch span { position: relative; width: 40px; height: 24px; border-radius: 99px; background: #CBD3DC; transition: background-color .2s; flex: none; }
+.cmp-switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+.cmp-switch input:checked + span { background: var(--blue); }
+.cmp-switch input:checked + span::after { transform: translateX(16px); }
+.cmp-switch input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+.cmp-scroll { overflow-x: auto; padding: 4px 2px 16px; }
+.cmp-t { width: 100%; min-width: calc(150px + var(--n) * 210px); border-collapse: separate; border-spacing: 12px 0; margin: 0 -12px; table-layout: fixed; font-size: 14.5px; }
+.cmp-t col:first-child, .cmp-t tr > :first-child { width: 150px; }
+.cmp-t thead th, .cmp-t tbody td, .cmp-t tfoot td:not(:first-child) { background: #fff; }
+.cmp-t thead th { padding: 14px 14px 12px; border-radius: 16px 16px 0 0; text-align: left; vertical-align: top; box-shadow: 0 -10px 24px -18px rgba(0,58,125,.35); }
+.cmp-t tfoot td:not(:first-child) { padding: 6px 14px 16px; border-radius: 0 0 16px 16px; box-shadow: 0 14px 24px -18px rgba(0,58,125,.35); }
+.cmp-t .is-current { background: var(--pt-tint) !important; }
+.cmp-pic { display: grid; place-items: center; height: 140px; border-radius: 12px; background: var(--pt-soft); margin-bottom: 10px; overflow: hidden; }
+.cmp-t .is-current .cmp-pic { background: #fff; }
+.cmp-pic img { max-height: 124px; width: auto; object-fit: contain; mix-blend-mode: multiply; }
+.cmp-tag { display: inline-block; margin-bottom: 6px; font: 600 11px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--blue); padding: 5px 8px; border-radius: 99px; }
+.cmp-name { display: block; font: 700 17px/1.15 var(--font-cond); color: var(--ink); text-transform: uppercase; }
+.cmp-name:hover { color: var(--blue); text-decoration: none; }
+.cmp-t tbody th { text-align: left; vertical-align: top; padding: 12px 0; font: 600 11px/1.3 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--pt-hair); }
+.cmp-t tbody td { padding: 12px 14px; vertical-align: top; border-top: 1px solid var(--pt-hair); line-height: 1.45; }
+.cmp-t tbody td[data-text] { font-size: 13.5px; color: #3d4a52; }
+.cmp-t tbody tr.is-diff th::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--blue); vertical-align: middle; }
+.cmp.is-diff-only tbody tr:not(.is-diff) { display: none; }
+.category-page .cmp { margin: 8px 0 28px; }
+@media (max-width: 1100px) { .pt-scroll { max-height: none; } .pt-foot { position: sticky; bottom: 0; z-index: 3; } }
+
+/* product head and the one description (src/pages/product.js) */
+.product-page .phead { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+.product-page .phead h1 { margin: 0; text-wrap: balance; }
+.product-page .phead .psku { margin: 0; align-self: flex-start; font-size: 13px; color: var(--muted); background: #F2F5F8; padding: 5px 11px; border-radius: 99px; }
+.product-page .phead .psku b { color: var(--ink); font-family: var(--font-cond); letter-spacing: .03em; }
+.pdesc { margin-top: 22px; }
+.pdesc-title { font: 700 13px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.pdesc.is-folded:not(.is-open) .rich { max-height: var(--fold, 260px); }
+.pdesc .pdesc-more[hidden] { display: none; }
+@media (max-width: 1100px) { .product-page .pinfo > .phead { order: 1; } }
+/* laptops: tighter lines so more of the table shows with the card whole on screen */
+@media (min-width: 1101px) {
+  .pt-line td { padding-top: 5px; padding-bottom: 5px; }
+  .pt-step { height: 30px; }
+  .pt-step button { width: 26px; height: 26px; }
+  .pt-head { padding-top: 14px; padding-bottom: 8px; }
+  .pt-head .pbox-note { display: none; }
+  .pt-chips { padding-bottom: 10px; }
+  .pt-g th { padding-top: 6px; padding-bottom: 6px; }
+}
+@media (min-width: 1101px) and (max-height: 800px) {
+  .srun-tile { padding: 8px 6px 7px; gap: 6px; }
+  .srun-size { font-size: 18px; }
+  .pbox--sizes .srun { padding-bottom: 10px; }
+}
+.product-page .phead { gap: 4px; margin-bottom: 0; }
+.product-page .phead .psku { padding: 3px 10px; font-size: 12.5px; }
+.product-page .pinfo > .pbox, .product-page .pinfo > .pt, .product-page .pinfo > .rb { margin-top: 8px; }
+@media (min-width: 1101px) and (max-height: 900px) {
+  .product-page .pinfo h1 { font-size: 26px; line-height: 1.12; }
+  .srun-tile { padding: 8px 6px 7px; gap: 6px; }
+  .srun-size { font-size: 18px; }
 }

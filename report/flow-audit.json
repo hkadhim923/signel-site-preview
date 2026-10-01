@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-30T18:10:21.260Z",
+ "generated": "2026-10-01T20:28:49.016Z",
  "results": [
   {
    "width": 1440,
@@ -22,6 +22,24 @@
   {
    "width": 1440,
    "name": "simple product: add to cart, badge, drawer, cart page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "price table: two lines added at once, the badge counts both",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "rent or buy: a rental goes into the cart with its dates",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "model comparison: only differences hides equal rows",
    "ok": true,
    "detail": ""
   },
@@ -112,6 +130,24 @@
   {
    "width": 390,
    "name": "simple product: add to cart, badge, drawer, cart page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "price table: two lines added at once, the badge counts both",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "rent or buy: a rental goes into the cart with its dates",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "model comparison: only differences hides equal rows",
    "ok": true,
    "detail": ""
   },

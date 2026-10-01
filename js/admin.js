@@ -39,7 +39,7 @@
   var DATA = null, byId = {}, catById = {};
   // changes: { products: { id: {field: value} }, new: [ {...} ] } — the catalog.json shape
   var changes = store.get(CHANGES, { products: {}, new: [] });
-  var FIELDS = ['name', 'sku', 'internalId', 'categories', 'highlights', 'summary', 'description', 'images', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
+  var FIELDS = ['name', 'sku', 'internalId', 'categories', 'description', 'priceStyle', 'images', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
   var current = null;   // { id, isNew }
 
   fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }).then(function (d) {
@@ -87,7 +87,7 @@
     // after every id in use: the catalogue's own (products added before) and this browser's
     var ids = changes.new.map(function (n) { return n.id; }).concat(DATA.products.map(function (p) { return p.id; }));
     var id = Math.max.apply(null, [Number(app.getAttribute('data-new-id-from')) - 1].concat(ids)) + 1;
-    changes.new.unshift({ id: id, name: 'New product', sku: '', internalId: '', categories: [], highlights: [], summary: '', description: '', images: [], documents: [],
+    changes.new.unshift({ id: id, name: 'New product', sku: '', internalId: '', categories: [], description: '', priceStyle: 'auto', images: [], documents: [],
                           options: [], specs: [], weight: '', dimensions: { length: '', width: '', height: '' }, pricing: { mode: 'quote', price: '', priceMax: '' } });
     save(); open(id);
   });
@@ -150,14 +150,17 @@
         '<div class="adm-add"><input type="text" placeholder="Picture address, e.g. /img/2026/05/photo.jpg" data-img-url><button type="button" class="adm-btn" data-img-add>Add</button>' +
         '<label class="adm-btn adm-file">Choose file…<input type="file" accept="image/*" data-img-file hidden></label></div>') +
 
-      sec('Short description', '<p class="adm-muted adm-small">“About this item”, between the name and the price. It is taken from the full description: the opening sentences and the main list of points move to the top, and are no longer repeated below. To choose the split yourself, put the cursor in the full description and press <b>Split here</b>. Or type your own key points here; the full description then stays whole.</p>' +
-        fld('Key points <small>(optional, one per line, up to 5 is best)</small>', '<textarea name="highlights" rows="5" placeholder="' + esc(autoLines(v.auto)) + '">' + esc((v.highlights || []).join('\n')) + '</textarea>') +
-        (v.auto && !(v.highlights || []).length ? '<p class="adm-muted adm-small">Shown now: ' + (AUTO_SAYS[v.auto.source] || '') + ' (the grey lines in the box).</p>' : '')) +
-
-      sec('Descriptions', fld('Summary <small>(optional opening sentence, shown above the key points)</small>', '<textarea name="summary" rows="3">' + esc(v.summary) + '</textarea>') +
-        fld('Full description <small>(HTML; the top part goes to the short description, the rest shows folded with “Read the full description”)</small>', '<textarea name="description" rows="10">' + esc(v.description) + '</textarea>') +
-        '<button type="button" class="adm-btn" data-split title="Everything above the cursor becomes the short description">Split here</button> ' +
+      sec('Description', '<p class="adm-muted adm-small">One description, shown under the price card. On the page it folds with “Read more” where the pictures column ends.</p>' +
+        fld('Description <small>(HTML: paragraphs, lists, headings)</small>', '<textarea name="description" rows="12">' + esc(v.description) + '</textarea>') +
         '<button type="button" class="adm-btn" data-preview>Preview description</button><div class="adm-preview rich" data-preview-out hidden></div>') +
+
+      sec('Page display', '<p class="adm-muted adm-small">How the product page shows the price and the choices.</p>' +
+        '<div class="adm-radio adm-display">' + [
+          ['auto', 'Automatic', 'Now: ' + (STYLE_NAME[v.autoStyle] || STYLE_NAME.card)],
+          ['card', 'Normal', 'The price card with option buttons and one Add to cart'],
+          ['table', 'Price table', 'Every version on its own line, with a quantity box per line'],
+          ['sizes', 'Size run', 'One quantity box per clothing size']
+        ].map(function (o) { return '<label><input type="radio" name="priceStyle" value="' + o[0] + '"' + ((v.priceStyle || 'auto') === o[0] ? ' checked' : '') + '> <b>' + o[1] + '</b> <span class="adm-muted adm-small">' + o[2] + '</span></label>'; }).join('') + '</div>') +
 
       sec('Documents', '<p class="adm-muted adm-small">Shown under Additional information. Types set the label (product-sheet → “Product sheet”).</p><div data-docs>' + (v.documents || []).map(docRow).join('') + '</div>' +
         '<div class="adm-add"><button type="button" class="adm-btn" data-doc-add>Add a document by address</button><label class="adm-btn adm-file">Choose PDF…<input type="file" accept="application/pdf" data-doc-file hidden></label></div>') +
@@ -194,16 +197,6 @@
       if (t.closest('[data-doc-add]')) { $('[data-docs]', f).insertAdjacentHTML('beforeend', docRow({ type: 'product-sheet', href: '', lang: 'en' })); return; }
       if (t.closest('[data-opt-add]')) { $('[data-opts]', f).insertAdjacentHTML('beforeend', pairRow('opt', { label: '', values: [] })); return; }
       if (t.closest('[data-spec-add]')) { $('[data-specs]', f).insertAdjacentHTML('beforeend', pairRow('spec', { label: '', values: [] })); return; }
-      if (t.closest('[data-split]')) {
-        // one split marker: the part above the cursor is the short description (src/model/highlights.js)
-        var d = f.description, at = d.selectionStart || 0, txt = d.value;
-        var before = txt.slice(0, at).replace(/<!--\s*more\s*-->/gi, ''), after = txt.slice(at).replace(/<!--\s*more\s*-->/gi, '');
-        // never inside a tag: move to the end of the element the cursor is in
-        var close = after.search(/<\/(p|ul|ol|h\d|div|table)>/i), open = after.search(/<(p|ul|ol|h\d|div|table)\b/i);
-        if (close >= 0 && (open < 0 || close < open)) { var end = after.indexOf('>', close) + 1; before += after.slice(0, end); after = after.slice(end); }
-        d.value = before.replace(/\s+$/, '') + '\n<!--more-->\n' + after.replace(/^\s+/, '');
-        d.dispatchEvent(new Event('input', { bubbles: true })); return;
-      }
       if (t.closest('[data-preview]')) { var o = $('[data-preview-out]', f); o.innerHTML = f.description.value; o.hidden = !o.hidden; return; }
       if (t.closest('[data-editor-close]')) { closeEditor(); return; }
       if (t.closest('[data-preview-toggle]')) { app.classList.contains('is-preview') ? closePreview() : openPreview(); return; }
@@ -236,8 +229,7 @@
     return {
       name: f.name.value.trim(), sku: f.sku.value.trim(), internalId: f.internalId.value.trim(), hidden: f.hidden.checked,
       categories: $$('[data-cats] input:checked', f).map(function (i) { return Number(i.value); }),
-      highlights: f.highlights.value.split('\n').map(function (t) { return t.trim(); }).filter(Boolean),
-      summary: f.summary.value, description: f.description.value,
+      description: f.description.value, priceStyle: (f.priceStyle && f.priceStyle.value) || 'auto',
       images: $$('[data-imgs] .adm-rowedit', f).map(function (r) { var i = $('[data-img]', r); return i.getAttribute('data-file') || i.value.trim(); }).filter(Boolean),
       documents: $$('[data-docs] .adm-rowedit', f).map(function (r) {
         var h = $('[data-doc-href]', r);
@@ -369,16 +361,6 @@
     var info = (docs || specs.length) ? '<section class="pcard-info"><h2>Additional information</h2>' +
       (docs ? '<div class="pdocs2"><p class="pdocs2-title">Documentation</p><ul>' + docs + '</ul></div>' : '') +
       (specs.length ? '<dl class="pspecs">' + specs.map(function (x) { return '<div><dt>' + esc(x.label) + '</dt><dd>' + (x.values.length > 1 ? '<ul class="chips">' + x.values.map(function (y) { return '<li class="chip">' + esc(y) + '</li>'; }).join('') + '</ul>' : esc(x.values[0])) + '</dd></div>'; }).join('') + '</dl>' : '') + '</section>' : '';
-    // the short description, by the site's own rule (src/model/highlights.js, served as /admin/highlights.js)
-    var h = HL ? HL.highlightsOf({ highlights: v.highlights }, {
-      description: v.description || '', summary: v.summary || '', specs: v.specs || [],
-      options: (v.options || []).map(function (o) { return { label: o.label, values: o.values.map(function (x) { return { label: x }; }) }; })
-    }) : { intro: '', items: v.highlights || [], rest: null };
-    var items = h.items, intro = h.intro || '', rest = h.rest == null ? (v.description || '') : h.rest;
-    var folds = items.length > 2 || (items.join(' ') + intro.replace(/<[^>]+>/g, '')).length > 150;
-    var hl = (items.length || intro) ? '<section class="hl-block' + (folds ? ' is-folded' : '') + '"' + (folds ? ' data-fold' : '') + '><h2 class="hl-title">About this item</h2><div class="hl-body">' +
-      (intro ? '<div class="hl-intro rich">' + intro + '</div>' : '') + (items.length ? '<ul class="hl-list">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +
-      (folds ? '<button type="button" class="hl-more" data-fold-toggle aria-expanded="false" data-more="Read more" data-less="Show less">Read more</button>' : '') + '</section>' : '';
     // the purchase card, with the same compact rules as the site (src/components/pricing.js)
     var opts = v.options || [], total = opts.reduce(function (n, o) { return n + o.values.length; }, 0), compact = opts.length >= 3 || total > 9;
     var wide = function (o) { return o.values.length > 5 || o.values.reduce(function (n, x) { return n + x.length + 5; }, 0) > 62; };
@@ -396,30 +378,44 @@
       (compact ? '<div class="pbox-opts--compact">' + opts.map(function (o, i) { return group(o, i, true); }).join('') + '</div>' : opts.map(function (o, i) { return group(o, i, wide(o)); }).join('')) +
       '<div class="pbox-buyrow"><div class="qty"><button type="button" data-qty-dec>&minus;</button><input name="qty" type="number" value="1" min="1"><button type="button" data-qty-inc>+</button></div>' +
       '<button type="button" class="ui-btn ui-btn--primary ui-btn--app pbox-add" data-add-to-cart><span>Add to cart</span></button></div></aside>' + (after ? after.outerHTML : '');
-    var plain = rest.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    var desc = rest ? '<div class="pdesc' + (plain.length > 400 ? ' is-folded' : '') + '" data-fold><div class="rich">' + rest + '</div>' +
-      (plain.length > 400 ? '<button type="button" class="pdesc-more" data-fold-toggle aria-expanded="false">Read the full description</button>' : '') + '</div>' : '';
+    // the price table or size run instead, as the site chooses (src/model/price-style.js)
+    var style = v.priceStyle && v.priceStyle !== 'auto' ? v.priceStyle : (v.autoStyle || (opts.length && !opts.some(function (o) { return /colou?r/i.test(o.label); }) ? 'table' : 'card'));
+    if (style !== 'card' && opts.length) box = tableHtml(v, opts, style, price, priced);
+    var plain = (v.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    var desc = plain ? '<section class="pdesc is-folded" data-fold data-fold-auto><h2 class="pdesc-title">Description</h2><div class="rich">' + v.description + '</div>' +
+      '<button type="button" class="pdesc-more" data-fold-toggle aria-expanded="false" data-more="Read more" data-less="Show less">Read more</button></section>' : '';
     var cats = (v.categories || []).map(function (id) { return catById[id] ? esc(catById[id].path) : ''; }).filter(Boolean);
-    return '<div class="product"><div class="pgal">' + gallery + info + '</div><div class="pinfo" data-product-id="' + v.id + '">' +
-      '<h1>' + esc(v.name) + '</h1>' + (v.sku ? '<p class="psku">SKU: <b>' + esc(v.sku) + '</b></p>' : '') + hl + box + desc +
+    return '<div class="product' + (style === 'table' && opts.length ? ' product--table' : '') + '"><div class="pgal">' + gallery + info + '</div><div class="pinfo" data-product-id="' + v.id + '">' +
+      '<div class="phead"><h1>' + esc(v.name) + '</h1>' + (v.sku ? '<p class="psku">SKU: <b>' + esc(v.sku) + '</b></p>' : '') + '</div>' + box + desc +
       (cats.length ? '<p class="cats">Categories: ' + cats.join(', ') + '</p>' : '') + '</div></div>';
   }
-  // the short-description rule, loaded once for the preview
-  var HL = null, HL_LOAD = null;
-  function loadRule() {
-    return HL_LOAD || (HL_LOAD = import(ROOT + '/admin/highlights.js').then(function (m) { HL = m; }).catch(function () { HL = { highlightsOf: function (p, w) { return { intro: '', items: p.highlights || [], rest: null }; } }; }));
-  }
-  var AUTO_SAYS = { auto: 'taken from the full description', split: 'the part above the split in the full description', specs: 'made from the options and specifications' };
-  function autoLines(a) {
-    if (!a) return '';
-    var t = (a.intro || '').replace(/<\/(p|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\n\s*\n/g, '\n').trim();
-    return (t ? t + '\n' : '') + (a.items || []).join('\n');
+  var STYLE_NAME = { card: 'Normal', table: 'Price table', sizes: 'Size run' };
+  // the price table / size run in the preview: every combination (the built page keeps only
+  // the ones that exist), grouped by the first option
+  function tableHtml(v, opts, style, price, priced) {
+    var lines = [[]];
+    opts.forEach(function (o) { var next = []; lines.forEach(function (l) { o.values.forEach(function (x) { next.push(l.concat([x])); }); }); lines = next; });
+    var step = '<div class="pt-step"><button type="button" data-q-dec>&minus;</button><input type="number" min="0" placeholder="0" data-q><button type="button" data-q-inc>+</button></div>';
+    var head = '<div class="pt-head"><div><p class="pbox-price" data-price-slot>' + esc(price) + '</p></div><span class="pt-count">' + lines.length + ' versions</span></div>';
+    var foot = '<div class="pt-foot"><p class="pt-sum" data-pt-sum data-hint="Type a quantity on each line you need.">Type a quantity on each line you need.</p><button type="button" class="ui-btn ui-btn--primary ui-btn--app pt-add" data-pt-add data-add-to-cart disabled><span>Add to cart</span></button></div>';
+    var body;
+    if (style === 'sizes') {
+      body = '<div class="srun"><div class="srun-grid">' + lines.map(function (l) { return '<label class="srun-tile pt-line" data-line="[]"><span class="srun-size">' + esc(l.join(' · ').replace(/^Size\s+/i, '')) + '</span>' + step + '</label>'; }).join('') + '</div></div>';
+      return '<aside class="pbox pbox--sizes pt" data-pt data-id="' + v.id + '">' + head + body + foot + '</aside>';
+    }
+    var grouped = opts.length > 1 && lines.length > 4, cols = grouped ? opts.slice(1) : opts;
+    var row = function (l) { return '<tr class="pt-line" data-line="[]">' + (grouped ? l.slice(1) : l).map(function (x, i) { return '<td data-col="' + esc(cols[i].label) + '"><span>' + esc(x) + '</span></td>'; }).join('') + '<td class="pt-q">' + step + '</td></tr>'; };
+    var thead = '<thead><tr>' + cols.map(function (c) { return '<th>' + esc(c.label) + '</th>'; }).join('') + '<th class="pt-q">Qty</th></tr></thead>';
+    if (grouped) {
+      var groups = {}; lines.forEach(function (l) { (groups[l[0]] = groups[l[0]] || []).push(l); });
+      body = Object.keys(groups).map(function (g) { return '<tbody><tr class="pt-g"><th colspan="' + (cols.length + 1) + '"><span>' + esc(g) + '</span></th></tr>' + groups[g].map(row).join('') + '</tbody>'; }).join('');
+    } else body = '<tbody>' + lines.map(row).join('') + '</tbody>';
+    return '<aside class="pbox pbox--table pt" data-pt data-id="' + v.id + '">' + head + '<div class="pt-scroll"><table class="pt-t">' + thead + body + '</table></div>' + foot + '</aside>';
   }
   function renderPreview() {
     var f = $('[data-admin-form]'); if (!f || !current) return;
     var v = collect(f), orig = find(current.id) || {};
-    v.id = current.id;
-    if (!HL) { loadRule().then(renderPreview); return; }
+    v.id = current.id; v.autoStyle = orig.autoStyle;
     var url = (byId[current.id] || {}).url || DATA.products[0].url;   // a new product borrows any product page's frame
     template(url).then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html'), prod = doc.querySelector('.product');

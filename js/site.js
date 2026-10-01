@@ -116,7 +116,7 @@
   /* ---- product page on a phone: the purchase box sits under the pictures, so a slim bar
      pinned to the bottom keeps the price (the same text as the box, updated with it) and a
      button that brings the box into view. It hides while the box itself is on screen. ---- */
-  var buyBox = document.querySelector('.pinfo .pbox[data-buy]');
+  var buyBox = document.querySelector('.pinfo .pbox[data-buy], .pinfo .pbox[data-pt]');
   if (buyBox && 'IntersectionObserver' in window) {
     var slot = buyBox.querySelector('[data-price-slot]');
     var addBtn = buyBox.querySelector('[data-add-to-cart]');
