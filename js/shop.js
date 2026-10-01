@@ -376,6 +376,7 @@
   /* ---------- login page ---------- */
   var auth = $('[data-auth]');
   if (auth) {
+    if (location.hash === '#register') { location.replace(ROOT + '/create-account/' + location.search); return; }   // old links to the sign-up tab
     var showTab = function (name) {
       $$('[data-auth-tab]', auth).forEach(function (b) { if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', b.getAttribute('data-auth-tab') === name ? 'true' : 'false'); });
       $$('[data-auth-form]', auth).forEach(function (f) { f.hidden = f.getAttribute('data-auth-form') !== name; });
@@ -384,7 +385,7 @@
       var acc = account();
       $('.auth-tabs', auth).hidden = !!acc;
       if (acc) $$('[data-auth-form]', auth).forEach(function (f) { f.hidden = true; });
-      else showTab(location.hash === '#register' ? 'register' : 'login');
+      else showTab('login');
       $('[data-auth-done]', auth).hidden = !acc;
       if (acc) $('[data-auth-name]', auth).textContent = acc.name || acc.email;
     };

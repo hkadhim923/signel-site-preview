@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-01T20:32:04.361Z",
+ "generated": "2026-10-01T20:36:56.516Z",
  "results": [
   {
    "width": 1440,
@@ -28,6 +28,12 @@
   {
    "width": 1440,
    "name": "price table: two lines added at once, the badge counts both",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "create account: three steps, postal code fills the province, signed in at the end",
    "ok": true,
    "detail": ""
   },
@@ -136,6 +142,12 @@
   {
    "width": 390,
    "name": "price table: two lines added at once, the badge counts both",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "create account: three steps, postal code fills the province, signed in at the end",
    "ok": true,
    "detail": ""
   },

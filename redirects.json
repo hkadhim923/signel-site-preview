@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-01T20:32:08.854Z",
+  "generated": "2026-10-01T20:37:03.621Z",
   "redirects": [
     {
       "from": "/produit/poteau-axe/",
@@ -19917,7 +19917,7 @@
     },
     {
       "from": "/inscription/",
-      "to": "/login/",
+      "to": "/create-account/",
       "status": 301,
       "why": "registration needs a backend"
     },

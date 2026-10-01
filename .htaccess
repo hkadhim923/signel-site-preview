@@ -3326,7 +3326,7 @@ Redirect 301 /resultat-de-la-recherche/ /search/
 Redirect 301 /nos-videos/ /videos/
 Redirect 301 /connexion/ /login/
 Redirect 301 /politique-de-cookies/ /cookie-policy/
-Redirect 301 /inscription/ /login/
+Redirect 301 /inscription/ /create-account/
 Redirect 301 /carrieres/ /careers/
 Redirect 301 /politique-de-confidentialite/ /privacy-policy/
 Redirect 301 /retour-de-marchandises/ /returns/
