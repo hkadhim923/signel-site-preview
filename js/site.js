@@ -169,6 +169,9 @@
   // the page's language; the FR / EN switch remembers the visitor's choice on the device, and
   // a page opened in the other language then goes to its twin (the script in <head>)
   var FR = /^fr/.test(document.documentElement.lang || '');
+  // messages in the page's language (the shop-i18n block, from site.json / site-fr.json)
+  var SAY = null;
+  var say = function (k) { if (!SAY) { try { SAY = JSON.parse(document.getElementById('shop-i18n').textContent); } catch (e) { SAY = {}; } } return SAY[k] || k; };
   document.addEventListener('click', function (e) {
     var sw = e.target.closest && e.target.closest('[data-lang-switch]');
     if (sw) try { localStorage.setItem('signel.lang', sw.getAttribute('data-lang-switch')); } catch (err) {}
@@ -261,8 +264,8 @@
         target.innerHTML = items.map(card).join('');
       }, function () {
         // never a silent empty page: say so, and offer to try again
-        target.innerHTML = '<p class="search-failed">The product list could not be loaded (the connection may be weak). ' +
-          '<button type="button" class="ui-btn ui-btn--outline" data-search-retry>Try again</button></p>';
+        target.innerHTML = '<p class="search-failed">' + say('search_failed') + ' ' +
+          '<button type="button" class="ui-btn ui-btn--outline" data-search-retry>' + say('try_again') + '</button></p>';
       });
     };
     target.addEventListener('click', function (e) { if (e.target.closest('[data-search-retry]')) show(); });
@@ -307,15 +310,15 @@
       data._form = f.getAttribute('data-form'); data._page = location.href;
       if (!endpoint) {
         msg.className = 'msg err';
-        msg.textContent = 'This form is not connected yet. Please email ' + (f.getAttribute('data-fallback') || 'us') + ' directly.';
+        msg.textContent = say('form_offline').replace('{email}', f.getAttribute('data-fallback') || 'info@signel.ca');
         return;
       }
       var btn = f.querySelector('[type=submit]'); if (btn) btn.disabled = true;
       fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { if (!r.ok) throw new Error(r.status);
           if (window.signelRequest) window.signelRequest('message', { customer: { name: [data.first_name, data.last_name].filter(Boolean).join(' '), company: data.company || '', email: data.email || '', phone: data.phone || '' }, message: data.message || '' });
-          msg.className = 'msg ok'; msg.textContent = 'Thank you — your request has been sent.'; f.reset(); })
-        .catch(function () { msg.className = 'msg err'; msg.textContent = 'Sorry, the request could not be sent. Please try again or contact us by phone.'; })
+          msg.className = 'msg ok'; msg.textContent = say('form_sent'); f.reset(); })
+        .catch(function () { msg.className = 'msg err'; msg.textContent = say('form_failed'); })
         .then(function () { if (btn) btn.disabled = false; });
     });
   });

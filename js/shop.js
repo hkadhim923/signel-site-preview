@@ -16,7 +16,9 @@
   var $ = function (sel, el) { return (el || document).querySelector(sel); };
   var $$ = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var money = function (n) { return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n); };
+  // prices in the page's language: $25.00 on English pages, 25,00 $ on French ones
+  var LOCALE = /^fr/.test(document.documentElement.lang || '') ? 'fr-CA' : 'en-CA';
+  var money = function (n) { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'CAD' }).format(n); };
   var read = function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   var write = function (k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   var T = {};                                                  // UI strings, from the page
@@ -72,7 +74,7 @@
   /* ---------- line + summary markup (drawer and cart page share it) ---------- */
   function lineHtml(l, big) {
     var p = priceOf(l.id, l.key);
-    var opts = (l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
+    var opts = (l.show || l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
       : (l.priced && !account() ? '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>' : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
     return '<li class="cl' + (big ? ' cl--big' : '') + '" data-key="' + esc(l.key) + '">' +
@@ -255,10 +257,10 @@
       }
       var btn = e.target.closest('[data-pt-add]'); if (!btn || btn.disabled) return;
       // settings (chosen once for the order, e.g. the display language) go on every line
-      var set = {}, missing = null;
+      var set = {}, setShow = [], missing = null;
       $$('[data-pt-set]', box).forEach(function (fs) {
         var c = $('input:checked', fs), err = $('[data-pt-set-err]', fs);
-        if (c) set[fs.getAttribute('data-pt-set')] = c.value; else if (!missing) missing = fs;
+        if (c) { set[fs.getAttribute('data-pt-set')] = c.value; setShow.push([fs.getAttribute('data-label'), c.getAttribute('data-label')]); } else if (!missing) missing = fs;
         err.hidden = !!c; fs.classList.toggle('is-bad', !c);
       });
       if (missing) { missing.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
@@ -266,7 +268,8 @@
       $$('.pt-line', box).forEach(function (l) {
         var q = qtyOf(l); if (!q) return;
         var opts = JSON.parse(l.getAttribute('data-line')).map(function (o) { return o[1] == null ? [o[0], set[o[0]]] : o; });
-        add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
+        var show = l.hasAttribute('data-show') ? JSON.parse(l.getAttribute('data-show')).concat(setShow) : null;
+        add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), show: show, sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
               url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: box.hasAttribute('data-priced'), opts: opts, qty: q });
         $('[data-q]', l).value = ''; added++;
       });
@@ -330,9 +333,15 @@
       missing.forEach(function (g) { $('[data-opt-err]', g.el).hidden = false; });
       if (missing.length) { missing[0].el.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       var opts = s.groups.map(function (g) { return [g.key, g.value]; });
+      // the same choices as the page shows them (its language), for the cart's lines
+      var show = s.groups.map(function (g) {
+        var leg = $('legend', g.el), name = leg ? leg.firstChild.textContent.trim() : g.key;
+        var sel = $('select', g.el), lab = sel ? sel.options[sel.selectedIndex].text : (($('input:checked + span', g.el) || {}).textContent || g.value);
+        return [name, lab.trim()];
+      });
       add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'),
             name: box.getAttribute('data-name'), url: box.getAttribute('data-url'), img: box.getAttribute('data-img'),
-            priced: box.hasAttribute('data-priced'), opts: opts, qty: Math.max(1, parseInt(qty.value, 10) || 1) });
+            priced: box.hasAttribute('data-priced'), opts: opts, show: show, qty: Math.max(1, parseInt(qty.value, 10) || 1) });
       btn.classList.add('is-added'); var label = $('span', btn), was = label.textContent; label.textContent = t('added');
       setTimeout(function () { btn.classList.remove('is-added'); label.textContent = was; }, 1600);
       openDrawer();
@@ -379,7 +388,7 @@
     var body = lines.map(function (l) {
       var p = priceOf(l.id, l.key);
       return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name +
-        (l.opts && l.opts.length ? ' (' + l.opts.map(function (o) { return o[0] + ': ' + o[1]; }).join(', ') + ')' : '') +
+        ((l.show || l.opts) && (l.show || l.opts).length ? ' (' + (l.show || l.opts).map(function (o) { return o[0] + ': ' + o[1]; }).join(', ') + ')' : '') +
         ' - ' + (p ? priceText(p) + ' ' + t('each') : t('price_on_request_tag')) + '\n   ' + location.origin + ROOT + l.url;
     }).join('\n\n');
     if (s.priced) body += '\n\n' + (s.ranged ? t('subtotal_from') : t('subtotal')) + ': ' + money(s.subtotal);

@@ -12,8 +12,8 @@
   var msg = function (k) { return root.getAttribute('data-err-' + k) || ''; };
 
   // Canadian postal codes: the first letter is the province
-  var PROV = { A: 'Newfoundland and Labrador', B: 'Nova Scotia', C: 'Prince Edward Island', E: 'New Brunswick', G: 'Quebec', H: 'Quebec', J: 'Quebec',
-               K: 'Ontario', L: 'Ontario', M: 'Ontario', N: 'Ontario', P: 'Ontario', R: 'Manitoba', S: 'Saskatchewan', T: 'Alberta', V: 'British Columbia', Y: 'Yukon' };
+  // (codes: the province list's values are the same in both languages)
+  var PROV = { A: 'NL', B: 'NS', C: 'PE', E: 'NB', G: 'QC', H: 'QC', J: 'QC', K: 'ON', L: 'ON', M: 'ON', N: 'ON', P: 'ON', R: 'MB', S: 'SK', T: 'AB', V: 'BC', Y: 'YT' };
 
   function errorOf(inp) {
     var v = (inp.value || '').trim();
@@ -80,7 +80,7 @@
       var raw = t.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       t.value = raw.length > 3 ? raw.slice(0, 3) + ' ' + raw.slice(3) : raw;
       var p = PROV[raw.charAt(0)]; if (p) form.province.value = p;
-      if (raw.charAt(0) === 'X') form.province.value = 'Northwest Territories';
+      if (raw.charAt(0) === 'X') form.province.value = 'NT';
     }
     if (t.name === 'phone') {
       var d = t.value.replace(/\D/g, ''); if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
@@ -127,7 +127,7 @@
     for (var n = 1; n <= 3; n++) { if (!checkStep(n)) { if (n !== step) { go(n); checkStep(n); } return; } }
     var f = new FormData(form), get = function (k) { return (f.get(k) || '').toString().trim(); };
     var acc = { email: get('email'), name: (get('first_name') + ' ' + get('last_name')).trim(), company: get('company'), phone: get('phone') + (get('ext') ? ' ext. ' + get('ext') : ''),
-                type: get('type'), position: get('position'), address: [get('address'), get('city'), get('province'), get('postal')].filter(Boolean).join(', '),
+                type: get('type'), position: get('position'), address: [get('address'), get('city'), (form.province.selectedOptions[0] || {}).text || get('province'), get('postal')].filter(Boolean).join(', '),
                 customer: get('customer'), customer_no: get('customer_no'), news: !!f.get('news'), message: get('message') };
     try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {}
     if (window.signelRequest) window.signelRequest('account', { customer: acc });
