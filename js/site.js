@@ -304,7 +304,9 @@
       }
       var btn = f.querySelector('[type=submit]'); if (btn) btn.disabled = true;
       fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-        .then(function (r) { if (!r.ok) throw new Error(r.status); msg.className = 'msg ok'; msg.textContent = 'Thank you — your request has been sent.'; f.reset(); })
+        .then(function (r) { if (!r.ok) throw new Error(r.status);
+          if (window.signelRequest) window.signelRequest('message', { customer: { name: [data.first_name, data.last_name].filter(Boolean).join(' '), company: data.company || '', email: data.email || '', phone: data.phone || '' }, message: data.message || '' });
+          msg.className = 'msg ok'; msg.textContent = 'Thank you — your request has been sent.'; f.reset(); })
         .catch(function () { msg.className = 'msg err'; msg.textContent = 'Sorry, the request could not be sent. Please try again or contact us by phone.'; })
         .then(function () { if (btn) btn.disabled = false; });
     });

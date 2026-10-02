@@ -382,6 +382,10 @@
     }).join('\n\n');
     if (s.priced) body += '\n\n' + (s.ranged ? t('subtotal_from') : t('subtotal')) + ': ' + money(s.subtotal);
     if (acc) body += '\n\n' + [acc.name, acc.company, acc.email, acc.phone].filter(Boolean).join('\n');
+    if (window.signelRequest) window.signelRequest(lines.some(function (l) { return l.rental; }) ? 'rental' : 'quote', {
+      customer: acc || null, total: s.priced ? s.subtotal : null,
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key); return { id: l.id, sku: l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.opts || [], rental: !!l.rental, price: p ? p.min : null }; })
+    });
     location.href = 'mailto:' + (T.email || '') + '?subject=' + encodeURIComponent(t('request_subject') + ' (' + count(lines) + ')') + '&body=' + encodeURIComponent(body);
   }
 

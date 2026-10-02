@@ -130,6 +130,7 @@
                 type: get('type'), position: get('position'), address: [get('address'), get('city'), get('province'), get('postal')].filter(Boolean).join(', '),
                 customer: get('customer'), customer_no: get('customer_no'), news: !!f.get('news'), message: get('message') };
     try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {}
+    if (window.signelRequest) window.signelRequest('account', { customer: acc });
     form.hidden = true;
     var done = $('[data-rg-done]'); done.hidden = false;
     $('[data-rg-done-title]').textContent = root.getAttribute('data-done').replace('{name}', get('first_name'));

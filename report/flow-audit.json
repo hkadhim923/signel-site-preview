@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-02T12:36:42.259Z",
+ "generated": "2026-10-02T12:49:28.098Z",
  "results": [
   {
    "width": 1440,
@@ -99,7 +99,7 @@
   },
   {
    "width": 1440,
-   "name": "admin: sign-in, open a product, save a change",
+   "name": "admin: sign-in, search, edit and save, preview, request board",
    "ok": true,
    "detail": ""
   },
@@ -213,7 +213,7 @@
   },
   {
    "width": 390,
-   "name": "admin: sign-in, open a product, save a change",
+   "name": "admin: sign-in, search, edit and save, preview, request board",
    "ok": true,
    "detail": ""
   },
