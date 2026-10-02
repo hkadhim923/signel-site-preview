@@ -121,6 +121,36 @@
     nodesc: { label: 'No description', test: function (v) { return !String(v.description || '').replace(/<[^>]+>/g, '').trim(); } }
   };
   var STYLE_NAME = { card: 'Normal', table: 'Price table', sizes: 'Size run' };
+  // A sketch of each page display (not the product): what the customer will see in the price card
+  var g = function (x, y, w, h, fill, r) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (r == null ? 4 : r) + '" fill="' + fill + '"/>'; };
+  var T = function (x, y, t, fill, size, weight, anchor) { return '<text x="' + x + '" y="' + y + '" fill="' + (fill || '#0E171B') + '" font-size="' + (size || 13) + '" font-weight="' + (weight || 600) + '" font-family="Red Hat Display, system-ui, sans-serif"' + (anchor ? ' text-anchor="' + anchor + '"' : '') + '>' + t + '</text>'; };
+  var step = function (x, y, n, on) { return g(x, y, 78, 26, '#fff', 13) + '<rect x="' + (x + .75) + '" y="' + (y + .75) + '" width="76.5" height="24.5" rx="12.25" fill="none" stroke="' + (on ? '#004EA4' : '#C9D2DB') + '" stroke-width="' + (on ? 1.5 : 1) + '"/>' + T(x + 13, y + 18, '−', '#5B6770', 14, 500) + T(x + 39, y + 18, n, on ? '#004EA4' : '#9AA6B0', 13, 700, 'middle') + T(x + 60, y + 18, '+', '#5B6770', 14, 500); };
+  var cardFrame = function (inner) { return '<svg viewBox="0 0 440 236" role="img" xmlns="http://www.w3.org/2000/svg">' + g(0, 0, 440, 236, '#EEF2F6', 16) + g(20, 16, 400, 204, '#fff', 14) + inner + '</svg>'; };
+  var btn = function (x, y, w, label) { return g(x, y, w, 32, '#004EA4', 16) + T(x + w / 2, y + 21, label, '#fff', 12.5, 700, 'middle'); };
+  var STYLE_ART = {
+    card: { label: 'Normal', text: 'One price, the options as buttons or lists, then one quantity and Add to cart. Best for colours or a product with few choices.',
+      svg: cardFrame(T(40, 50, '$25.00 – $197.50', '#0E171B', 19, 700) +
+        T(40, 80, 'Size', '#3B4852', 11.5) + g(40, 88, 74, 26, '#EEF4FC', 8) + '<rect x="40.75" y="88.75" width="72.5" height="24.5" rx="7.5" fill="none" stroke="#004EA4" stroke-width="1.5"/>' + T(77, 105, '600 mm', '#004EA4', 11.5, 700, 'middle') +
+        g(122, 88, 74, 26, '#F3F5F8', 8) + T(159, 105, '750 mm', '#5B6770', 11.5, 500, 'middle') + g(204, 88, 74, 26, '#F3F5F8', 8) + T(241, 105, '900 mm', '#5B6770', 11.5, 500, 'middle') +
+        T(40, 136, 'Sheeting', '#3B4852', 11.5) + g(40, 144, 112, 26, '#F3F5F8', 8) + T(96, 161, 'Engineer grade', '#5B6770', 11.5, 500, 'middle') + g(160, 144, 104, 26, '#F3F5F8', 8) + T(212, 161, 'Diamond Grade', '#5B6770', 11.5, 500, 'middle') +
+        step(40, 182, '1', false) + btn(130, 179, 270, 'Add to cart')) },
+    table: { label: 'Price table', text: 'Every version that exists on its own line, grouped by size, with a quantity on each line and one Add for all of them. Best for signs and anything sold in sizes and materials.',
+      svg: cardFrame(T(40, 46, '$25.00 – $197.50', '#0E171B', 19, 700) + g(320, 31, 82, 22, '#EEF4FC', 11) + T(361, 46, '12 versions', '#004EA4', 11, 700, 'middle') +
+        g(20, 58, 400, 24, '#F5F7FA', 0) + '<polygon points="46,62 54,70 46,78 38,70" fill="#FFD200" stroke="#0E171B" stroke-width="1"/>' + T(62, 75, '600 x 600 mm', '#0E171B', 12, 700) + T(152, 75, '2 versions', '#9AA6B0', 11, 500) +
+        T(40, 104, '1.5 mm', '#3B4852', 12, 500) + g(110, 91, 98, 20, '#F3F5F8', 10) + T(159, 105, 'Engineer grade', '#3B4852', 10.5, 600, 'middle') + step(322, 88, '', false) +
+        g(20, 118, 400, 32, '#EEF4FC', 0) + T(40, 138, '2.0 mm', '#3B4852', 12, 500) + g(110, 124, 98, 20, '#fff', 10) + T(159, 138, 'Diamond Grade', '#3B4852', 10.5, 600, 'middle') + step(322, 121, '4', true) +
+        g(20, 150, 400, 24, '#F5F7FA', 0) + '<polygon points="46,153 55,162 46,171 37,162" fill="#FFD200" stroke="#0E171B" stroke-width="1"/>' + T(62, 167, '900 x 900 mm', '#0E171B', 12, 700) +
+        T(40, 204, '1 line · 4 signs', '#0E171B', 12, 700) + btn(270, 186, 130, 'Add to cart')) },
+    sizes: { label: 'Size run', text: 'One box per size, so a whole crew is ordered at once (3 M, 5 L, 2 XL). Best for clothing.',
+      svg: cardFrame(T(40, 50, '$83.32', '#0E171B', 19, 700) +
+        ['S', 'M', 'L', 'XL'].map(function (sz, i) { var x = 40 + i * 92, on = sz === 'L'; return g(x, 66, 82, 92, on ? '#EEF4FC' : '#F5F7FA', 12) + (on ? '<rect x="' + (x + .75) + '" y="66.75" width="80.5" height="90.5" rx="11.25" fill="none" stroke="#004EA4" stroke-width="1.5"/>' : '') + T(x + 41, 98, sz, on ? '#004EA4' : '#0E171B', 18, 700, 'middle') + step(x + 2, 118, on ? '5' : '', on); }).join('') +
+        T(40, 204, '5 coveralls · $416.60', '#0E171B', 12, 700) + btn(270, 186, 130, 'Add to cart')) }
+  };
+  function paintStyleArt(f) {
+    var fig = $('[data-style-art]', f); if (!fig) return;
+    var pick = (f.priceStyle && f.priceStyle.value) || 'auto', auto = pick === 'auto', key = auto ? fig.getAttribute('data-auto') : pick, a = STYLE_ART[key] || STYLE_ART.card;
+    fig.innerHTML = '<div class="ad-style-art-pic">' + a.svg + '</div><figcaption><b>' + (auto ? 'Automatic: ' : '') + a.label + '</b><span>' + a.text + '</span><small>A sketch of the price card, not this product.</small></figcaption>';
+  }
 
   /* ---------- Overview ---------- */
   function showOverview() {
@@ -298,7 +328,8 @@
           ['card', 'Normal', 'Price card with option buttons'],
           ['table', 'Price table', 'Every version on its own line'],
           ['sizes', 'Size run', 'One box per clothing size']
-        ].map(function (o) { return '<label><input type="radio" name="priceStyle" value="' + o[0] + '"' + ((v.priceStyle || 'auto') === o[0] ? ' checked' : '') + '><span><b>' + o[1] + '</b><small>' + o[2] + '</small></span></label>'; }).join('') + '</div></div>' +
+        ].map(function (o) { return '<label><input type="radio" name="priceStyle" value="' + o[0] + '"' + ((v.priceStyle || 'auto') === o[0] ? ' checked' : '') + '><span><b>' + o[1] + '</b><small>' + o[2] + '</small></span></label>'; }).join('') + '</div>' +
+          '<figure class="ad-style-art" data-style-art data-auto="' + esc(v.autoStyle || 'card') + '"></figure></div>' +
         '<div class="ad-card"><h2>Options the customer chooses <small>Each needs two values or more; English colour names show as colour dots</small></h2><div data-opts>' + (v.options || []).map(function (o) { return pairRow('opt', o); }).join('') + '</div>' +
           '<button type="button" class="ad-btn ad-btn--ghost" data-opt-add>+ Add an option</button></div>') +
 
@@ -371,6 +402,8 @@
       $$('[data-cats] details', f).forEach(function (d) { var any = $$('[data-catpath]:not([hidden])', d).length; d.hidden = q && !any; if (q && any) d.open = true; });
     });
     $$('input[name=pmode]', f).forEach(function (r) { r.addEventListener('change', function () { $('[data-prices]', f).hidden = f.pmode.value !== 'priced'; }); });
+    $$('input[name=priceStyle]', f).forEach(function (r) { r.addEventListener('change', function () { paintStyleArt(f); }); });
+    paintStyleArt(f);
     f.addEventListener('change', function (e) { if (e.target.closest('[data-cats]')) paintCats(f); });
     f.addEventListener('submit', function (e) { e.preventDefault(); saveProduct(); });
     ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, function (e) { if (e.target.matches('[data-catfilter], [data-img-url]')) return; changed(); }); });
@@ -720,6 +753,36 @@
       (cats.length ? '<p class="cats">Categories: ' + cats.join(', ') + '</p>' : '') + '</div></div>';
   }
   var STYLE_NAME = { card: 'Normal', table: 'Price table', sizes: 'Size run' };
+  // A sketch of each page display (not the product): what the customer will see in the price card
+  var g = function (x, y, w, h, fill, r) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (r == null ? 4 : r) + '" fill="' + fill + '"/>'; };
+  var T = function (x, y, t, fill, size, weight, anchor) { return '<text x="' + x + '" y="' + y + '" fill="' + (fill || '#0E171B') + '" font-size="' + (size || 13) + '" font-weight="' + (weight || 600) + '" font-family="Red Hat Display, system-ui, sans-serif"' + (anchor ? ' text-anchor="' + anchor + '"' : '') + '>' + t + '</text>'; };
+  var step = function (x, y, n, on) { return g(x, y, 78, 26, '#fff', 13) + '<rect x="' + (x + .75) + '" y="' + (y + .75) + '" width="76.5" height="24.5" rx="12.25" fill="none" stroke="' + (on ? '#004EA4' : '#C9D2DB') + '" stroke-width="' + (on ? 1.5 : 1) + '"/>' + T(x + 13, y + 18, '−', '#5B6770', 14, 500) + T(x + 39, y + 18, n, on ? '#004EA4' : '#9AA6B0', 13, 700, 'middle') + T(x + 60, y + 18, '+', '#5B6770', 14, 500); };
+  var cardFrame = function (inner) { return '<svg viewBox="0 0 440 236" role="img" xmlns="http://www.w3.org/2000/svg">' + g(0, 0, 440, 236, '#EEF2F6', 16) + g(20, 16, 400, 204, '#fff', 14) + inner + '</svg>'; };
+  var btn = function (x, y, w, label) { return g(x, y, w, 32, '#004EA4', 16) + T(x + w / 2, y + 21, label, '#fff', 12.5, 700, 'middle'); };
+  var STYLE_ART = {
+    card: { label: 'Normal', text: 'One price, the options as buttons or lists, then one quantity and Add to cart. Best for colours or a product with few choices.',
+      svg: cardFrame(T(40, 50, '$25.00 – $197.50', '#0E171B', 19, 700) +
+        T(40, 80, 'Size', '#3B4852', 11.5) + g(40, 88, 74, 26, '#EEF4FC', 8) + '<rect x="40.75" y="88.75" width="72.5" height="24.5" rx="7.5" fill="none" stroke="#004EA4" stroke-width="1.5"/>' + T(77, 105, '600 mm', '#004EA4', 11.5, 700, 'middle') +
+        g(122, 88, 74, 26, '#F3F5F8', 8) + T(159, 105, '750 mm', '#5B6770', 11.5, 500, 'middle') + g(204, 88, 74, 26, '#F3F5F8', 8) + T(241, 105, '900 mm', '#5B6770', 11.5, 500, 'middle') +
+        T(40, 136, 'Sheeting', '#3B4852', 11.5) + g(40, 144, 112, 26, '#F3F5F8', 8) + T(96, 161, 'Engineer grade', '#5B6770', 11.5, 500, 'middle') + g(160, 144, 104, 26, '#F3F5F8', 8) + T(212, 161, 'Diamond Grade', '#5B6770', 11.5, 500, 'middle') +
+        step(40, 182, '1', false) + btn(130, 179, 270, 'Add to cart')) },
+    table: { label: 'Price table', text: 'Every version that exists on its own line, grouped by size, with a quantity on each line and one Add for all of them. Best for signs and anything sold in sizes and materials.',
+      svg: cardFrame(T(40, 46, '$25.00 – $197.50', '#0E171B', 19, 700) + g(320, 31, 82, 22, '#EEF4FC', 11) + T(361, 46, '12 versions', '#004EA4', 11, 700, 'middle') +
+        g(20, 58, 400, 24, '#F5F7FA', 0) + '<polygon points="46,62 54,70 46,78 38,70" fill="#FFD200" stroke="#0E171B" stroke-width="1"/>' + T(62, 75, '600 x 600 mm', '#0E171B', 12, 700) + T(152, 75, '2 versions', '#9AA6B0', 11, 500) +
+        T(40, 104, '1.5 mm', '#3B4852', 12, 500) + g(110, 91, 98, 20, '#F3F5F8', 10) + T(159, 105, 'Engineer grade', '#3B4852', 10.5, 600, 'middle') + step(322, 88, '', false) +
+        g(20, 118, 400, 32, '#EEF4FC', 0) + T(40, 138, '2.0 mm', '#3B4852', 12, 500) + g(110, 124, 98, 20, '#fff', 10) + T(159, 138, 'Diamond Grade', '#3B4852', 10.5, 600, 'middle') + step(322, 121, '4', true) +
+        g(20, 150, 400, 24, '#F5F7FA', 0) + '<polygon points="46,153 55,162 46,171 37,162" fill="#FFD200" stroke="#0E171B" stroke-width="1"/>' + T(62, 167, '900 x 900 mm', '#0E171B', 12, 700) +
+        T(40, 204, '1 line · 4 signs', '#0E171B', 12, 700) + btn(270, 186, 130, 'Add to cart')) },
+    sizes: { label: 'Size run', text: 'One box per size, so a whole crew is ordered at once (3 M, 5 L, 2 XL). Best for clothing.',
+      svg: cardFrame(T(40, 50, '$83.32', '#0E171B', 19, 700) +
+        ['S', 'M', 'L', 'XL'].map(function (sz, i) { var x = 40 + i * 92, on = sz === 'L'; return g(x, 66, 82, 92, on ? '#EEF4FC' : '#F5F7FA', 12) + (on ? '<rect x="' + (x + .75) + '" y="66.75" width="80.5" height="90.5" rx="11.25" fill="none" stroke="#004EA4" stroke-width="1.5"/>' : '') + T(x + 41, 98, sz, on ? '#004EA4' : '#0E171B', 18, 700, 'middle') + step(x + 2, 118, on ? '5' : '', on); }).join('') +
+        T(40, 204, '5 coveralls · $416.60', '#0E171B', 12, 700) + btn(270, 186, 130, 'Add to cart')) }
+  };
+  function paintStyleArt(f) {
+    var fig = $('[data-style-art]', f); if (!fig) return;
+    var pick = (f.priceStyle && f.priceStyle.value) || 'auto', auto = pick === 'auto', key = auto ? fig.getAttribute('data-auto') : pick, a = STYLE_ART[key] || STYLE_ART.card;
+    fig.innerHTML = '<div class="ad-style-art-pic">' + a.svg + '</div><figcaption><b>' + (auto ? 'Automatic: ' : '') + a.label + '</b><span>' + a.text + '</span><small>A sketch of the price card, not this product.</small></figcaption>';
+  }
   // the price table / size run in the preview: every combination (the built page keeps only
   // the ones that exist), grouped by the first option
   function tableHtml(v, opts, style, price, priced) {

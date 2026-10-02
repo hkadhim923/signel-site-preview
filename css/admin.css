@@ -367,3 +367,13 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
   .ad-search { min-width: 0; }
   .ad-stat { padding: 14px; }
 }
+/* page display: a sketch of the chosen style under the choices */
+.ad-style-art { margin: 4px 0 0; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 22px; align-items: center; padding: 16px; border-radius: 14px; background: var(--ad-soft); }
+.ad-style-art-pic svg { display: block; width: 100%; height: auto; animation: ad-fade .25s ease; }
+@keyframes ad-fade { from { opacity: 0; transform: translateY(4px); } }
+.ad-style-art figcaption { display: grid; gap: 6px; }
+.ad-style-art figcaption b { font-size: 16px; color: var(--blue); }
+.ad-style-art figcaption span { font-size: 14px; line-height: 1.5; color: var(--ad-ink2); }
+.ad-style-art figcaption small { font-size: 12px; color: var(--muted); }
+@media (max-width: 760px) { .ad-style-art { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .ad-style-art-pic svg { animation: none; } }
