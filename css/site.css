@@ -1707,3 +1707,11 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .pt-set-opts { flex: 1; padding: 3px; }
   .pt-set-opts span { min-height: 30px; font-size: 13.5px; }
 }
+/* a long product name (often French) a size smaller on laptops, so the price card stays whole */
+@media (min-width: 1101px) { .product-page .phead--long h1 { font-size: 22px; line-height: 1.15; } }
+@media (min-width: 1101px) {
+  /* the Buy / Rent switch and a once-per-order setting take room above the lines */
+  .rb .pt-scroll { max-height: max(150px, calc(100vh - 590px)); }
+  .pt:has(.pt-set) .pt-scroll { max-height: max(150px, calc(100vh - 590px)); }
+  .rb .pt:has(.pt-set) .pt-scroll { max-height: max(140px, calc(100vh - 640px)); }
+}

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-02T12:58:10.617Z",
+ "generated": "2026-10-02T20:22:13.509Z",
  "results": [
   {
    "width": 1440,
@@ -10,6 +10,12 @@
   {
    "width": 1440,
    "name": "search box in the header submits",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "language: the switch opens the same page in French, and the choice is remembered",
    "ok": true,
    "detail": ""
   },
@@ -124,6 +130,12 @@
   {
    "width": 390,
    "name": "search box in the header submits",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "language: the switch opens the same page in French, and the choice is remembered",
    "ok": true,
    "detail": ""
   },

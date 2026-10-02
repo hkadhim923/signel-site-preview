@@ -166,6 +166,13 @@
 
   /* ---- search (header + category filter) ---- */
   var ROOT = document.documentElement.getAttribute('data-root') || '';
+  // the page's language; the FR / EN switch remembers the visitor's choice on the device, and
+  // a page opened in the other language then goes to its twin (the script in <head>)
+  var FR = /^fr/.test(document.documentElement.lang || '');
+  document.addEventListener('click', function (e) {
+    var sw = e.target.closest && e.target.closest('[data-lang-switch]');
+    if (sw) try { localStorage.setItem('signel.lang', sw.getAttribute('data-lang-switch')); } catch (err) {}
+  });
   var index = null, loading = null;
   var log = window.signelLog || function () {};
   // The product list (~270 KB) search reads. A download that fails (a weak or filtered
@@ -175,7 +182,7 @@
     if (index) return Promise.resolve(index);
     if (loading) return loading;
     var attempt = function (n) {
-      return fetch(ROOT + '/search-index.json').then(function (r) {
+      return fetch(ROOT + (FR ? '/search-index-fr.json' : '/search-index.json')).then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       }).catch(function (e) {
@@ -235,7 +242,8 @@
     document.addEventListener('click', function (e) { if (!box.contains(e.target)) results.classList.remove('open'); });
     box.addEventListener('submit', function (e) {
       e.preventDefault();
-      location.href = ROOT + '/search/?q=' + encodeURIComponent(input.value);
+      var routes = {}; try { routes = JSON.parse(document.getElementById('shop-i18n').textContent).routes || {}; } catch (err) {}
+      location.href = ROOT + (routes['/search/'] || '/search/') + '?q=' + encodeURIComponent(input.value);
     });
   }
   /* search results page */

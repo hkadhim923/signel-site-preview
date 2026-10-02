@@ -22,6 +22,8 @@
   var T = {};                                                  // UI strings, from the page
   try { T = JSON.parse($('#shop-i18n').textContent); } catch (e) {}
   var t = function (k, n) { return String(T[k] || k).replace('{n}', n); };
+  // an address in the page's language (shop-i18n routes: /cart/ is /panier/ on French pages)
+  var R = function (p) { return ROOT + ((T.routes || {})[p] || p); };
 
   /* ---------- account + prices ---------- */
   var account = function () { return read(ACCOUNT, null); };
@@ -72,7 +74,7 @@
     var p = priceOf(l.id, l.key);
     var opts = (l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
-      : (l.priced && !account() ? '<a class="cl-tag cl-tag--login" href="' + ROOT + '/login/">' + esc(t('login_for_price_short')) + '</a>' : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
+      : (l.priced && !account() ? '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>' : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
     return '<li class="cl' + (big ? ' cl--big' : '') + '" data-key="' + esc(l.key) + '">' +
       '<a class="cl-img" href="' + ROOT + esc(l.url) + '">' + (l.img ? '<img src="' + ROOT + esc(l.img) + '" alt="" loading="lazy">' : '') + '</a>' +
       '<div class="cl-main"><a class="cl-name" href="' + ROOT + esc(l.url) + '">' + esc(l.name) + '</a>' +
@@ -88,19 +90,19 @@
     var rows = '<div class="cs-row"><span>' + esc(n === 1 ? t('item') : t('items', n)) + '</span></div>';
     if (s.priced) rows += '<div class="cs-row cs-sub"><span>' + esc(s.ranged ? t('subtotal_from') : t('subtotal')) + '</span><b>' + esc(money(s.subtotal)) + '</b></div>';
     if (s.quoted) rows += '<div class="cs-row cs-q"><span class="cl-tag">' + esc(t('quoted_count', s.quoted)) + '</span></div>';
-    if (s.hidden) rows += '<div class="cs-row cs-q"><a class="cl-tag cl-tag--login" href="' + ROOT + '/login/">' + esc(t('hidden_count', s.hidden)) + '</a></div>';
+    if (s.hidden) rows += '<div class="cs-row cs-q"><a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a></div>';
     var note = '<p class="cs-note">' + esc(t('taxes')) + (s.ranged ? ' ' + esc('* ' + t('range_note')) : '') + '</p>';
     var actions = page
       ? '<button type="button" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" data-send>' + esc(t('send_request')) + '</button><p class="cs-hint">' + esc(t('send_hint')) + '</p>' +
-        (s.hidden ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + ROOT + '/login/">' + esc(t('login_cta')) + '</a>' : '') +
-        '<div class="cs-links"><a href="' + ROOT + '/products/">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
-      : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + ROOT + '/cart/">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
+        (s.hidden ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
+        '<div class="cs-links"><a href="' + R('/products/') + '">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
+      : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/cart/') + '">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
     return (page ? '<h2>' + esc(t('summary')) + '</h2>' : '') + rows + note + actions;
   }
 
   function emptyHtml() {
     return '<div class="cart-empty"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M6 6 5 3H2"/></svg>' +
-      '<p class="cart-empty-t">' + esc(t('empty')) + '</p><p>' + esc(t('empty_hint')) + '</p><a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + ROOT + '/products/">' + esc(t('browse')) + '</a></div>';
+      '<p class="cart-empty-t">' + esc(t('empty')) + '</p><p>' + esc(t('empty_hint')) + '</p><a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/products/') + '">' + esc(t('browse')) + '</a></div>';
   }
 
   /* ---------- render everything that shows the cart or prices ---------- */
@@ -198,7 +200,7 @@
     if (box.hasAttribute('data-priced')) {
       var p = priceOf(box.getAttribute('data-id'));
       if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = true; }
-      else { slot.innerHTML = '<a href="' + ROOT + '/login/">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; text.hidden = false; }
+      else { slot.innerHTML = '<a href="' + R('/login/') + '">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; text.hidden = false; }
     }
   }
   /* ---------- price table and size run (src/components/price-table.js) ---------- */
@@ -206,7 +208,7 @@
     if (!box.hasAttribute('data-priced')) return;
     var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box), p = priceOf(box.getAttribute('data-id'));
     if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); }
-    else { slot.innerHTML = '<a href="' + ROOT + '/login/">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; }
+    else { slot.innerHTML = '<a href="' + R('/login/') + '">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; }
   }
   var keyOf = function (box, line) { return box.getAttribute('data-id') + '|' + line.getAttribute('data-line'); };
   var qtyOf = function (line) { return Math.max(0, parseInt($('[data-q]', line).value, 10) || 0); };
@@ -392,7 +394,7 @@
   /* ---------- login page ---------- */
   var auth = $('[data-auth]');
   if (auth) {
-    if (location.hash === '#register') { location.replace(ROOT + '/create-account/' + location.search); return; }   // old links to the sign-up tab
+    if (location.hash === '#register') { location.replace(R('/create-account/') + location.search); return; }   // old links to the sign-up tab
     var showTab = function (name) {
       $$('[data-auth-tab]', auth).forEach(function (b) { if (b.getAttribute('role') === 'tab') b.setAttribute('aria-selected', b.getAttribute('data-auth-tab') === name ? 'true' : 'false'); });
       $$('[data-auth-form]', auth).forEach(function (f) { f.hidden = f.getAttribute('data-auth-form') !== name; });
