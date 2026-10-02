@@ -1685,3 +1685,25 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
   .rg-seg { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .rg-step, .rg-done { animation: none; } }
+.cmp-title { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px 18px; }
+.cmp-pdf { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: 12px; background: #FDECEE; color: var(--ink); font-weight: 600; font-size: 14px; line-height: 1.2; transition: background-color .15s; }
+.cmp-pdf svg { color: var(--red); flex: none; }
+.cmp-pdf small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.cmp-pdf:hover { background: #FAD9DD; text-decoration: none; }
+/* a setting chosen once for the order (the display language), above the lines */
+.pt-set { border: 0; margin: 0; padding: 0 20px 12px; min-width: 0; }
+.pt-set legend { padding: 0; margin-bottom: 7px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.pt-set legend small { margin-left: 8px; font-weight: 500; color: var(--red); }
+.pt-set-opts { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--pt-soft); }
+.pt-set-opts label { position: relative; cursor: pointer; }
+.pt-set-opts input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pt-set-opts span { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 36px; padding: 6px 10px; border-radius: 9px; font-size: 14px; font-weight: 500; color: var(--muted); transition: background-color .15s, color .15s, box-shadow .15s; }
+.pt-set-opts input:checked + span { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(14,23,27,.12); }
+.pt-set-opts input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 1px; }
+.pt-set.is-bad .pt-set-opts { box-shadow: inset 0 0 0 2px var(--red); }
+@media (min-width: 1101px) {
+  .pt-set { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; }
+  .pt-set legend { float: left; margin: 0; white-space: nowrap; }
+  .pt-set-opts { flex: 1; padding: 3px; }
+  .pt-set-opts span { min-height: 30px; font-size: 13.5px; }
+}

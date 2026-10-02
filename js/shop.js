@@ -252,11 +252,19 @@
         return;
       }
       var btn = e.target.closest('[data-pt-add]'); if (!btn || btn.disabled) return;
+      // settings (chosen once for the order, e.g. the display language) go on every line
+      var set = {}, missing = null;
+      $$('[data-pt-set]', box).forEach(function (fs) {
+        var c = $('input:checked', fs), err = $('[data-pt-set-err]', fs);
+        if (c) set[fs.getAttribute('data-pt-set')] = c.value; else if (!missing) missing = fs;
+        err.hidden = !!c; fs.classList.toggle('is-bad', !c);
+      });
+      if (missing) { missing.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
       var added = 0;
       $$('.pt-line', box).forEach(function (l) {
         var q = qtyOf(l); if (!q) return;
-        var opts = JSON.parse(l.getAttribute('data-line'));
-        add({ key: keyOf(box, l), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
+        var opts = JSON.parse(l.getAttribute('data-line')).map(function (o) { return o[1] == null ? [o[0], set[o[0]]] : o; });
+        add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
               url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: box.hasAttribute('data-priced'), opts: opts, qty: q });
         $('[data-q]', l).value = ''; added++;
       });
@@ -266,6 +274,10 @@
       sumTable(box); openDrawer();
     });
     box.addEventListener('input', function (e) { if (e.target.matches('[data-q]')) sumTable(box); });
+    box.addEventListener('change', function (e) {
+      var fs = e.target.closest('[data-pt-set]'); if (!fs) return;
+      fs.classList.remove('is-bad'); $('[data-pt-set-err]', fs).hidden = true;
+    });
     box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('[data-q]')) { e.preventDefault(); var b = $('[data-pt-add]', box); if (!b.disabled) b.click(); } });
   });
 

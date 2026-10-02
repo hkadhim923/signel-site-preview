@@ -1,6 +1,6 @@
 # signel.ca — what is broken on the original site
 
-Compiled 2026-10-01. Every link below was fetched from the live site.
+Compiled 2026-10-02. Every link below was fetched from the live site.
 Open the page in the **Where to check** column and you will see the problem there.
 
 ## 1. Download links that lead to a missing file

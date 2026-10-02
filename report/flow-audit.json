@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-01T20:36:56.516Z",
+ "generated": "2026-10-02T12:36:42.259Z",
  "results": [
   {
    "width": 1440,
@@ -45,7 +45,7 @@
   },
   {
    "width": 1440,
-   "name": "model comparison: only differences hides equal rows",
+   "name": "model comparison: differences first, the switch shows every row",
    "ok": true,
    "detail": ""
   },
@@ -159,7 +159,7 @@
   },
   {
    "width": 390,
-   "name": "model comparison: only differences hides equal rows",
+   "name": "model comparison: differences first, the switch shows every row",
    "ok": true,
    "detail": ""
   },
