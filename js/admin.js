@@ -56,7 +56,11 @@
   var DATA = null, byId = {}, catById = {};
   // changes: { products: { id: {field: value} }, new: [ {...} ] } — the catalog.json shape
   var changes = store.get(CHANGES, { products: {}, new: [] });
-  var FIELDS = ['name', 'sku', 'internalId', 'categories', 'description', 'priceStyle', 'images', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
+  var FIELDS = ['name', 'name_fr', 'sku', 'internalId', 'categories', 'description', 'description_fr', 'priceStyle', 'images', 'images_fr', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
+  // the language being edited: name, description, pictures and option wording show in it;
+  // everything else (SKU, categories, prices...) is the same in both and shows once
+  var EL = sessionStorage.getItem('signel.admin.lang') === 'fr' ? 'fr' : 'en';
+  var LANGS = { en: 'English', fr: 'Français' };
   var current = null;   // the product open in the editor: { id, isNew }
   var dirty = false, saved = null;   // unsaved edits in the editor, and the last saved state
   var viewEl = $('[data-view]');
@@ -65,7 +69,11 @@
 
   fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }).then(function (d) {
     DATA = d;
-    d.products.forEach(function (p) { byId[p.id] = p; });
+    d.products.forEach(function (p) {
+      byId[p.id] = p;
+      // French option wording that the build had none for counts as empty, so it reads "to translate"
+      (p.options || []).concat(p.specs || []).forEach(function (o) { if (!(o.values_fr || []).some(Boolean)) o.values_fr = []; });
+    });
     d.categories.forEach(function (c) { catById[c.id] = c; });
     paintBadges();
     route();
@@ -118,7 +126,8 @@
     nosku: { label: 'No SKU', test: function (v) { return !v.sku; } },
     noid: { label: 'No internal ID', test: function (v) { return !v.internalId; } },
     nocat: { label: 'No category', test: function (v) { return !(v.categories || []).length; } },
-    nodesc: { label: 'No description', test: function (v) { return !String(v.description || '').replace(/<[^>]+>/g, '').trim(); } }
+    nodesc: { label: 'No description', test: function (v) { return !String(v.description || '').replace(/<[^>]+>/g, '').trim(); } },
+    tofr: { label: 'To translate', test: function (v) { return missingIn(v, 'fr').length > 0; } }
   };
   var STYLE_NAME = { card: 'Normal', table: 'Price table', sizes: 'Size run' };
   // A sketch of each page display (not the product): what the customer will see in the price card
@@ -169,6 +178,7 @@
         tile('products/nopic', ICON.pic, 'Need a picture', count('nopic'), 'Products shown without one', count('nopic') ? 'warn' : '') +
         tile('products/nosku', ICON.tag, 'No SKU', count('nosku'), 'Add the product code', count('nosku') ? 'warn' : '') +
         tile('products/noid', ICON.link, 'No internal ID', count('noid'), 'To match the internal software', '') +
+        tile('products/tofr', '<b class="ad-stat-fr">FR</b>', 'French to finish', count('tofr'), 'Name, description or options', count('tofr') ? 'warn' : '') +
         tile('publish', ICON.up, 'Not published yet', n, n ? 'Changes made here' : 'Everything is published', n ? 'warn' : '') +
       '</div>' +
       '<div class="ad-cols">' +
@@ -192,7 +202,7 @@
   var PER = 50;
   function showProducts(args) {
     if (args && args[0] && (CHECKS[args[0]] || /^(edited|hidden)$/.test(args[0]))) PF.filter = args[0];
-    var chips = [['all', 'All'], ['edited', 'Edited here'], ['nopic', 'No picture'], ['nosku', 'No SKU'], ['noid', 'No internal ID'], ['nodesc', 'No description'], ['hidden', 'Hidden']];
+    var chips = [['all', 'All'], ['edited', 'Edited here'], ['tofr', 'French to finish'], ['nopic', 'No picture'], ['nosku', 'No SKU'], ['noid', 'No internal ID'], ['nodesc', 'No description'], ['hidden', 'Hidden']];
     viewEl.innerHTML = '<div class="ad-page">' +
       '<div class="ad-head"><div><h1>Products</h1><p class="ad-muted" data-p-count></p></div></div>' +
       '<div class="ad-toolbar"><div class="ad-chips" role="group" aria-label="Show">' + chips.map(function (c) { return '<button type="button" class="ad-chip-btn' + (PF.filter === c[0] ? ' on' : '') + '" data-pf="' + c[0] + '">' + c[1] + '<span data-pf-n="' + c[0] + '"></span></button>'; }).join('') + '</div>' +
@@ -228,7 +238,8 @@
       var v = view(p), cat = catById[(v.categories || [])[(v.categories || []).length - 1]];
       var style = v.priceStyle && v.priceStyle !== 'auto' ? STYLE_NAME[v.priceStyle] : STYLE_NAME[v.autoStyle || 'card'] + ' <small>(auto)</small>';
       var flags = (p.isNew ? '<em class="ad-chip ad-chip--green">New</em>' : isChanged(p) ? '<em class="ad-chip ad-chip--amber">Edited</em>' : '') +
-        (v.hidden ? '<em class="ad-chip ad-chip--red">Hidden</em>' : '') + (!(v.images || []).length ? '<em class="ad-chip">No picture</em>' : '');
+        (v.hidden ? '<em class="ad-chip ad-chip--red">Hidden</em>' : '') + (!(v.images || []).length ? '<em class="ad-chip">No picture</em>' : '') +
+        (missingIn(v, 'fr').length ? '<em class="ad-chip ad-chip--amber" title="Something is still in English only">FR to finish</em>' : '');
       return '<tr data-open="' + p.id + '" tabindex="0"><td><div class="ad-prod">' + thumb(v) + '<span><b>' + esc(v.name) + '</b><small>' + (v.sku ? esc(v.sku) : '<i>No SKU</i>') + '</small></span></div></td>' +
         '<td>' + (v.internalId ? esc(v.internalId) : '<span class="ad-muted">—</span>') + '</td><td class="ad-cat">' + (cat ? esc(cat.name) : '<span class="ad-muted">—</span>') + '</td><td>' + style + '</td><td><div class="ad-flags">' + (flags || '<span class="ad-muted">On the site</span>') + '</div></td></tr>';
     }).join('') || '<tr><td colspan="5" class="ad-none">No product matches. Try another filter or search.</td></tr>';
@@ -239,7 +250,7 @@
     // after every id in use: the catalogue's own (products added before) and this browser's
     var ids = changes.new.map(function (n) { return n.id; }).concat(DATA.products.map(function (p) { return p.id; }));
     var id = Math.max.apply(null, [Number(app.getAttribute('data-new-id-from')) - 1].concat(ids)) + 1;
-    changes.new.unshift({ id: id, name: 'New product', sku: '', internalId: '', categories: [], description: '', priceStyle: 'auto', images: [], documents: [],
+    changes.new.unshift({ id: id, name: 'New product', name_fr: '', sku: '', internalId: '', categories: [], description: '', description_fr: '', priceStyle: 'auto', images: [], images_fr: null, documents: [],
                           options: [], specs: [], weight: '', dimensions: { length: '', width: '', height: '' }, pricing: { mode: 'quote', price: '', priceMax: '' } });
     save(); go('product/' + id);
   });
@@ -269,8 +280,18 @@
       '<select data-doc-lang aria-label="Language"><option value="en"' + (d.lang !== 'fr' ? ' selected' : '') + '>English</option><option value="fr"' + (d.lang === 'fr' ? ' selected' : '') + '>French</option></select>');
   }
   function pairRow(kind, o) {
-    return row('adm-pair-row', '<input type="text" placeholder="' + (kind === 'opt' ? 'Option, e.g. Colour' : 'Name, e.g. Material') + '" value="' + esc(o.label) + '" data-' + kind + '-label>' +
-      '<input type="text" placeholder="Values, separated by |   e.g. Amber | White" value="' + esc((o.values || []).join(' | ')) + '" data-' + kind + '-values>');
+    var vfr = (o.values_fr || []).join(' | ').replace(/^[\s|]+$/, '');
+    return row('adm-pair-row',
+      '<input type="text" data-l="en" placeholder="' + (kind === 'opt' ? 'Option, e.g. Colour' : 'Name, e.g. Material') + '" value="' + esc(o.label) + '" data-' + kind + '-label>' +
+      '<input type="text" data-l="en" placeholder="Values, separated by |   e.g. Amber | White" value="' + esc((o.values || []).join(' | ')) + '" data-' + kind + '-values>' +
+      '<input type="text" data-l="fr" placeholder="' + esc(o.label || (kind === 'opt' ? 'Option, ex. Couleur' : 'Nom, ex. Matériau')) + '" value="' + esc(o.label_fr || '') + '" data-' + kind + '-label-fr>' +
+      '<input type="text" data-l="fr" placeholder="' + esc((o.values || []).join(' | ') || 'Valeurs, séparées par |   ex. Ambre | Blanc') + '" value="' + esc(vfr) + '" data-' + kind + '-values-fr>');
+  }
+  // a small marker on fields that are the same in both languages
+  var BOTH = '<em class="ad-both" title="The same in English and French">EN = FR</em>';
+  function langFld(name, label, v, hint) {
+    return '<label class="ad-fld" data-l="en"><span>' + label + ' <em class="ad-lang">EN</em></span><input type="text" name="' + name + '" value="' + esc(v[name] || '') + '"' + (name === 'name' ? ' required' : '') + '>' + (hint ? '<small>' + hint + '</small>' : '') + '</label>' +
+      '<label class="ad-fld" data-l="fr"><span>' + label + ' <em class="ad-lang">FR</em></span><input type="text" name="' + name + '_fr" value="' + esc(v[name + '_fr'] || '') + '" placeholder="' + esc(v[name] || '') + '">' + (hint ? '<small>' + hint + '</small>' : '') + '</label>';
   }
   function fld(l, inner, hint) { return '<label class="ad-fld"><span>' + l + '</span>' + inner + (hint ? '<small>' + hint + '</small>' : '') + '</label>'; }
   function catTree(v) {
@@ -287,8 +308,13 @@
   }
   function editorHtml(v, isNew) {
     var pr = v.pricing || { mode: 'quote' }, dm = v.dimensions || {};
+    var samePics = !v.images_fr || JSON.stringify(v.images_fr) === JSON.stringify(v.images || []);
+    var grid = function (key, list, l) {
+      return '<div class="ad-pics" data-imgs="' + key + '"' + (l ? ' data-l="' + l + '"' : '') + '>' + (list || []).map(imgTile).join('') +
+        '<label class="ad-pic ad-pic--add">' + ICON.pic + '<span>Add a picture</span><small>JPG, PNG or WebP, under 3 MB</small><input type="file" accept="image/*" data-img-file hidden multiple></label></div>';
+    };
     var panel = function (id, inner) { return '<section class="ad-panel" data-panel="' + id + '"' + (id === 'basics' ? '' : ' hidden') + '>' + inner + '</section>'; };
-    return '<form class="ad-editor" data-admin-form novalidate>' +
+    return '<form class="ad-editor" data-admin-form data-elang="' + EL + '" novalidate>' +
       '<nav class="ad-crumbs"><button type="button" class="ad-link" data-go="products">Products</button><span>/</span><span>' + esc(v.name) + '</span></nav>' +
       '<div class="ad-ed-head">' + thumb(v, 'lg') + '<div class="ad-ed-title"><h1 data-ed-name>' + esc(v.name) + '</h1><p>' +
         (v.sku ? '<em class="ad-chip">SKU ' + esc(v.sku) + '</em>' : '<em class="ad-chip ad-chip--warn">No SKU</em>') +
@@ -299,26 +325,32 @@
         '<details class="ad-more"><summary class="ad-btn" aria-label="More actions">•••</summary><div class="ad-menu-pop">' +
           '<button type="button" data-backup>Back up all changes</button>' +
           '<button type="button" data-revert>' + (isNew ? 'Delete this new product' : 'Undo all my changes to this product') + '</button></div></details></div></div>' +
-      '<div class="ad-tabs" role="tablist">' + TABS.map(function (t, i) { return '<button type="button" role="tab" aria-selected="' + (i ? 'false' : 'true') + '" data-tab="' + t[0] + '">' + t[1] + '<i data-tab-err hidden></i></button>'; }).join('') + '</div>' +
+      '<div class="ad-tabbar"><div class="ad-tabs" role="tablist">' + TABS.map(function (t, i) { return '<button type="button" role="tab" aria-selected="' + (i ? 'false' : 'true') + '" data-tab="' + t[0] + '">' + t[1] + '<i data-tab-err hidden></i><i class="ad-tab-tr" data-tab-tr hidden title="Something to translate here"></i></button>'; }).join('') + '</div>' +
+      '<div class="ad-langsw" role="group" aria-label="Language you are editing">' + ['en', 'fr'].map(function (l) { return '<button type="button" data-elang="' + l + '" aria-pressed="' + (EL === l) + '">' + LANGS[l] + '<i data-lang-dot="' + l + '" hidden></i></button>'; }).join('') + '</div></div>' +
+      '<p class="ad-lang-note" data-lang-note hidden></p>' +
 
       panel('basics',
-        '<div class="ad-card"><h2>Product</h2><div class="ad-grid3">' + fld('Name', '<input type="text" name="name" required value="' + esc(v.name) + '">') +
-          fld('SKU', '<input type="text" name="sku" value="' + esc(v.sku) + '">', 'The product code customers see') +
-          fld('Internal ID', '<input type="text" name="internalId" value="' + esc(v.internalId || '') + '">', 'The code in the internal software') + '</div>' +
+        '<div class="ad-card"><h2>Product</h2><div class="ad-grid3">' + langFld('name', 'Name', v) +
+          fld('SKU ' + BOTH, '<input type="text" name="sku" value="' + esc(v.sku) + '">', 'The product code customers see') +
+          fld('Internal ID ' + BOTH, '<input type="text" name="internalId" value="' + esc(v.internalId || '') + '">', 'The code in the internal software') + '</div>' +
           '<label class="ad-switch"><input type="checkbox" name="hidden"' + (v.hidden ? ' checked' : '') + '><span aria-hidden="true"></span><b>Hide from the website</b><small>The product stays here but nobody can find it on the site.</small></label></div>' +
-        '<div class="ad-card"><h2>Pictures <small>The first one is the main picture</small></h2><div class="ad-pics" data-imgs>' + (v.images || []).map(imgTile).join('') +
-          '<label class="ad-pic ad-pic--add">' + ICON.pic + '<span>Add a picture</span><small>JPG, PNG or WebP, under 3 MB</small><input type="file" accept="image/*" data-img-file hidden multiple></label></div>' +
+        '<div class="ad-card' + (samePics ? ' is-same-pics' : '') + '" data-pics-card><h2>Pictures <small>The first one is the main picture</small></h2>' +
+          '<label class="ad-switch ad-switch--blue"><input type="checkbox" name="samePics"' + (samePics ? ' checked' : '') + '><span aria-hidden="true"></span><b>Same pictures in English and French</b><small>Turn off when a picture has text in it, to give each language its own.</small></label>' +
+          '<p class="ad-pics-lang" data-pics-lang></p>' +
+          grid('en', v.images, samePics ? '' : 'en') + grid('fr', samePics ? v.images : v.images_fr, 'fr') +
           '<div class="ad-inline"><input type="text" placeholder="Or paste a picture address, e.g. /img/2026/05/photo.jpg" data-img-url><button type="button" class="ad-btn" data-img-add>Add</button></div></div>') +
 
       panel('description',
         '<div class="ad-card"><h2>Description <small>Shown under the price card, folded with “Read more” where the pictures end</small></h2>' +
-          '<div class="ad-rte-bar" role="toolbar" aria-label="Formatting"><button type="button" data-fmt="h3">Heading</button><button type="button" data-fmt="p">Paragraph</button><button type="button" data-fmt="ul">Bullet list</button><button type="button" data-fmt="b">Bold</button><span></span><button type="button" class="on" data-desc-mode="edit">Edit</button><button type="button" data-desc-mode="see">See it</button></div>' +
-          '<textarea name="description" rows="16" class="ad-code">' + esc(v.description) + '</textarea><div class="ad-desc-see rich" data-preview-out hidden></div></div>') +
+          '<div class="ad-rte-bar" role="toolbar" aria-label="Formatting"><button type="button" data-fmt="h3">Heading</button><button type="button" data-fmt="p">Paragraph</button><button type="button" data-fmt="ul">Bullet list</button><button type="button" data-fmt="b">Bold</button><span></span><button type="button" data-sbs aria-pressed="false">Both languages side by side</button><button type="button" class="on" data-desc-mode="edit">Edit</button><button type="button" data-desc-mode="see">See it</button></div>' +
+          '<div class="ad-desc-pair"><label class="ad-desc-l" data-l="en"><span class="ad-lang-cap">English</span><textarea name="description" rows="16" class="ad-code">' + esc(v.description) + '</textarea></label>' +
+          '<label class="ad-desc-l" data-l="fr"><span class="ad-lang-cap">Français</span><textarea name="description_fr" rows="16" class="ad-code" placeholder="La description en français. Laissée vide, la page française montre la description anglaise en attendant.">' + esc(v.description_fr || '') + '</textarea></label></div>' +
+          '<div class="ad-desc-see rich" data-preview-out hidden></div></div>') +
 
-      panel('categories', '<div class="ad-card"><h2>Categories <small>Where customers find it when clicking through the site; it also shows in every parent category and in search</small></h2>' + catTree(v) + '</div>') +
+      panel('categories', '<div class="ad-card"><h2>Categories ' + BOTH + ' <small>Where customers find it when clicking through the site; it also shows in every parent category and in search</small></h2>' + catTree(v) + '</div>') +
 
       panel('price',
-        '<div class="ad-card"><h2>Price</h2><div class="ad-choice">' +
+        '<div class="ad-card"><h2>Price ' + BOTH + '</h2><div class="ad-choice">' +
           '<label><input type="radio" name="pmode" value="quote"' + (pr.mode !== 'priced' ? ' checked' : '') + '><span><b>Price on request</b><small>Quoted for each order</small></span></label>' +
           '<label><input type="radio" name="pmode" value="priced"' + (pr.mode === 'priced' ? ' checked' : '') + '><span><b>Fixed price</b><small>Shown to signed-in customers</small></span></label></div>' +
           '<div class="ad-grid3" data-prices' + (pr.mode === 'priced' ? '' : ' hidden') + '>' + fld('Price (CAD)', '<input type="number" min="0" step="0.01" name="price" value="' + esc(pr.price) + '">') +
@@ -330,7 +362,7 @@
           ['sizes', 'Size run', 'One box per clothing size']
         ].map(function (o) { return '<label><input type="radio" name="priceStyle" value="' + o[0] + '"' + ((v.priceStyle || 'auto') === o[0] ? ' checked' : '') + '><span><b>' + o[1] + '</b><small>' + o[2] + '</small></span></label>'; }).join('') + '</div>' +
           '<figure class="ad-style-art" data-style-art data-auto="' + esc(v.autoStyle || 'card') + '"></figure></div>' +
-        '<div class="ad-card"><h2>Options the customer chooses <small>Each needs two values or more; English colour names show as colour dots</small></h2><div data-opts>' + (v.options || []).map(function (o) { return pairRow('opt', o); }).join('') + '</div>' +
+        '<div class="ad-card"><h2>Options the customer chooses <small data-l="en">Each needs two values or more; English colour names show as colour dots</small><small data-l="fr">La même liste dans les deux langues : écrivez ici le texte français de chaque option, dans le même ordre</small></h2><div data-opts>' + (v.options || []).map(function (o) { return pairRow('opt', o); }).join('') + '</div>' +
           '<button type="button" class="ad-btn ad-btn--ghost" data-opt-add>+ Add an option</button></div>') +
 
       panel('details',
@@ -348,7 +380,41 @@
     if (file.size > 3 * 1024 * 1024) { toast(file.name + ' is over 3 MB. Use a smaller file, or put it on the site and add it by address.'); return; }
     var r = new FileReader(); r.onload = function () { cb(r.result); }; r.readAsDataURL(file);
   }
-  function relabelPics(f) { $$('[data-pic]:not(.ad-pic--add)', f).forEach(function (t, i) { var m = $('.ad-pic-main', t); if (i === 0 && !m) t.insertAdjacentHTML('beforeend', '<em class="ad-pic-main">Main picture</em>'); if (i && m) m.remove(); }); }
+  function relabelPics(f) {
+    $$('[data-imgs]', f).forEach(function (g) { $$('[data-pic]:not(.ad-pic--add)', g).forEach(function (t, i) { var m = $('.ad-pic-main', t); if (i === 0 && !m) t.insertAdjacentHTML('beforeend', '<em class="ad-pic-main">Main picture</em>'); if (i && m) m.remove(); }); });
+  }
+  // the picture list being edited: the shared one, or the language's own
+  function activeGrid(f) { return $('[data-imgs="' + (f.samePics.checked ? 'en' : EL) + '"]', f); }
+  function setLang(f, l) {
+    EL = l; try { sessionStorage.setItem('signel.admin.lang', l); } catch (e) {}
+    f.setAttribute('data-elang', l);
+    $$('[data-elang]', f).forEach(function (b) { if (b.tagName === 'BUTTON') b.setAttribute('aria-pressed', b.getAttribute('data-elang') === l ? 'true' : 'false'); });
+    paintLang(f); schedulePreview();
+  }
+  // what is still missing in each language, shown on the switch and on the tabs
+  function missingIn(v, l) {
+    var out = [], fr = l === 'fr';
+    if (!(fr ? v.name_fr : v.name)) out.push(['basics', 'name']);
+    var d = (fr ? v.description_fr : v.description) || '', other = (fr ? v.description : v.description_fr) || '';
+    if (!d.replace(/<[^>]+>/g, '').trim() && other.replace(/<[^>]+>/g, '').trim()) out.push(['description', 'description']);
+    var opts = (v.options || []).filter(function (o) { return fr ? !o.label_fr || (o.values_fr || []).length < o.values.length : !o.label; });
+    if (opts.length) out.push(['price', plural(opts.length, 'option', 'options')]);
+    var specs = (v.specs || []).filter(function (o) { return fr ? !o.label_fr : !o.label; });
+    if (specs.length) out.push(['details', plural(specs.length, 'specification', 'specifications')]);
+    return out;
+  }
+  function paintLang(f) {
+    var v = collect(f), miss = { en: missingIn(v, 'en'), fr: missingIn(v, 'fr') };
+    ['en', 'fr'].forEach(function (l) { var d = $('[data-lang-dot="' + l + '"]', f); if (d) d.hidden = !miss[l].length; });
+    $$('[data-tab-tr]', f).forEach(function (i) { var tab = i.parentNode.getAttribute('data-tab'); i.hidden = !miss[EL].some(function (m) { return m[0] === tab; }); });
+    var note = $('[data-lang-note]', f);
+    note.hidden = !miss[EL].length;
+    note.innerHTML = miss[EL].length ? '<b>' + (EL === 'fr' ? 'Still to translate into French: ' : 'Missing in English: ') + '</b>' + miss[EL].map(function (m) { return m[1]; }).join(', ') +
+      (EL === 'fr' ? '. Until then the French page shows the English.' : '.') : '';
+    var pl = $('[data-pics-lang]', f);
+    if (pl) pl.textContent = f.samePics.checked ? 'These pictures show in both languages.' : 'Pictures for the ' + (EL === 'fr' ? 'French' : 'English') + ' page. Switch language above to edit the other list.';
+    $('[data-pics-card]', f).classList.toggle('is-same-pics', f.samePics.checked);
+  }
   function paintCats(f) {
     var picked = $$('[data-cats] input:checked', f).map(function (i) { return catById[Number(i.value)]; }).filter(Boolean);
     $('[data-catpicked]', f).innerHTML = picked.length ? picked.map(function (c) { return '<span class="ad-chip ad-chip--blue">' + esc(c.path) + '<button type="button" data-uncat="' + c.id + '" aria-label="Remove ' + esc(c.name) + '">' + ICON.x + '</button></span>'; }).join('')
@@ -369,17 +435,19 @@
       if (pic && t.closest('[data-pic-del]')) { pic.remove(); relabelPics(f); changed(); return; }
       if (pic && t.closest('[data-pic-left]') && pic.previousElementSibling) { pic.parentNode.insertBefore(pic, pic.previousElementSibling); relabelPics(f); changed(); return; }
       if (pic && t.closest('[data-pic-right]') && pic.nextElementSibling && !pic.nextElementSibling.classList.contains('ad-pic--add')) { pic.parentNode.insertBefore(pic.nextElementSibling, pic); relabelPics(f); changed(); return; }
-      if (t.closest('[data-img-add]')) { var u = $('[data-img-url]', f); if (u.value.trim()) { $('.ad-pic--add', f).insertAdjacentHTML('beforebegin', imgTile(u.value.trim(), 1)); u.value = ''; relabelPics(f); changed(); } return; }
+      if (t.closest('[data-img-add]')) { var u = $('[data-img-url]', f); if (u.value.trim()) { $('.ad-pic--add', activeGrid(f)).insertAdjacentHTML('beforebegin', imgTile(u.value.trim(), 1)); u.value = ''; relabelPics(f); changed(); } return; }
+      var lb = t.closest('button[data-elang]'); if (lb) { setLang(f, lb.getAttribute('data-elang')); return; }
+      var sbs = t.closest('[data-sbs]'); if (sbs) { var on = f.classList.toggle('is-sbs'); sbs.setAttribute('aria-pressed', on ? 'true' : 'false'); sbs.classList.toggle('on', on); return; }
       if (t.closest('[data-doc-add]')) { $('[data-docs]', f).insertAdjacentHTML('beforeend', docRow({ type: 'product-sheet', href: '', lang: 'en' })); return; }
       if (t.closest('[data-opt-add]')) { $('[data-opts]', f).insertAdjacentHTML('beforeend', pairRow('opt', { label: '', values: [] })); return; }
       if (t.closest('[data-spec-add]')) { $('[data-specs]', f).insertAdjacentHTML('beforeend', pairRow('spec', { label: '', values: [] })); return; }
       var un = t.closest('[data-uncat]'); if (un) { var box = $('[data-cats] input[value="' + un.getAttribute('data-uncat') + '"]', f); if (box) box.checked = false; paintCats(f); changed(); return; }
-      var fm = t.closest('[data-fmt]'); if (fm) { format(f.description, fm.getAttribute('data-fmt')); changed(); return; }
+      var fm = t.closest('[data-fmt]'); if (fm) { format(EL === 'fr' ? f.description_fr : f.description, fm.getAttribute('data-fmt')); changed(); return; }
       var dm = t.closest('[data-desc-mode]');
       if (dm) {
         var see = dm.getAttribute('data-desc-mode') === 'see', out = $('[data-preview-out]', f);
         $$('[data-desc-mode]', f).forEach(function (b) { b.classList.toggle('on', b === dm); });
-        out.innerHTML = f.description.value; out.hidden = !see; f.description.hidden = see; return;
+        out.innerHTML = (EL === 'fr' ? f.description_fr.value : f.description.value) || f.description.value; out.hidden = !see; $('.ad-desc-pair', f).hidden = see; return;
       }
       if (t.closest('[data-preview-toggle]')) { app.classList.contains('is-preview') ? closePreview() : openPreview(); return; }
       if (t.closest('[data-backup]')) { t.closest('details').open = false; backup(); return; }
@@ -391,9 +459,18 @@
         delete changes.products[current.id]; save(); dirty = false; openProduct(current.id); toast('Back to the published version.');
       }
     });
-    $('[data-img-file]', f).addEventListener('change', function (e) {
-      Array.prototype.forEach.call(e.target.files, function (file) { readFile(file, function (d) { $('.ad-pic--add', f).insertAdjacentHTML('beforebegin', imgTile(d, 1)); relabelPics(f); changed(); }); });
-      e.target.value = '';
+    $$('[data-img-file]', f).forEach(function (inp) {
+      inp.addEventListener('change', function (e) {
+        var g = inp.closest('[data-imgs]');
+        Array.prototype.forEach.call(e.target.files, function (file) { readFile(file, function (d) { $('.ad-pic--add', g).insertAdjacentHTML('beforebegin', imgTile(d, 1)); relabelPics(f); changed(); }); });
+        e.target.value = '';
+      });
+    });
+    f.samePics.addEventListener('change', function () {
+      // turning "same pictures" off starts the French list from the English one
+      if (!f.samePics.checked) { var fr = $('[data-imgs="fr"]', f), en = $('[data-imgs="en"]', f); $$('[data-pic]:not(.ad-pic--add)', fr).forEach(function (x) { x.remove(); }); $$('[data-pic]:not(.ad-pic--add)', en).forEach(function (x) { $('.ad-pic--add', fr).insertAdjacentHTML('beforebegin', x.outerHTML); }); }
+      $('[data-imgs="en"]', f).setAttribute('data-l', f.samePics.checked ? '' : 'en'); if (f.samePics.checked) $('[data-imgs="en"]', f).removeAttribute('data-l');
+      relabelPics(f); paintLang(f);
     });
     $('[data-doc-file]', f).addEventListener('change', function (e) { var file = e.target.files[0]; if (file) readFile(file, function (d) { $('[data-docs]', f).insertAdjacentHTML('beforeend', docRow({ type: 'product-sheet', label: file.name.replace(/\.pdf$/i, ''), href: d, lang: 'en' })); changed(); }); });
     $('[data-catfilter]', f).addEventListener('input', function (e) {
@@ -408,7 +485,7 @@
     f.addEventListener('submit', function (e) { e.preventDefault(); saveProduct(); });
     ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, function (e) { if (e.target.matches('[data-catfilter], [data-img-url]')) return; changed(); }); });
     f.name.addEventListener('input', function () { $('[data-ed-name]', f).textContent = f.name.value || 'Untitled product'; });
-    paintCats(f);
+    paintCats(f); paintLang(f);
     if (app.classList.contains('is-preview')) schedulePreview();
   }
   // simple formatting for the HTML description: wraps the selected text (or the line the cursor is on)
@@ -424,7 +501,7 @@
   function changed() {
     var f = $('[data-admin-form]'); if (!f) return;
     dirty = JSON.stringify(collect(f)) !== saved;
-    paintDirty(); schedulePreview();
+    paintDirty(); paintLang(f); schedulePreview();
   }
   function paintDirty(err) {
     var bar = $('[data-savebar]'); if (!bar) return;
@@ -434,16 +511,19 @@
   }
 
   function pairs(f, kind) {
+    var split = function (v) { return v.trim() ? v.split('|').map(function (s) { return s.trim(); }) : []; };
     return $$('[data-' + kind + 's] .adm-rowedit', f).map(function (r) {
-      return { label: $('[data-' + kind + '-label]', r).value.trim(), values: $('[data-' + kind + '-values]', r).value.split('|').map(function (s) { return s.trim(); }).filter(Boolean) };
+      return { label: $('[data-' + kind + '-label]', r).value.trim(), values: split($('[data-' + kind + '-values]', r).value).filter(Boolean),
+               label_fr: $('[data-' + kind + '-label-fr]', r).value.trim(), values_fr: split($('[data-' + kind + '-values-fr]', r).value) };
     }).filter(function (o) { return o.label && o.values.length; });
   }
   function collect(f) {
     return {
-      name: f.name.value.trim(), sku: f.sku.value.trim(), internalId: f.internalId.value.trim(), hidden: f.hidden.checked,
+      name: f.name.value.trim(), name_fr: f.name_fr.value.trim(), sku: f.sku.value.trim(), internalId: f.internalId.value.trim(), hidden: f.hidden.checked,
       categories: $$('[data-cats] input:checked', f).map(function (i) { return Number(i.value); }),
-      description: f.description.value, priceStyle: (f.priceStyle && f.priceStyle.value) || 'auto',
-      images: $$('[data-pic] [data-img]', f).map(function (i) { return i.getAttribute('data-file') || i.value.trim(); }).filter(Boolean),
+      description: f.description.value, description_fr: f.description_fr.value, priceStyle: (f.priceStyle && f.priceStyle.value) || 'auto',
+      images: picsOf($('[data-imgs="en"]', f)),
+      images_fr: f.samePics.checked ? null : picsOf($('[data-imgs="fr"]', f)),
       documents: $$('[data-docs] .adm-rowedit', f).map(function (r) {
         var h = $('[data-doc-href]', r);
         return { type: $('[data-doc-type]', r).value, label: $('[data-doc-label]', r).value.trim(), href: h.getAttribute('data-file') || h.value.trim(), lang: $('[data-doc-lang]', r).value };
@@ -453,6 +533,7 @@
       pricing: f.pmode.value === 'priced' ? { mode: 'priced', price: Number(f.price.value) || '', priceMax: Number(f.priceMax.value) || '' } : { mode: 'quote', price: '', priceMax: '' }
     };
   }
+  var picsOf = function (g) { return $$('[data-pic] [data-img]', g).map(function (i) { return i.getAttribute('data-file') || i.value.trim(); }).filter(Boolean); };
   var same = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
   // problems that stop a save, each with the tab it is on
   function problemsOf(f, v) {
@@ -475,7 +556,8 @@
     }
     if (current.isNew) Object.assign(changes.new.filter(function (x) { return x.id === current.id; })[0], v);
     else {
-      var orig = byId[current.id], patch = {};
+      var orig = Object.assign({}, byId[current.id]), patch = {};
+      if (same(orig.images_fr, orig.images)) orig.images_fr = null;
       var sorted = function (a) { return (a || []).slice().sort(function (x, y) { return x - y; }); };
       FIELDS.forEach(function (k) {
         var diff = k === 'hidden' ? v.hidden !== !!orig.hidden : k === 'categories' ? !same(sorted(v[k]), sorted(orig[k])) : !same(v[k], orig[k]);
@@ -809,7 +891,14 @@
     var f = $('[data-admin-form]'); if (!f || !current) return;
     var v = collect(f), orig = find(current.id) || {};
     v.id = current.id; v.autoStyle = orig.autoStyle;
-    var url = (byId[current.id] || {}).url || DATA.products[0].url;   // a new product borrows any product page's frame
+    // the page in the language being edited: French text and pictures, the English while missing
+    if (EL === 'fr') v = Object.assign({}, v, {
+      name: v.name_fr || v.name, description: v.description_fr || v.description, images: v.images_fr || v.images,
+      options: (v.options || []).map(function (o) { return { label: o.label_fr || o.label, values: o.values.map(function (x, i) { return (o.values_fr || [])[i] || x; }) }; }),
+      specs: (v.specs || []).map(function (o) { return { label: o.label_fr || o.label, values: o.values.map(function (x, i) { return (o.values_fr || [])[i] || x; }) }; })
+    });
+    var pub = byId[current.id] || {};
+    var url = (EL === 'fr' ? pub.url_fr : pub.url) || (EL === 'fr' ? DATA.products[0].url_fr : DATA.products[0].url);   // a new product borrows any product page's frame
     template(url).then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html'), prod = doc.querySelector('.product');
       if (!prod) return;
