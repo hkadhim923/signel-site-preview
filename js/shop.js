@@ -43,8 +43,17 @@
     return prices && prices[id] ? { min: prices[id][0], max: prices[id][1] || prices[id][0] } : null;
   };
   // the price of one exact version, when the price list has it (prices.json "lines":
-  // { "<id>|<options as JSON>": price }, from the back end)
-  var linePrice = function (key) { return prices && prices.lines && prices.lines[key] != null ? prices.lines[key] : null; };
+  // { "<id>|<choices as JSON, sorted by name>": price }, src/model/prices.js lineKey)
+  var lineKey = function (key) {
+    var i = key.indexOf('|'), pairs;
+    try { pairs = JSON.parse(key.slice(i + 1)); } catch (e) { return null; }   // rentals: quoted
+    if (!Array.isArray(pairs)) return null;
+    return key.slice(0, i) + '|' + JSON.stringify(pairs.slice().sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }));
+  };
+  var linePrice = function (key) {
+    var k = prices && prices.lines ? lineKey(key) : null;
+    return k && prices.lines[k] != null ? prices.lines[k] : null;
+  };
   var priceText = function (p) { return p.max > p.min ? t('from') + ' ' + money(p.min) : money(p.min); };
 
   /* ---------- cart store ---------- */
@@ -200,7 +209,9 @@
     var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box),
         text = $('[data-price-text]', box) || (box.nextElementSibling && $('[data-price-text]', box.nextElementSibling)) || document.createElement('p');   // the line sits under the card
     if (box.hasAttribute('data-priced')) {
-      var p = priceOf(box.getAttribute('data-id'));
+      // every choice made: that exact version's price, when the price list has it
+      var all = s.groups.length && s.groups.every(function (g) { return g.value; });
+      var p = priceOf(box.getAttribute('data-id'), all ? box.getAttribute('data-id') + '|' + JSON.stringify(s.groups.map(function (g) { return [g.key, g.value]; })) : null);
       if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = true; }
       else { slot.innerHTML = '<a href="' + R('/login/') + '">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; text.hidden = false; }
     }

@@ -251,6 +251,31 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ad-timeline li.is-current .ad-dot { background: #1E8A3A; box-shadow: 0 0 0 4px #E1F3E6; }
 .adm-launch { margin: 0; padding: 12px 16px; border-radius: 12px; background: #FFF1CC; color: #6B4800; font-weight: 600; font-size: 14px; }
 
+/* ---- prices: the Excel price list ---- */
+.ad-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.ad-tile { display: grid; gap: 2px; padding: 16px 18px; border-radius: 16px; background: #fff; box-shadow: var(--ad-shadow); }
+.ad-tile small { font-weight: 600; font-size: 13.5px; color: var(--ad-ink2); }
+.ad-tile b { font: 700 28px/1.1 var(--font-cond); font-variant-numeric: tabular-nums; }
+.ad-tile span { font-size: 12.5px; color: var(--muted); }
+.ad-publish--one { grid-template-columns: 1fr; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--ad-hair); }
+.ad-drop { display: grid; gap: 2px; justify-items: center; width: 100%; padding: 22px 16px; border-radius: 14px; border: 2px dashed #C9D3DE; background: var(--ad-soft); cursor: pointer; text-align: center; transition: border-color .15s, background-color .15s; }
+.ad-drop:hover, .ad-drop.is-over { border-color: var(--blue); background: #EEF4FB; }
+.ad-drop b { color: var(--blue); }
+.ad-drop span { font-size: 13px; color: var(--muted); }
+.ad-notes { margin: 0 0 14px; padding: 10px 14px 10px 30px; border-radius: 12px; font-size: 13.5px; display: grid; gap: 4px; }
+.ad-notes.is-bad { background: #FDECEC; color: #8F1D1D; }
+.ad-notes.is-warn { background: #FFF6DB; color: #6B4800; }
+.ad-table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ad-hair); }
+.ad-price-diff tbody tr { cursor: default; }
+.ad-price-diff td small { display: block; }
+.ad-price-diff td:nth-child(3), .ad-price-diff td:nth-child(4) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ad-price-diff td:nth-child(3) { color: var(--muted); }
+.ad-price-diff .is-up { color: #8F1D1D; font-weight: 600; }
+.ad-price-diff .is-down { color: #1E7A36; font-weight: 600; }
+.ad-price-diff .is-new { color: var(--blue); font-weight: 600; }
+.ad-price-diff .is-off { color: var(--muted); font-style: italic; }
+@media (max-width: 720px) { .ad-tiles { grid-template-columns: 1fr; } .ad-table.ad-price-diff th:nth-child(n), .ad-table.ad-price-diff td:nth-child(n) { display: table-cell; } }
+
 /* ---- requests board ---- */
 .ad-board { display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); gap: 14px; align-items: start; overflow-x: auto; padding-bottom: 8px; }
 .ad-col { background: #E9EDF2; border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }

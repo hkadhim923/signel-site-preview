@@ -93,7 +93,7 @@
     if (parts[0] !== 'product') { current = null; closePreview(); }
     $$('[data-nav]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-nav') === (parts[0] === 'product' ? 'products' : parts[0])); });
     var fn = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1])); }, requests: showRequests,
-               publish: showPublish, versions: showVersions, backups: showBackups }[parts[0]] || showOverview;
+               prices: showPrices, publish: showPublish, versions: showVersions, backups: showBackups }[parts[0]] || showOverview;
     fn(parts.slice(1));
     if (document.activeElement !== gsearch) viewEl.focus({ preventScroll: true });
     window.scrollTo(0, 0);
@@ -626,6 +626,65 @@
         } catch (err) { toast('That file is not a Signel changes file or backup.'); }
       };
       r.readAsText(file);
+    });
+  }
+
+  /* ---------- Prices: the Excel price list (in French), out and back in ----------
+     Export downloads the list the build wrote (src/model/price-sheet.js). Import reads a
+     returned sheet here, with the same code as tools/price-sheet.mjs (/admin/xlsx.js and
+     /admin/price-import.js), and shows what changes before anything is kept. */
+  var PRICES = null;
+  function priceList() { return PRICES || (PRICES = fetch(ROOT + '/admin/price-list.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })); }
+  var cad = function (n) { return n == null ? 'On request' : n.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' }); };
+  function inflateRaw(bytes) {
+    return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+  }
+  function showPrices() {
+    var day = new Date().toISOString().slice(0, 10);
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Prices</h1><p class="ad-muted">One Excel price list, in French: every item the website sells, with its parent and child codes and its price. Export it, change the prices, import it back.</p></div></div>' +
+      '<div class="ad-tiles" data-price-tiles></div>' +
+      '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Export the price list</h2><p class="ad-muted">Always the latest prices. Codes that belong together (a parent and its versions, AB1022 and AB1022P) sit together; versions fold under their parent.</p>' +
+      '<a class="ad-btn ad-btn--primary" href="' + ROOT + '/admin/liste-de-prix.xlsx" download="liste-de-prix-' + day + '.xlsx">' + ICON.up.replace('M12 16V4M7 9l5-5 5 5', 'M12 4v12M7 11l5 5 5-5') + 'Export to Excel</a></div></div>' +
+      '<div class="ad-step"><b>2</b><div><h2>Import the changed list</h2><p class="ad-muted">Change only the yellow « Prix » column; leave it empty for « Prix sur demande ». You will see every change before anything is kept.</p>' +
+      '<label class="ad-drop" data-price-drop><input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-price-file hidden><b>Choose the Excel file</b><span>or drop it here (.xlsx)</span></label></div></div></div>' +
+      '<div data-price-result></div></div>';
+    priceList().then(function (d) {
+      var sold = d.rows.filter(function (r) { return r.kind !== 'parent'; }), priced = sold.filter(function (r) { return r.price; }).length;
+      $('[data-price-tiles]', viewEl).innerHTML =
+        '<div class="ad-tile"><small>Items sold</small><b>' + sold.length.toLocaleString('en-CA') + '</b><span>versions and items, each with its code</span></div>' +
+        '<div class="ad-tile"><small>With a price</small><b>' + priced.toLocaleString('en-CA') + '</b><span>shown to signed-in customers</span></div>' +
+        '<div class="ad-tile"><small>Price on request</small><b>' + (sold.length - priced).toLocaleString('en-CA') + '</b><span>quoted when the cart is sent</span></div>';
+    }).catch(function () { $('[data-price-tiles]', viewEl).innerHTML = '<p class="ad-muted">The price list could not be loaded (admin/price-list.json).</p>'; });
+    var drop = $('[data-price-drop]', viewEl), input = $('[data-price-file]', viewEl);
+    input.addEventListener('change', function () { if (input.files[0]) readSheet(input.files[0]); });
+    ['dragover', 'dragenter'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('is-over'); }); });
+    ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function () { drop.classList.remove('is-over'); }); });
+    drop.addEventListener('drop', function (e) { e.preventDefault(); if (e.dataTransfer.files[0]) readSheet(e.dataTransfer.files[0]); });
+  }
+  function readSheet(file) {
+    var out = $('[data-price-result]', viewEl);
+    out.innerHTML = '<div class="ad-card"><p class="ad-muted">Reading ' + esc(file.name) + '…</p></div>';
+    Promise.all([file.arrayBuffer(), import(ROOT + '/admin/xlsx.js'), import(ROOT + '/admin/price-import.js'), priceList()]).then(function (a) {
+      return a[1].readXlsx(new Uint8Array(a[0]), inflateRaw).then(function (sheets) { return a[2].checkPriceSheet(sheets, a[3]); });
+    }).then(function (res) {
+      var list = function (items, cls) { return items.length ? '<ul class="ad-notes ' + cls + '">' + items.slice(0, 50).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + (items.length > 50 ? '<li>… and ' + (items.length - 50) + ' more</li>' : '') + '</ul>' : ''; };
+      if (!res.next) { out.innerHTML = '<div class="ad-card"><h2>This file cannot be imported</h2>' + list(res.errors, 'is-bad') + '</div>'; return; }
+      var ch = res.changes, MAX = 300;
+      out.innerHTML = '<div class="ad-card"><div class="ad-card-head"><h2>' + (ch.length === 1 ? '1 price changes' : ch.length ? ch.length.toLocaleString('en-CA') + ' prices change' : 'No price changes') + '</h2><span class="ad-muted">' + esc(file.name) + ' · ' + res.read.toLocaleString('en-CA') + ' lines read</span></div>' +
+        list(res.errors, 'is-bad') + list(res.warnings, 'is-warn') +
+        (ch.length ? '<div class="ad-table-wrap"><table class="ad-table ad-price-diff"><thead><tr><th>Code</th><th>Product</th><th>Before</th><th>After</th></tr></thead><tbody>' + ch.slice(0, MAX).map(function (c) {
+          var up = c.from != null && c.to != null ? (c.to > c.from ? 'up' : 'down') : c.to == null ? 'off' : 'new';
+          return '<tr><td><b>' + esc(c.code || '—') + '</b></td><td>' + esc(c.name) + (c.options ? '<small>' + esc(c.options) + '</small>' : '') + '</td><td>' + cad(c.from) + '</td><td class="is-' + up + '">' + cad(c.to) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' + (ch.length > MAX ? '<p class="ad-muted">… and ' + (ch.length - MAX) + ' more, all in the file below.</p>' : '') +
+        '<div class="ad-publish ad-publish--one"><div class="ad-step"><b>3</b><div><h2>Put the new prices online</h2><p class="ad-muted">Until the back end is connected, the file below goes into the website project (data/prices/prix.json) and the site is rebuilt. Once the back end is connected, this step is a single Apply button.</p><button type="button" class="ad-btn ad-btn--primary" data-price-save>Download prix.json</button></div></div></div>' : '') + '</div>';
+      var b = $('[data-price-save]', out);
+      if (b) b.addEventListener('click', function () {
+        download('prix.json', { _about: 'One price per item sold, in CAD before taxes: products (sold as is) and versions, by id. Missing = Prix sur demande. Changed by importing the Excel price list (tools/price-sheet.mjs, or the dashboard Prices page). See src/model/prices.js.',
+          updated: new Date().toISOString().slice(0, 10), source: file.name, products: res.next.products, versions: res.next.versions });
+        toast('prix.json downloaded.');
+      });
+    }).catch(function (err) {
+      out.innerHTML = '<div class="ad-card"><h2>This file cannot be read</h2><p class="ad-muted">' + esc(String(err && err.message || err)) + '. Save it as an Excel workbook (.xlsx) and try again.</p></div>';
     });
   }
 
