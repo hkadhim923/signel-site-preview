@@ -1071,7 +1071,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .auth-tabs button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(14,23,27,.08),0 2px 8px rgba(14,23,27,.06)}
 .auth-form{display:flex;flex-direction:column;gap:16px}
 .af{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--ink);min-width:0}
-.af input{height:46px;border:1px solid #c4ccd3;border-radius:8px;padding:0 14px;font:15px var(--font-body);color:var(--ink);background:#fff}
+.af input,.af select{height:46px;border:1px solid #c4ccd3;border-radius:8px;padding:0 14px;font:15px var(--font-body);color:var(--ink);background:#fff}
 .af input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,78,164,.15)}
 .af input.is-bad{border-color:var(--red)}
 .af-err{font-weight:400;color:var(--red)}
@@ -1084,6 +1084,10 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .auth-note{margin:24px 0 0;padding:12px 14px;border-radius:8px;background:#FFF7E0;color:#6b5400;font-size:13px}
 .auth-done{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
 .auth-who{margin:0;font-size:1.1rem}
+.auth-class{margin:0;color:var(--muted)}
+.af-demo{padding:12px;border-radius:10px;background:#FFF8E1}
+.af-hint{color:var(--muted);font-size:.85rem}
+.price-pending{color:var(--muted);font-weight:600;font-size:.95rem}
 .auth-done-actions{display:flex;flex-wrap:wrap;gap:10px}
 .auth-panel{background:var(--blue);color:#fff;padding:clamp(24px,4vw,48px);display:flex;flex-direction:column;justify-content:center;gap:22px}
 .auth-panel h2{margin:0;color:#fff;font-size:clamp(1.6rem,2.4vw,2.2rem);line-height:1.15}

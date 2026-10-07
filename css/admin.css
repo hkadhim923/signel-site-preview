@@ -251,6 +251,14 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ad-timeline li.is-current .ad-dot { background: #1E8A3A; box-shadow: 0 0 0 4px #E1F3E6; }
 .adm-launch { margin: 0; padding: 12px 16px; border-radius: 12px; background: #FFF1CC; color: #6B4800; font-weight: 600; font-size: 14px; }
 
+/* ---- account review (request drawer) ---- */
+.ad-review { display: grid; gap: 10px; padding: 14px; border-radius: 12px; background: #FFF6DB; }
+.ad-review.is-done { background: #E1F3E6; }
+.ad-review p { margin: 0; }
+.ad-review-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.ad-review-row label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.ad-review-row select { min-width: 110px; }
+
 /* ---- prices: the Excel price list ---- */
 .ad-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .ad-tile { display: grid; gap: 2px; padding: 16px 18px; border-radius: 16px; background: #fff; box-shadow: var(--ad-shadow); }
@@ -268,12 +276,13 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ad-table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--ad-hair); }
 .ad-price-diff tbody tr { cursor: default; }
 .ad-price-diff td small { display: block; }
-.ad-price-diff td:nth-child(3), .ad-price-diff td:nth-child(4) { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ad-price-diff td:nth-child(3) { color: var(--muted); }
-.ad-price-diff .is-up { color: #8F1D1D; font-weight: 600; }
-.ad-price-diff .is-down { color: #1E7A36; font-weight: 600; }
-.ad-price-diff .is-new { color: var(--blue); font-weight: 600; }
-.ad-price-diff .is-off { color: var(--muted); font-style: italic; }
+.ad-pchgs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad-pchg { padding: 3px 9px; border-radius: 999px; background: var(--ad-soft); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ad-pchg b { margin-right: 2px; }
+.ad-pchg.is-up { background: #FDECEC; color: #8F1D1D; }
+.ad-pchg.is-down { background: #E1F3E6; color: #1E7A36; }
+.ad-pchg.is-new { background: #E6EFFA; color: var(--blue); }
+.ad-pchg.is-off { color: var(--muted); font-style: italic; }
 @media (max-width: 720px) { .ad-tiles { grid-template-columns: 1fr; } .ad-table.ad-price-diff th:nth-child(n), .ad-table.ad-price-diff td:nth-child(n) { display: table-cell; } }
 
 /* ---- requests board ---- */

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-05T17:23:21.142Z",
+ "generated": "2026-10-07T15:52:32.149Z",
  "results": [
   {
    "width": 1440,
@@ -39,9 +39,15 @@
   },
   {
    "width": 1440,
-   "name": "create account: three steps, postal code fills the province, signed in at the end",
+   "name": "create account: three steps, postal code fills the province, then waits for review",
    "ok": true,
    "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "quantity picks the code and the price (AD2001Q1 at 24, Q2 at 25)",
+   "ok": true,
+   "detail": "24: $71.70 · 25: $67.40"
   },
   {
    "width": 1440,
@@ -165,9 +171,15 @@
   },
   {
    "width": 390,
-   "name": "create account: three steps, postal code fills the province, signed in at the end",
+   "name": "create account: three steps, postal code fills the province, then waits for review",
    "ok": true,
    "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "quantity picks the code and the price (AD2001Q1 at 24, Q2 at 25)",
+   "ok": true,
+   "detail": "24: $71.70 · 25: $67.40"
   },
   {
    "width": 390,

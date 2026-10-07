@@ -128,7 +128,8 @@
     var f = new FormData(form), get = function (k) { return (f.get(k) || '').toString().trim(); };
     var acc = { email: get('email'), name: (get('first_name') + ' ' + get('last_name')).trim(), company: get('company'), phone: get('phone') + (get('ext') ? ' ext. ' + get('ext') : ''),
                 type: get('type'), position: get('position'), address: [get('address'), get('city'), (form.province.selectedOptions[0] || {}).text || get('province'), get('postal')].filter(Boolean).join(', '),
-                customer: get('customer'), customer_no: get('customer_no'), news: !!f.get('news'), message: get('message') };
+                customer: get('customer'), customer_no: get('customer_no'), news: !!f.get('news'), message: get('message'),
+                status: 'pending' };   // Signel reviews the account and gives it its price class (dashboard, Requests)
     try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {}
     if (window.signelRequest) window.signelRequest('account', { customer: acc });
     form.hidden = true;

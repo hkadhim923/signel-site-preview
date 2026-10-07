@@ -641,19 +641,20 @@
   }
   function showPrices() {
     var day = new Date().toISOString().slice(0, 10);
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Prices</h1><p class="ad-muted">One Excel price list, in French: every item the website sells, with its parent and child codes and its price. Export it, change the prices, import it back.</p></div></div>' +
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Prices</h1><p class="ad-muted">One Excel price list, in French: every item the website sells, with its parent and child codes, the quantities each code covers and its price for each class, P1 to P7. Export it, change the prices, import it back.</p></div></div>' +
       '<div class="ad-tiles" data-price-tiles></div>' +
       '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Export the price list</h2><p class="ad-muted">Always the latest prices. Codes that belong together (a parent and its versions, AB1022 and AB1022P) sit together; versions fold under their parent.</p>' +
       '<a class="ad-btn ad-btn--primary" href="' + ROOT + '/admin/liste-de-prix.xlsx" download="liste-de-prix-' + day + '.xlsx">' + ICON.up.replace('M12 16V4M7 9l5-5 5 5', 'M12 4v12M7 11l5 5 5-5') + 'Export to Excel</a></div></div>' +
-      '<div class="ad-step"><b>2</b><div><h2>Import the changed list</h2><p class="ad-muted">Change only the yellow « Prix » column; leave it empty for « Prix sur demande ». You will see every change before anything is kept.</p>' +
+      '<div class="ad-step"><b>2</b><div><h2>Import the changed list</h2><p class="ad-muted">Change the yellow P1 to P7 columns, and the green « Quantité » column for quantity codes. You will see every change before anything is kept.</p>' +
       '<label class="ad-drop" data-price-drop><input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-price-file hidden><b>Choose the Excel file</b><span>or drop it here (.xlsx)</span></label></div></div></div>' +
       '<div data-price-result></div></div>';
     priceList().then(function (d) {
-      var sold = d.rows.filter(function (r) { return r.kind !== 'parent'; }), priced = sold.filter(function (r) { return r.price; }).length;
+      var sold = d.rows.filter(function (r) { return r.kind !== 'parent'; }), priced = sold.filter(function (r) { return r.prices[0]; }).length;
+      var classed = sold.filter(function (r) { return r.prices.slice(1).some(Boolean); }).length;
       $('[data-price-tiles]', viewEl).innerHTML =
         '<div class="ad-tile"><small>Items sold</small><b>' + sold.length.toLocaleString('en-CA') + '</b><span>versions and items, each with its code</span></div>' +
-        '<div class="ad-tile"><small>With a price</small><b>' + priced.toLocaleString('en-CA') + '</b><span>shown to signed-in customers</span></div>' +
-        '<div class="ad-tile"><small>Price on request</small><b>' + (sold.length - priced).toLocaleString('en-CA') + '</b><span>quoted when the cart is sent</span></div>';
+        '<div class="ad-tile"><small>With a P1 price</small><b>' + priced.toLocaleString('en-CA') + '</b><span>' + (sold.length - priced).toLocaleString('en-CA') + ' on request</span></div>' +
+        '<div class="ad-tile"><small>With P2 to P7 prices</small><b>' + classed.toLocaleString('en-CA') + '</b><span>the others use their P1 price for every class</span></div>';
     }).catch(function () { $('[data-price-tiles]', viewEl).innerHTML = '<p class="ad-muted">The price list could not be loaded (admin/price-list.json).</p>'; });
     var drop = $('[data-price-drop]', viewEl), input = $('[data-price-file]', viewEl);
     input.addEventListener('change', function () { if (input.files[0]) readSheet(input.files[0]); });
@@ -670,17 +671,22 @@
       var list = function (items, cls) { return items.length ? '<ul class="ad-notes ' + cls + '">' + items.slice(0, 50).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + (items.length > 50 ? '<li>… and ' + (items.length - 50) + ' more</li>' : '') + '</ul>' : ''; };
       if (!res.next) { out.innerHTML = '<div class="ad-card"><h2>This file cannot be imported</h2>' + list(res.errors, 'is-bad') + '</div>'; return; }
       var ch = res.changes, MAX = 300;
-      out.innerHTML = '<div class="ad-card"><div class="ad-card-head"><h2>' + (ch.length === 1 ? '1 price changes' : ch.length ? ch.length.toLocaleString('en-CA') + ' prices change' : 'No price changes') + '</h2><span class="ad-muted">' + esc(file.name) + ' · ' + res.read.toLocaleString('en-CA') + ' lines read</span></div>' +
+      var head = res.cells === 1 ? '1 price changes' : res.cells ? res.cells.toLocaleString('en-CA') + ' prices change' : ch.length ? 'Quantities change' : 'No price changes';
+      out.innerHTML = '<div class="ad-card"><div class="ad-card-head"><h2>' + head + (ch.length ? ' <small class="ad-muted">on ' + plural(ch.length, 'line', 'lines') + '</small>' : '') + '</h2><span class="ad-muted">' + esc(file.name) + ' · ' + res.read.toLocaleString('en-CA') + ' lines read</span></div>' +
         list(res.errors, 'is-bad') + list(res.warnings, 'is-warn') +
-        (ch.length ? '<div class="ad-table-wrap"><table class="ad-table ad-price-diff"><thead><tr><th>Code</th><th>Product</th><th>Before</th><th>After</th></tr></thead><tbody>' + ch.slice(0, MAX).map(function (c) {
-          var up = c.from != null && c.to != null ? (c.to > c.from ? 'up' : 'down') : c.to == null ? 'off' : 'new';
-          return '<tr><td><b>' + esc(c.code || '—') + '</b></td><td>' + esc(c.name) + (c.options ? '<small>' + esc(c.options) + '</small>' : '') + '</td><td>' + cad(c.from) + '</td><td class="is-' + up + '">' + cad(c.to) + '</td></tr>';
-        }).join('') + '</tbody></table></div>' + (ch.length > MAX ? '<p class="ad-muted">… and ' + (ch.length - MAX) + ' more, all in the file below.</p>' : '') +
+        (ch.length ? '<div class="ad-table-wrap"><table class="ad-table ad-price-diff"><thead><tr><th>Code</th><th>Product</th><th>Changes</th></tr></thead><tbody>' + ch.slice(0, MAX).map(function (c) {
+          var bits = c.cells.map(function (x) {
+            var how = x.from != null && x.to != null ? (x.to > x.from ? 'up' : 'down') : x.to == null ? 'off' : 'new';
+            return '<span class="ad-pchg is-' + how + '"><b>' + x.cls + '</b> ' + (x.from == null ? '—' : cad(x.from)) + ' → ' + (x.to == null ? 'empty' : cad(x.to)) + '</span>';
+          });
+          if (c.qty) bits.push('<span class="ad-pchg"><b>Quantité</b> ' + esc(c.qty.from || '—') + ' → ' + esc(c.qty.to || '—') + '</span>');
+          return '<tr><td><b>' + esc(c.code || '—') + '</b></td><td>' + esc(c.name) + (c.options ? '<small>' + esc(c.options) + '</small>' : '') + '</td><td><div class="ad-pchgs">' + bits.join('') + '</div></td></tr>';
+        }).join('') + '</tbody></table></div>' + (ch.length > MAX ? '<p class="ad-muted">… and ' + (ch.length - MAX) + ' more lines, all in the file below.</p>' : '') +
         '<div class="ad-publish ad-publish--one"><div class="ad-step"><b>3</b><div><h2>Put the new prices online</h2><p class="ad-muted">Until the back end is connected, the file below goes into the website project (data/prices/prix.json) and the site is rebuilt. Once the back end is connected, this step is a single Apply button.</p><button type="button" class="ad-btn ad-btn--primary" data-price-save>Download prix.json</button></div></div></div>' : '') + '</div>';
       var b = $('[data-price-save]', out);
       if (b) b.addEventListener('click', function () {
-        download('prix.json', { _about: 'One price per item sold, in CAD before taxes: products (sold as is) and versions, by id. Missing = Prix sur demande. Changed by importing the Excel price list (tools/price-sheet.mjs, or the dashboard Prices page). See src/model/prices.js.',
-          updated: new Date().toISOString().slice(0, 10), source: file.name, products: res.next.products, versions: res.next.versions });
+        download('prix.json', { _about: 'Prices in CAD before taxes, by customer class P1..P7 (index 0..6): products sold as is and versions (codes), by id; quantities: the quantities a tier code covers. Empty class = the class before it; no P1 = Prix sur demande. See src/model/prices.js.',
+          updated: new Date().toISOString().slice(0, 10), source: file.name, classes: CLASSES, products: res.next.products, versions: res.next.versions, quantities: res.next.quantities });
         toast('prix.json downloaded.');
       });
     }).catch(function (err) {
@@ -700,7 +706,7 @@
   function summary(r) {
     var d = r.data || {}, lines = d.lines || [];
     if (lines.length) { var n = lines.reduce(function (t, l) { return t + l.qty; }, 0); return plural(lines.length, 'line', 'lines') + ' · ' + plural(n, 'item', 'items') + (d.total ? ' · ' + money(d.total) : ''); }
-    if (r.type === 'account') return ((d.customer || {}).type || 'Account') + ((d.customer || {}).customer === 'yes' ? ' · existing customer' : '');
+    if (r.type === 'account') return (r.review ? 'Approved · ' + r.review.cls : 'To review') + ' · ' + ((d.customer || {}).type || 'Account') + ((d.customer || {}).customer === 'yes' ? ' · existing customer' : '');
     return String(d.message || '').slice(0, 70) || '—';
   }
   function ago(iso) {
@@ -768,6 +774,7 @@
       (lines.length ? '<h3>Items</h3><ul class="ad-lines">' + lines.map(function (l) {
         return '<li>' + (l.img ? '<img src="' + esc(src(l.img)) + '" alt="">' : '<span class="ad-thumb ad-thumb--none">' + ICON.pic + '</span>') + '<span><b>' + l.qty + ' × ' + esc(l.name) + '</b><small>' + esc([l.sku].concat((l.opts || []).map(function (o) { return o[0] + ': ' + o[1]; })).filter(Boolean).join(' · ')) + '</small></span>' + (l.price ? '<em>' + money(l.price * l.qty) + '</em>' : '<em class="ad-muted">To quote</em>') + '</li>';
       }).join('') + '</ul>' + (d.total ? '<p class="ad-total">Listed prices: <b>' + money(d.total) + '</b></p>' : '') : '') +
+      (r.type === 'account' ? reviewHtml(r) : '') +
       (d.message || c.message ? '<h3>Message</h3><blockquote>' + esc(d.message || c.message) + '</blockquote>' : '') +
       '<h3>Handled by</h3><input class="ad-input" type="text" placeholder="Name of the person in charge" value="' + esc(r.assignee || '') + '" data-assignee>' +
       '<h3>Notes</h3><ul class="ad-notes">' + (r.notes || []).map(function (n) { return '<li><p>' + esc(n.text) + '</p><small>' + new Date(n.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) + '</small></li>'; }).join('') + '</ul>' +
@@ -779,10 +786,28 @@
       var t = e.target;
       if (t.closest('[data-drawer-close]')) return closeDrawer();
       var s = t.closest('[data-set-status]'); if (s) return setStatus(id, s.getAttribute('data-set-status'));
+      if (t.closest('[data-approve]')) {
+        var cls = $('[data-review-cls]', dr).value;
+        updateRequest(id, function (x) { x.review = { cls: cls, at: new Date().toISOString() }; if (x.status !== 'done') { (x.history = x.history || []).push({ at: x.review.at, to: 'done' }); x.status = 'done'; } });
+        // demo: an account created in this browser is approved here too; the back end will
+        // set the class on the account and email the customer
+        try { var acc = JSON.parse(localStorage.getItem('signel.account')); if (acc && c.email && acc.email === c.email) { acc.status = 'approved'; acc.cls = cls; localStorage.setItem('signel.account', JSON.stringify(acc)); } } catch (err) {}
+        toast('Account approved in class ' + cls + '.'); openRequest(id); paintBoard(); return;
+      }
       if (t.closest('[data-note-add]')) { var ta = $('[data-note]', dr); if (!ta.value.trim()) return; updateRequest(id, function (x) { (x.notes = x.notes || []).push({ at: new Date().toISOString(), text: ta.value.trim() }); }); openRequest(id); paintBoard(); return; }
       if (t.closest('[data-req-del]')) { if (!confirm('Delete this request?')) return; saveRequests(requests().filter(function (x) { return x.id !== id; })); closeDrawer(); paintBoard(); }
     };
     $('[data-assignee]', dr).addEventListener('change', function (e) { updateRequest(id, function (x) { x.assignee = e.target.value.trim(); }); paintBoard(); });
+  }
+  // new accounts: Signel reviews each one and puts it in a price class (P1 to P7); until then
+  // the customer sees no prices (src/js/shop.js)
+  var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
+  function reviewHtml(r) {
+    var rv = r.review;
+    return '<h3>Account review</h3><div class="ad-review' + (rv ? ' is-done' : '') + '">' +
+      (rv ? '<p><b>Approved, class ' + esc(rv.cls) + '</b> <small class="ad-muted">' + new Date(rv.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) + '</small></p>' : '<p class="ad-muted">The customer sees no prices until the account is approved. Choose the price class it gets.</p>') +
+      '<div class="ad-review-row"><label><span>Price class</span><select class="ad-input" data-review-cls>' + CLASSES.map(function (k) { return '<option' + (rv && rv.cls === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label>' +
+      '<button type="button" class="ad-btn ad-btn--primary" data-approve>' + (rv ? 'Change class' : 'Approve account') + '</button></div></div>';
   }
   function closeDrawer() {
     var dr = $('[data-drawer]'); if (!dr || !dr.classList.contains('on')) return;

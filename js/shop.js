@@ -1,8 +1,12 @@
 /* Signel Services - account, prices, cart. No dependencies, no server.
  *
- *  account  demo sign-in kept in localStorage ('signel.account'); swapped for the real
- *           account system later. While signed in, /prices.json is loaded and priced items
- *           show their price everywhere.
+ *  account  demo sign-in kept in localStorage ('signel.account': { email, name, cls, status });
+ *           swapped for the real account system later. Signel reviews every new account and
+ *           puts it in a price class (cls, P1 to P7); until then it is 'pending' and sees no
+ *           prices. An approved account loads /prices.json and sees its class's prices.
+ *  prices   per item and quantity tier (src/model/prices.js): the quantity ordered picks the
+ *           code (AD2001Q1 for 1-24, Q2 for 25-124...), the class picks the price; an empty
+ *           class price takes the class before it.
  *  cart     localStorage ('signel.cart'): [{ key, id, sku, name, url, img, opts, qty }].
  *           Lines are "priced" (a price is known and the visitor is signed in) or "quote"
  *           (priced per order). Both go in the same cart; "Send request" emails the lot.
@@ -29,30 +33,58 @@
 
   /* ---------- account + prices ---------- */
   var account = function () { return read(ACCOUNT, null); };
-  var prices = null, pricesLoading = null;
+  var approved = function () { var a = account(); return !!a && a.status !== 'pending'; };
+  var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
+  var classIndex = function () { var a = account(), i = CLASSES.indexOf((a && a.cls) || 'P1'); return i < 0 ? 0 : i; };
+  var prices = null, pricesLoading = null, RANGE = null;
   function loadPrices() {
-    if (!account()) return Promise.resolve(null);
+    if (!approved()) return Promise.resolve(null);
     if (prices) return Promise.resolve(prices);
     if (!pricesLoading) pricesLoading = fetch(ROOT + '/prices.json').then(function (r) { return r.json(); })
-      .then(function (d) { prices = d; return d; }).catch(function () { return null; });
+      .then(function (d) { prices = d; RANGE = null; return d; }).catch(function () { return null; });
     return pricesLoading;
   }
-  var priceOf = function (id, key) {
-    var lp = key ? linePrice(key) : null;
-    if (lp != null) return { min: lp, max: lp };
-    return prices && prices[id] ? { min: prices[id][0], max: prices[id][1] || prices[id][0] } : null;
-  };
-  // the price of one exact version, when the price list has it (prices.json "lines":
-  // { "<id>|<choices as JSON, sorted by name>": price }, src/model/prices.js lineKey)
+  // the price this account's class pays: its own, else the nearest class before it
+  var classPrice = function (list) { for (var i = classIndex(); i >= 0; i--) if (list[i]) return list[i]; return null; };
+  // prices.json "lines": { "<id>|<choices as JSON, sorted by name>": [[min qty, max qty, code, [P1..P7]], ...] }
   var lineKey = function (key) {
     var i = key.indexOf('|'), pairs;
     try { pairs = JSON.parse(key.slice(i + 1)); } catch (e) { return null; }   // rentals: quoted
     if (!Array.isArray(pairs)) return null;
     return key.slice(0, i) + '|' + JSON.stringify(pairs.slice().sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }));
   };
-  var linePrice = function (key) {
-    var k = prices && prices.lines ? lineKey(key) : null;
-    return k && prices.lines[k] != null ? prices.lines[k] : null;
+  // one item at one quantity: the tier (code) that covers it, at this class's price
+  var lineAt = function (key, qty) {
+    var k = prices && prices.lines && key ? lineKey(key) : null, tiers = k && prices.lines[k];
+    if (!tiers) return null;
+    var q = Math.max(1, qty || 1), hit = tiers[0];
+    tiers.forEach(function (t) { if (q >= t[0]) hit = t; });
+    var p = classPrice(hit[3]);
+    return p ? { price: p, sku: hit[2] } : null;
+  };
+  // a product's range ("from"): the one-unit price of each of its items, for this class
+  var rangeOf = function (id) {
+    if (!prices || !prices.lines) return null;
+    if (!RANGE || RANGE.cls !== classIndex()) {
+      RANGE = { cls: classIndex(), map: {} };
+      Object.keys(prices.lines).forEach(function (k) {
+        var pid = k.slice(0, k.indexOf('|')), p = classPrice(prices.lines[k][0][3]); if (!p) return;
+        var r = RANGE.map[pid] || (RANGE.map[pid] = { min: p, max: p });
+        if (p < r.min) r.min = p; if (p > r.max) r.max = p;
+      });
+    }
+    return RANGE.map[id] || null;
+  };
+  var priceOf = function (id, key, qty) {
+    var l = key ? lineAt(key, qty) : null;
+    if (l) return { min: l.price, max: l.price, sku: l.sku };
+    return rangeOf(id);
+  };
+  // where a price would be: the sign-in link, or for an account waiting for review, that
+  var pending = function () { return !!account() && !approved(); };
+  var noPrice = function (short) {
+    return pending() ? '<span class="price-pending">' + esc(t(short ? 'pending_short' : 'pending_price')) + '</span>'
+      : '<a href="' + R('/login/') + '">' + esc(t(short ? 'login_for_price_short' : 'login_for_price')) + '</a>';
   };
   var priceText = function (p) { return p.max > p.min ? t('from') + ' ' + money(p.min) : money(p.min); };
 
@@ -72,9 +104,9 @@
   function totals(lines) {
     var out = { subtotal: 0, ranged: false, quoted: 0, hidden: 0, priced: 0 };
     lines.forEach(function (l) {
-      var p = priceOf(l.id, l.key);
+      var p = priceOf(l.id, l.key, l.qty);
       if (p) { out.priced += l.qty; out.subtotal += p.min * l.qty; if (p.max > p.min) out.ranged = true; }
-      else if (l.priced && !account()) out.hidden += l.qty;
+      else if (l.priced && !approved()) out.hidden += l.qty;
       else out.quoted += l.qty;
     });
     return out;
@@ -82,14 +114,14 @@
 
   /* ---------- line + summary markup (drawer and cart page share it) ---------- */
   function lineHtml(l, big) {
-    var p = priceOf(l.id, l.key);
+    var p = priceOf(l.id, l.key, l.qty), code = (p && p.sku) || l.sku;   // the code for this quantity (AD2001Q2)
     var opts = (l.show || l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
-      : (l.priced && !account() ? '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>' : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
+      : (l.priced && !approved() ? (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>') : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
     return '<li class="cl' + (big ? ' cl--big' : '') + '" data-key="' + esc(l.key) + '">' +
       '<a class="cl-img" href="' + ROOT + esc(l.url) + '">' + (l.img ? '<img src="' + ROOT + esc(l.img) + '" alt="" loading="lazy">' : '') + '</a>' +
       '<div class="cl-main"><a class="cl-name" href="' + ROOT + esc(l.url) + '">' + esc(l.name) + '</a>' +
-      '<div class="cl-meta">' + (l.sku ? '<span>' + esc(t('code')) + ': ' + esc(l.sku) + '</span>' : '') + opts + '</div>' +
+      '<div class="cl-meta">' + (code ? '<span>' + esc(t('code')) + ': ' + esc(code) + '</span>' : '') + opts + '</div>' +
       '<div class="cl-row"><div class="qty qty--sm"><button type="button" data-line-dec aria-label="' + esc(t('decrease')) + '">&minus;</button>' +
       '<input type="number" min="1" value="' + l.qty + '" data-line-qty aria-label="' + esc(t('quantity')) + '"><button type="button" data-line-inc aria-label="' + esc(t('increase')) + '">+</button></div>' +
       '<button type="button" class="cl-remove" data-line-remove>' + esc(t('remove')) + '</button></div></div>' +
@@ -101,11 +133,11 @@
     var rows = '<div class="cs-row"><span>' + esc(n === 1 ? t('item') : t('items', n)) + '</span></div>';
     if (s.priced) rows += '<div class="cs-row cs-sub"><span>' + esc(s.ranged ? t('subtotal_from') : t('subtotal')) + '</span><b>' + esc(money(s.subtotal)) + '</b></div>';
     if (s.quoted) rows += '<div class="cs-row cs-q"><span class="cl-tag">' + esc(t('quoted_count', s.quoted)) + '</span></div>';
-    if (s.hidden) rows += '<div class="cs-row cs-q"><a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a></div>';
+    if (s.hidden) rows += '<div class="cs-row cs-q">' + (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a>') + '</div>';
     var note = '<p class="cs-note">' + esc(t('taxes')) + (s.ranged ? ' ' + esc('* ' + t('range_note')) : '') + '</p>';
     var actions = page
       ? '<button type="button" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" data-send>' + esc(t('send_request')) + '</button><p class="cs-hint">' + esc(t('send_hint')) + '</p>' +
-        (s.hidden ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
+        (s.hidden && !pending() ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
         '<div class="cs-links"><a href="' + R('/products/') + '">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
       : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/cart/') + '">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
     return (page ? '<h2>' + esc(t('summary')) + '</h2>' : '') + rows + note + actions;
@@ -137,7 +169,7 @@
     // product cards: the price replaces "Log in for price" once signed in
     $$('.pcard[data-priced] [data-card-price]').forEach(function (el) {
       var p = priceOf(el.closest('.pcard').getAttribute('data-id'));
-      el.textContent = p ? priceText(p) : t('login_for_price_short');
+      el.textContent = p ? priceText(p) : t(pending() ? 'pending_short' : 'login_for_price_short');
       el.classList.toggle('is-price', !!p);
     });
     $$('[data-buy]').forEach(paintBuy);
@@ -208,12 +240,17 @@
     });
     var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box),
         text = $('[data-price-text]', box) || (box.nextElementSibling && $('[data-price-text]', box.nextElementSibling)) || document.createElement('p');   // the line sits under the card
+    // every choice made (or none to make): that item at the quantity asked, so the code and
+    // the price follow the quantity (AD2001Q1 at 24, AD2001Q2 at 25)
+    var all = s.groups.every(function (g) { return g.value; });
+    var qtyIn = $('input[name=qty]', box), qty = Math.max(1, parseInt(qtyIn && qtyIn.value, 10) || 1);
+    var p = all ? priceOf(box.getAttribute('data-id'), box.getAttribute('data-id') + '|' + JSON.stringify(s.groups.map(function (g) { return [g.key, g.value]; })), qty) : null;
+    var code = box.closest('.pinfo') && $('.psku b', box.closest('.pinfo'));
+    if (code) { if (!code.dataset.orig) code.dataset.orig = code.textContent; code.textContent = (p && p.sku) || code.dataset.orig; }
     if (box.hasAttribute('data-priced')) {
-      // every choice made: that exact version's price, when the price list has it
-      var all = s.groups.length && s.groups.every(function (g) { return g.value; });
-      var p = priceOf(box.getAttribute('data-id'), all ? box.getAttribute('data-id') + '|' + JSON.stringify(s.groups.map(function (g) { return [g.key, g.value]; })) : null);
+      if (!p) p = priceOf(box.getAttribute('data-id'));
       if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = true; }
-      else { slot.innerHTML = '<a href="' + R('/login/') + '">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; text.hidden = false; }
+      else { slot.innerHTML = noPrice(false); note.hidden = true; text.hidden = false; }
     }
   }
   /* ---------- price table and size run (src/components/price-table.js) ---------- */
@@ -221,15 +258,30 @@
     if (!box.hasAttribute('data-priced')) return;
     var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box), p = priceOf(box.getAttribute('data-id'));
     if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); }
-    else { slot.innerHTML = '<a href="' + R('/login/') + '">' + esc(t('login_for_price')) + '</a>'; note.hidden = true; }
+    else { slot.innerHTML = noPrice(false); note.hidden = true; }
   }
   var keyOf = function (box, line) { return box.getAttribute('data-id') + '|' + line.getAttribute('data-line'); };
+  // a line's price at a quantity: the settings chosen once for the order (display language)
+  // fill its empty choices; one not chosen yet shows the price if every value costs the same
+  function tableLine(box, line, qty) {
+    var pairs = JSON.parse(line.getAttribute('data-line')), keys = [[]];
+    pairs.forEach(function (o) {
+      var vals = [o[1]];
+      if (o[1] == null) {
+        var fs = $('[data-pt-set="' + o[0] + '"]', box), c = fs && $('input:checked', fs);
+        vals = c ? [c.value] : (fs ? $$('input', fs).map(function (i) { return i.value; }) : [null]);
+      }
+      var next = []; keys.forEach(function (k) { vals.forEach(function (v) { next.push(k.concat([[o[0], v]])); }); }); keys = next;
+    });
+    var found = keys.map(function (k) { return lineAt(box.getAttribute('data-id') + '|' + JSON.stringify(k), qty); });
+    return found.every(function (f) { return f && f.price === found[0].price; }) ? found[0] : null;
+  }
   var qtyOf = function (line) { return Math.max(0, parseInt($('[data-q]', line).value, 10) || 0); };
   function paintTable(box) {
     paintHead(box);
     var any = false;
     $$('.pt-line', box).forEach(function (line) {
-      var cell = $('[data-line-price]', line), lp = linePrice(keyOf(box, line));
+      var l = tableLine(box, line, qtyOf(line)), lp = l ? l.price : null, cell = $('[data-line-price]', line);
       if (cell) { cell.hidden = lp == null; cell.textContent = lp == null ? '' : money(lp); }
       if (lp != null) any = true;
     });
@@ -239,8 +291,8 @@
   function sumTable(box) {
     var lines = $$('.pt-line', box).filter(function (l) { return qtyOf(l) > 0; }), n = 0, total = 0, known = true;
     lines.forEach(function (l) {
-      var q = qtyOf(l), p = priceOf(box.getAttribute('data-id'), keyOf(box, l)); n += q;
-      if (p && p.min === p.max) total += p.min * q; else known = false;
+      var q = qtyOf(l), p = tableLine(box, l, q); n += q;
+      if (p) total += p.price * q; else known = false;
       l.classList.add('is-on');
     });
     $$('.pt-line', box).forEach(function (l) { if (!qtyOf(l)) l.classList.remove('is-on'); });
@@ -257,7 +309,7 @@
       if (step) {
         var inp = $('[data-q]', step.parentNode), q = parseInt(inp.value, 10) || 0;
         q = step.hasAttribute('data-q-inc') ? q + 1 : Math.max(0, q - 1);
-        inp.value = q || ''; sumTable(box); return;
+        inp.value = q || ''; paintTable(box); return;
       }
       var chip = e.target.closest('[data-pt-filter]');
       if (chip) {
@@ -289,10 +341,11 @@
       setTimeout(function () { btn.classList.remove('is-added'); sumTable(box); }, 1600);
       sumTable(box); openDrawer();
     });
-    box.addEventListener('input', function (e) { if (e.target.matches('[data-q]')) sumTable(box); });
+    box.addEventListener('input', function (e) { if (e.target.matches('[data-q]')) paintTable(box); });
     box.addEventListener('change', function (e) {
       var fs = e.target.closest('[data-pt-set]'); if (!fs) return;
       fs.classList.remove('is-bad'); $('[data-pt-set-err]', fs).hidden = true;
+      paintTable(box);
     });
     box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('[data-q]')) { e.preventDefault(); var b = $('[data-pt-add]', box); if (!b.disabled) b.click(); } });
   });
@@ -333,12 +386,13 @@
 
   $$('[data-buy]').forEach(function (box) {
     var qty = $('input[name=qty]', box);
+    if (qty) qty.addEventListener('input', function () { paintBuy(box); });
     box.addEventListener('change', function (e) {
       if (e.target.closest('[data-opt]')) { var err = $('[data-opt-err]', e.target.closest('[data-opt]')); if (err) err.hidden = true; paintBuy(box); }
     });
     box.addEventListener('click', function (e) {
-      if (e.target.closest('[data-qty-dec]')) qty.value = Math.max(1, (parseInt(qty.value, 10) || 1) - 1);
-      if (e.target.closest('[data-qty-inc]')) qty.value = (parseInt(qty.value, 10) || 1) + 1;
+      if (e.target.closest('[data-qty-dec]')) { qty.value = Math.max(1, (parseInt(qty.value, 10) || 1) - 1); paintBuy(box); }
+      if (e.target.closest('[data-qty-inc]')) { qty.value = (parseInt(qty.value, 10) || 1) + 1; paintBuy(box); }
       var btn = e.target.closest('[data-add-to-cart]'); if (!btn) return;
       var s = boxState(box), missing = s.groups.filter(function (g) { return !g.value; });
       missing.forEach(function (g) { $('[data-opt-err]', g.el).hidden = false; });
@@ -397,16 +451,16 @@
   function sendRequest() {
     var lines = cart(), acc = account(), s = totals(lines);
     var body = lines.map(function (l) {
-      var p = priceOf(l.id, l.key);
-      return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name +
+      var p = priceOf(l.id, l.key, l.qty), code = (p && p.sku) || l.sku;
+      return l.qty + ' x ' + (code ? code + ' - ' : '') + l.name +
         ((l.show || l.opts) && (l.show || l.opts).length ? ' (' + (l.show || l.opts).map(function (o) { return o[0] + ': ' + o[1]; }).join(', ') + ')' : '') +
         ' - ' + (p ? priceText(p) + ' ' + t('each') : t('price_on_request_tag')) + '\n   ' + location.origin + ROOT + l.url;
     }).join('\n\n');
     if (s.priced) body += '\n\n' + (s.ranged ? t('subtotal_from') : t('subtotal')) + ': ' + money(s.subtotal);
-    if (acc) body += '\n\n' + [acc.name, acc.company, acc.email, acc.phone].filter(Boolean).join('\n');
+    if (acc) body += '\n\n' + [acc.name, acc.company, acc.email, acc.phone, acc.cls && approved() ? t('price_class_is', acc.cls) : ''].filter(Boolean).join('\n');
     if (window.signelRequest) window.signelRequest(lines.some(function (l) { return l.rental; }) ? 'rental' : 'quote', {
       customer: acc || null, total: s.priced ? s.subtotal : null,
-      lines: lines.map(function (l) { var p = priceOf(l.id, l.key); return { id: l.id, sku: l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.opts || [], rental: !!l.rental, price: p ? p.min : null }; })
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.opts || [], rental: !!l.rental, price: p ? p.min : null }; })
     });
     location.href = 'mailto:' + (T.email || '') + '?subject=' + encodeURIComponent(t('request_subject') + ' (' + count(lines) + ')') + '&body=' + encodeURIComponent(body);
   }
@@ -426,6 +480,8 @@
       else showTab('login');
       $('[data-auth-done]', auth).hidden = !acc;
       if (acc) $('[data-auth-name]', auth).textContent = acc.name || acc.email;
+      var st = $('[data-auth-status]', auth);
+      if (st) st.textContent = !acc ? '' : approved() ? t('price_class_is', acc.cls || 'P1') : t('pending_price');
     };
     auth.addEventListener('click', function (e) {
       var tab = e.target.closest('[data-auth-tab]'); if (tab) { showTab(tab.getAttribute('data-auth-tab')); return; }
@@ -445,7 +501,9 @@
         });
         if (!ok) return;
         var f = new FormData(form);
-        write(ACCOUNT, { email: f.get('email'), name: f.get('name') || '', company: f.get('company') || '', phone: f.get('phone') || '' });
+        // demo: the class picked on the form; the real account system knows each account's class
+        write(ACCOUNT, { email: f.get('email'), name: f.get('name') || '', company: f.get('company') || '', phone: f.get('phone') || '', cls: f.get('cls') || 'P1', status: 'approved' });
+        prices = null; pricesLoading = null; RANGE = null;
         loadPrices().then(function () {
           var next = new URLSearchParams(location.search).get('next');
           if (next && next.charAt(0) === '/') location.href = ROOT + next; else { paintAuth(); render(); }
