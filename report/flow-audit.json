@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-07T19:41:02.665Z",
+ "generated": "2026-10-07T20:04:39.359Z",
  "results": [
   {
    "width": 1440,
@@ -118,6 +118,30 @@
   {
    "width": 1440,
    "name": "admin prices: export the Excel list, change one price, import shows the change",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "checkout: carrier delivery, invoice, order saved; Orders shows it and moves it on",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "admin roles: each team sees only its sections",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "admin HR: edit a posting, add one, close one; Publish lists them",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 1440,
+   "name": "admin marketing: edit a page text in both languages",
    "ok": true,
    "detail": ""
   },
@@ -250,6 +274,30 @@
   {
    "width": 390,
    "name": "admin prices: export the Excel list, change one price, import shows the change",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "checkout: carrier delivery, invoice, order saved; Orders shows it and moves it on",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "admin roles: each team sees only its sections",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "admin HR: edit a posting, add one, close one; Publish lists them",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "width": 390,
+   "name": "admin marketing: edit a page text in both languages",
    "ok": true,
    "detail": ""
   },

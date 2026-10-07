@@ -1,8 +1,11 @@
-/* Signel Services — admin (src/pages/admin.js). Demo sign-in, then the dashboard:
-     Overview          what needs attention (no picture, no SKU, no internal ID), new requests
+/* Signel Services — admin (src/pages/admin.js). Staff sign-in, then the dashboard. This file
+   is the core (sign-in, roles, navigation, products, prices, requests, publish); Orders,
+   Members, Users, Jobs and Pages live in their own files (src/js/admin-*.js) and plug in
+   through window.SignelAdmin. Who sees which section: src/model/admin-roles.js.
+     Overview          what needs attention, for the signed-in role
      Products          the catalogue as a table with filters; a product opens in the editor
-     Requests          a board of what visitors sent (cart, rental, account, message)
-     Publish           the changes made here, and how they reach the website
+     Requests          a board of what visitors sent (account, message)
+     Publish           the changes made here (products, jobs, page text), and how they go online
      Website versions  every published version (rollback switched on at launch)
      Backups           copies of the changes, to go back to
    Product changes are kept in this browser (localStorage 'signel.admin.changes') and published
@@ -33,17 +36,30 @@
     x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>'
   };
 
-  /* ---------- sign-in (demo: the back end will check real accounts) ---------- */
+  /* ---------- roles and staff (src/model/admin-roles.js) ---------- */
+  var ACCESS = { roles: {}, sections: [], staff: [] };
+  try { ACCESS = JSON.parse($('#admin-access').textContent); } catch (e) {}
+  var USERS = 'signel.admin.users';
+  // staff accounts: kept in this browser until the back end holds them (Users section)
+  function staff() {
+    var list = store.get(USERS, null);
+    if (!list) { list = ACCESS.staff.map(function (u) { return Object.assign({ active: true }, u); }); store.set(USERS, list); }
+    return list;
+  }
+
+  /* ---------- sign-in (demo: the back end will check real accounts and passwords) ---------- */
   var login = $('[data-admin-login]');
   if (login) {
     if (sessionStorage.getItem(SESSION)) location.replace(ROOT + '/admin/dashboard/');
+    $$('[data-demo-email]').forEach(function (b) { b.addEventListener('click', function () { login.email.value = b.getAttribute('data-demo-email'); login.password.value = 'signel-admin'; login.password.focus(); }); });
     login.addEventListener('submit', function (e) {
       e.preventDefault();
       var email = login.email.value.trim().toLowerCase(), pw = login.password.value, err = $('[data-admin-err]');
-      if (email === 'admin@signel.ca' && pw === 'signel-admin') {
-        sessionStorage.setItem(SESSION, JSON.stringify({ email: email, at: Date.now() }));
+      var u = staff().filter(function (x) { return x.email.toLowerCase() === email; })[0];
+      if (u && u.active && pw === 'signel-admin') {
+        sessionStorage.setItem(SESSION, JSON.stringify({ email: u.email, name: u.name, role: u.role, at: Date.now() }));
         location.href = ROOT + '/admin/dashboard/';
-      } else { err.textContent = 'Wrong email or password.'; err.hidden = false; }
+      } else { err.textContent = u && !u.active ? 'This account is switched off. Ask Administration.' : 'Wrong email or password.'; err.hidden = false; }
     });
     return;
   }
@@ -52,10 +68,33 @@
   if (!app) return;
   if (!sessionStorage.getItem(SESSION)) { location.replace(ROOT + '/admin/'); return; }
   $('[data-admin-logout]').addEventListener('click', function () { sessionStorage.removeItem(SESSION); location.href = ROOT + '/admin/'; });
+  // who is signed in, and what their role may open
+  var ME = JSON.parse(sessionStorage.getItem(SESSION));
+  if (!ME.role) { var u0 = staff().filter(function (x) { return x.email === ME.email; })[0]; ME.role = u0 ? u0.role : 'administration'; ME.name = u0 ? u0.name : 'Administration'; }
+  var SECTION = {}; ACCESS.sections.forEach(function (x) { SECTION[x.id] = x; });
+  function can(id) { var x = SECTION[id === 'product' ? 'products' : id]; return !!x && x.roles.indexOf(ME.role) >= 0; }
+  $('[data-me-name]').textContent = ME.name || ME.email;
+  // the role under the name, or the address when the name is the role's
+  var roleLabel = (ACCESS.roles[ME.role] || {}).label || ME.role;
+  $('[data-me-role]').textContent = roleLabel === ME.name ? ME.email : roleLabel;
+  $('[data-me-initial]').textContent = (ME.name || ME.email).charAt(0).toUpperCase();
+  $$('[data-nav]').forEach(function (b) { b.hidden = !can(b.getAttribute('data-nav')); });
+  // a group title shows when one of its sections does
+  $$('[data-nav-group]').forEach(function (g) {
+    var el = g.nextElementSibling, any = false;
+    while (el && !el.matches('[data-nav-group]')) { if (el.matches('[data-nav]') && !el.hidden) any = true; el = el.nextElementSibling; }
+    g.hidden = !any;
+  });
+  $('[data-search-box]').hidden = $('[data-admin-new]').hidden = !can('products');
+
+  // sections in their own files (src/js/admin-*.js) register here: { show(args), badge(), tiles(), changes() }
+  var MOD = {};
 
   var DATA = null, byId = {}, catById = {};
   // changes: { products: { id: {field: value} }, new: [ {...} ] } — the catalog.json shape
   var changes = store.get(CHANGES, { products: {}, new: [] });
+  // job postings and page text changed here go online with the products (Publish)
+  changes.jobs = changes.jobs || {}; changes.text = changes.text || {};
   var FIELDS = ['name', 'name_fr', 'sku', 'internalId', 'categories', 'description', 'description_fr', 'priceStyle', 'images', 'images_fr', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
   // the language being edited: name, description, pictures and option wording show in it;
   // everything else (SKU, categories, prices...) is the same in both and shows once
@@ -67,7 +106,10 @@
   var src = function (s) { return /^(data:|https?:)/.test(s) ? s : ROOT + s; };
   var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
 
-  fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }).then(function (d) {
+  // the sections in their own files load after this one: start once they have registered
+  var domReady = new Promise(function (res) { if (document.readyState === 'complete') res(); else document.addEventListener('DOMContentLoaded', res); });
+  Promise.all([fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }), domReady]).then(function (all) {
+    var d = all[0];
     DATA = d;
     d.products.forEach(function (p) {
       byId[p.id] = p;
@@ -91,9 +133,11 @@
     var h = location.hash.replace(/^#/, '') || 'overview', parts = h.split('/');
     dirty = false; app.classList.remove('nav-open');
     if (parts[0] !== 'product') { current = null; closePreview(); }
+    if (!can(parts[0])) { parts = ['overview']; history.replaceState(null, '', '#overview'); }
     $$('[data-nav]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-nav') === (parts[0] === 'product' ? 'products' : parts[0])); });
-    var fn = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1])); }, requests: showRequests,
-               prices: showPrices, publish: showPublish, versions: showVersions, backups: showBackups }[parts[0]] || showOverview;
+    var core = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1])); }, requests: showRequests,
+               prices: showPrices, publish: showPublish, versions: showVersions, backups: showBackups };
+    var fn = core[parts[0]] || (MOD[parts[0]] && MOD[parts[0]].show) || showOverview;
     fn(parts.slice(1));
     if (document.activeElement !== gsearch) viewEl.focus({ preventScroll: true });
     window.scrollTo(0, 0);
@@ -110,10 +154,11 @@
     if (e.key === 'Escape') closeDrawer();
   });
 
+  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length; }
   function paintBadges() {
-    var n = Object.keys(changes.products).length + changes.new.length, r = requests().filter(function (x) { return x.status === 'new'; }).length;
-    var bp = $('[data-badge-publish]'), br = $('[data-badge-requests]');
-    bp.textContent = n; bp.hidden = !n; br.textContent = r; br.hidden = !r;
+    var counts = { publish: pendingCount(), requests: requests().filter(function (x) { return x.status === 'new'; }).length };
+    Object.keys(MOD).forEach(function (k) { if (MOD[k].badge) counts[k] = MOD[k].badge(); });
+    Object.keys(counts).forEach(function (k) { var b = $('[data-badge-' + k + ']'); if (b) { b.textContent = counts[k]; b.hidden = !counts[k]; } });
   }
 
   /* ---------- products: the catalogue with this browser's changes over it ---------- */
@@ -161,38 +206,44 @@
     fig.innerHTML = '<div class="ad-style-art-pic">' + a.svg + '</div><figcaption><b>' + (auto ? 'Automatic: ' : '') + a.label + '</b><span>' + a.text + '</span><small>A sketch of the price card, not this product.</small></figcaption>';
   }
 
-  /* ---------- Overview ---------- */
+  /* ---------- Overview: what needs attention, for the signed-in role ---------- */
+  function tile(k, icon, label, value, hint, tone) {
+    return '<button type="button" class="ad-stat' + (tone ? ' ad-stat--' + tone : '') + '" data-go="' + k + '"><span class="ad-stat-ic">' + icon + '</span><span class="ad-stat-n">' + Number(value).toLocaleString('en-CA') + '</span><span class="ad-stat-l">' + label + '</span><span class="ad-stat-h">' + hint + '</span></button>';
+  }
   function showOverview() {
-    var list = allProducts().map(view), live = list.filter(function (v) { return !v.hidden; });
-    var count = function (k) { return live.filter(CHECKS[k].test).length; };
-    var reqs = requests(), fresh = reqs.filter(function (r) { return r.status === 'new'; });
-    var n = Object.keys(changes.products).length + changes.new.length;
-    var tile = function (k, icon, label, value, hint, tone) {
-      return '<button type="button" class="ad-stat' + (tone ? ' ad-stat--' + tone : '') + '" data-go="' + k + '"><span class="ad-stat-ic">' + icon + '</span><span class="ad-stat-n">' + value.toLocaleString('en-CA') + '</span><span class="ad-stat-l">' + label + '</span><span class="ad-stat-h">' + hint + '</span></button>';
-    };
-    var hour = new Date().getHours();
+    var hour = new Date().getHours(), tiles = [], cards = [];
+    // the sections in their own files first (orders, members, jobs...), each only for its roles
+    Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].tiles) tiles = tiles.concat(MOD[k].tiles()); });
+    if (can('requests')) {
+      var reqs = requests(), fresh = reqs.filter(function (r) { return r.status === 'new'; });
+      tiles.push(tile('requests', ICON.inbox, 'New requests', fresh.length, fresh.length ? 'Waiting for an answer' : 'All answered', fresh.length ? 'blue' : ''));
+      cards.push('<section class="ad-card"><div class="ad-card-head"><h2>Latest requests</h2><button type="button" class="ad-link" data-go="requests">Open the board</button></div>' +
+        (reqs.length ? '<ul class="ad-mini-list">' + reqs.slice(0, 6).map(function (r) {
+          return '<li><button type="button" data-req="' + r.id + '">' + typeChip(r.type) + '<span class="ad-mini-t"><b>' + esc(who(r)) + '</b><small>' + esc(summary(r)) + '</small></span><span class="ad-mini-s">' + statusChip(r.status) + '<small>' + ago(r.at) + '</small></span></button></li>';
+        }).join('') + '</ul>' : '<p class="ad-muted">No requests yet. They appear here when visitors create an account or write to you.</p>') + '</section>');
+    }
+    if (can('products')) {
+      var live = allProducts().map(view).filter(function (v) { return !v.hidden; });
+      var count = function (k) { return live.filter(CHECKS[k].test).length; };
+      tiles.push(tile('products/nopic', ICON.pic, 'Need a picture', count('nopic'), 'Products shown without one', count('nopic') ? 'warn' : ''),
+        tile('products/nosku', ICON.tag, 'No SKU', count('nosku'), 'Add the product code', count('nosku') ? 'warn' : ''),
+        tile('products/noid', ICON.link, 'No internal ID', count('noid'), 'To match the internal software', ''),
+        tile('products/tofr', '<b class="ad-stat-fr">FR</b>', 'French to finish', count('tofr'), 'Name, description or options', count('tofr') ? 'warn' : ''));
+      var n0 = Object.keys(changes.products).length + changes.new.length;
+      cards.push('<section class="ad-card"><div class="ad-card-head"><h2>Recently edited</h2><button type="button" class="ad-link" data-go="publish">Review and publish</button></div>' +
+        (n0 ? '<ul class="ad-mini-list">' + changedList().slice(0, 6).map(function (c) {
+          return '<li><button type="button" data-go="product/' + c.id + '">' + thumb(c.v) + '<span class="ad-mini-t"><b>' + esc(c.v.name) + '</b><small>' + esc(c.what) + '</small></span><span class="ad-mini-s">' + (c.isNew ? '<em class="ad-chip ad-chip--green">New</em>' : '<em class="ad-chip ad-chip--amber">Edited</em>') + '</span></button></li>';
+        }).join('') + '</ul>' : '<p class="ad-muted">Nothing changed since the last publish. Open a product to edit it, or add a new one.</p>') + '</section>');
+    }
+    if (can('publish')) { var n = pendingCount(); tiles.push(tile('publish', ICON.up, 'Not published yet', n, n ? 'Changes made here' : 'Everything is published', n ? 'warn' : '')); }
+    Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].cards) cards = cards.concat(MOD[k].cards()); });
     viewEl.innerHTML = '<div class="ad-page">' +
-      '<div class="ad-head"><div><p class="ad-eyebrow">' + new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }) + '</p><h1>Good ' + (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + '</h1></div></div>' +
-      '<div class="ad-stats">' +
-        tile('requests', ICON.inbox, 'New requests', fresh.length, fresh.length ? 'Waiting for an answer' : 'All answered', fresh.length ? 'blue' : '') +
-        tile('products/nopic', ICON.pic, 'Need a picture', count('nopic'), 'Products shown without one', count('nopic') ? 'warn' : '') +
-        tile('products/nosku', ICON.tag, 'No SKU', count('nosku'), 'Add the product code', count('nosku') ? 'warn' : '') +
-        tile('products/noid', ICON.link, 'No internal ID', count('noid'), 'To match the internal software', '') +
-        tile('products/tofr', '<b class="ad-stat-fr">FR</b>', 'French to finish', count('tofr'), 'Name, description or options', count('tofr') ? 'warn' : '') +
-        tile('publish', ICON.up, 'Not published yet', n, n ? 'Changes made here' : 'Everything is published', n ? 'warn' : '') +
-      '</div>' +
-      '<div class="ad-cols">' +
-        '<section class="ad-card"><div class="ad-card-head"><h2>Latest requests</h2><button type="button" class="ad-link" data-go="requests">Open the board</button></div>' +
-          (reqs.length ? '<ul class="ad-mini-list">' + reqs.slice(0, 6).map(function (r) {
-            return '<li><button type="button" data-req="' + r.id + '">' + typeChip(r.type) + '<span class="ad-mini-t"><b>' + esc(who(r)) + '</b><small>' + esc(summary(r)) + '</small></span><span class="ad-mini-s">' + statusChip(r.status) + '<small>' + ago(r.at) + '</small></span></button></li>';
-          }).join('') + '</ul>' : '<p class="ad-muted">No requests yet. They appear here when visitors send their cart, ask for a rental, create an account or write to you.</p>') + '</section>' +
-        '<section class="ad-card"><div class="ad-card-head"><h2>Recently edited</h2><button type="button" class="ad-link" data-go="publish">Review and publish</button></div>' +
-          (n ? '<ul class="ad-mini-list">' + changedList().slice(0, 6).map(function (c) {
-            return '<li><button type="button" data-go="product/' + c.id + '">' + thumb(c.v) + '<span class="ad-mini-t"><b>' + esc(c.v.name) + '</b><small>' + esc(c.what) + '</small></span><span class="ad-mini-s">' + (c.isNew ? '<em class="ad-chip ad-chip--green">New</em>' : '<em class="ad-chip ad-chip--amber">Edited</em>') + '</span></button></li>';
-          }).join('') + '</ul>' : '<p class="ad-muted">Nothing changed since the last publish. Open a product to edit it, or add a new one.</p>') + '</section>' +
-      '</div></div>';
+      '<div class="ad-head"><div><p class="ad-eyebrow">' + new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + esc((ACCESS.roles[ME.role] || {}).label || '') + '</p><h1>Good ' + (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + ', ' + esc((ME.name || '').split(' ')[0]) + '</h1></div></div>' +
+      '<div class="ad-stats">' + tiles.join('') + '</div>' +
+      (cards.length ? '<div class="ad-cols">' + cards.join('') + '</div>' : '') + '</div>';
     bindGo(viewEl);
     $$('[data-req]', viewEl).forEach(function (b) { b.addEventListener('click', function () { go('requests'); setTimeout(function () { openRequest(b.getAttribute('data-req')); }, 60); }); });
+    Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].bindOverview) MOD[k].bindOverview(viewEl); });
   }
   function bindGo(root) { $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); }); }
   function thumb(v, size) { var i = (v.images || [])[0]; return i ? '<img class="ad-thumb' + (size ? ' ad-thumb--' + size : '') + '" src="' + esc(src(i)) + '" alt="" loading="lazy">' : '<span class="ad-thumb ad-thumb--none' + (size ? ' ad-thumb--' + size : '') + '">' + ICON.pic + '</span>'; }
@@ -591,11 +642,20 @@
     return list;
   }
   function showPublish() {
-    var list = changedList();
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(list.length, 'product', 'products') + ' changed in this browser, not on the website yet.' : 'Everything you changed is on the website.') + '</p></div></div>' +
+    // products, then what the other sections changed (job postings, page text)
+    var list = changedList().map(function (c) {
+      return { thumb: thumb(c.v), title: c.v.name, what: c.what, chip: c.isNew ? 'New' : 'Edited', go: 'product/' + c.id, undo: 'p:' + c.id, undoTitle: c.isNew ? 'Delete' : 'Undo these changes' };
+    });
+    var undoers = {};
+    Object.keys(MOD).forEach(function (k) {
+      if (!MOD[k].changes) return;
+      MOD[k].changes().forEach(function (c, i) { var key = k + ':' + i; undoers[key] = c.undo; list.push(Object.assign({ thumb: '<span class="ad-thumb ad-thumb--none">' + (c.icon || ICON.up) + '</span>', undo: key, undoTitle: 'Undo these changes' }, c)); });
+    });
+    var chipTone = { New: 'green', Edited: 'amber', Closed: 'gray' };
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(list.length, 'change', 'changes') + ' made in this browser, not on the website yet.' : 'Everything you changed is on the website.') + '</p></div></div>' +
       (list.length ? '<div class="ad-card ad-card--flush"><ul class="ad-change-list">' + list.map(function (c) {
-        return '<li>' + thumb(c.v) + '<span class="ad-mini-t"><b>' + esc(c.v.name) + '</b><small>' + esc(c.what) + '</small></span>' + (c.isNew ? '<em class="ad-chip ad-chip--green">New</em>' : '<em class="ad-chip ad-chip--amber">Edited</em>') +
-          '<button type="button" class="ad-btn" data-go="product/' + c.id + '">Open</button><button type="button" class="ad-icon-btn" data-undo="' + c.id + '" title="' + (c.isNew ? 'Delete' : 'Undo these changes') + '" aria-label="Undo">' + ICON.x + '</button></li>';
+        return '<li>' + c.thumb + '<span class="ad-mini-t"><b>' + esc(c.title) + '</b><small>' + esc(c.what) + '</small></span><em class="ad-chip ad-chip--' + (chipTone[c.chip] || 'amber') + '">' + esc(c.chip) + '</em>' +
+          (c.go ? '<button type="button" class="ad-btn" data-go="' + esc(c.go) + '">Open</button>' : '') + '<button type="button" class="ad-icon-btn" data-undo="' + esc(c.undo) + '" title="' + esc(c.undoTitle) + '" aria-label="Undo">' + ICON.x + '</button></li>';
       }).join('') + '</ul></div>' +
       '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Download the changes</h2><p class="ad-muted">One file with every change above (catalog.json).</p><button type="button" class="ad-btn ad-btn--primary" data-export>Download the changes</button></div></div>' +
       '<div class="ad-step"><b>2</b><div><h2>Send it to put it online</h2><p class="ad-muted">Until the back end is connected, the file is added to the website project (data/admin/catalog.json) and the site is rebuilt: new products appear in their categories and in search. Once the back end is connected, this page will have a single Publish button.</p></div></div></div>' : '<div class="ad-empty-state">' + ICON.up + '<h2>Nothing to publish</h2><p>Changes you save to products appear here until they are on the website.</p><button type="button" class="ad-btn ad-btn--primary" data-go="products">Go to products</button></div>') +
@@ -603,13 +663,15 @@
     bindGo(viewEl);
     var ex = $('[data-export]', viewEl);
     if (ex) ex.addEventListener('click', function () {
-      download('catalog.json', { _about: 'Changes from the Signel admin dashboard. Put this file at data/admin/catalog.json; the next build applies it (src/model/catalog-edits.js).', exported: new Date().toISOString(),
-        products: changes.products, new: changes.new.map(function (n) { var c = Object.assign({}, n); delete c.isNew; return c; }) });
+      download('catalog.json', { _about: 'Changes from the Signel admin dashboard. Put this file at data/admin/catalog.json; the next build applies it (products: src/model/catalog-edits.js, jobs: src/model/jobs.js, text: src/lib/i18n.js).', exported: new Date().toISOString(),
+        products: changes.products, new: changes.new.map(function (n) { var c = Object.assign({}, n); delete c.isNew; return c; }), jobs: changes.jobs, text: changes.text });
       toast('catalog.json downloaded.');
     });
     viewEl.addEventListener('click', function (e) {
       var u = e.target.closest('[data-undo]'); if (!u) return;
-      var id = Number(u.getAttribute('data-undo'));
+      var key = u.getAttribute('data-undo');
+      if (key.indexOf('p:') !== 0) { if (!confirm('Undo these changes?')) return; undoers[key](); save(); showPublish(); return; }
+      var id = Number(key.slice(2));
       if (!confirm(byId[id] ? 'Undo the changes to this product?' : 'Delete this new product?')) return;
       if (byId[id]) delete changes.products[id]; else changes.new = changes.new.filter(function (n) { return n.id !== id; });
       save(); showPublish();
@@ -620,9 +682,9 @@
       r.onload = function () {
         try {
           var d = JSON.parse(r.result), c = d.kind === 'signel-admin-backup' ? d.changes : d;
-          if (!c || (!c.products && !c.new)) throw new Error('no changes');
+          if (!c || (!c.products && !c.new && !c.jobs && !c.text)) throw new Error('no changes');
           if (!confirm('Replace the changes in this browser with the ones in ' + file.name + '?')) return;
-          changes = { products: c.products || {}, new: c.new || [] }; save(); showPublish(); toast('Loaded ' + file.name);
+          changes = { products: c.products || {}, new: c.new || [], jobs: c.jobs || {}, text: c.text || {} }; save(); showPublish(); toast('Loaded ' + file.name);
         } catch (err) { toast('That file is not a Signel changes file or backup.'); }
       };
       r.readAsText(file);
@@ -633,7 +695,7 @@
      Export downloads the list the build wrote (src/model/price-sheet.js). Import reads a
      returned sheet here, with the same code as tools/price-sheet.mjs (/admin/xlsx.js and
      /admin/price-import.js), and shows what changes before anything is kept. */
-  var PRICES = null;
+  var PRICES = null, CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
   function priceList() { return PRICES || (PRICES = fetch(ROOT + '/admin/price-list.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })); }
   var cad = function (n) { return n == null ? 'On request' : n.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' }); };
   function inflateRaw(bytes) {
@@ -694,6 +756,53 @@
     });
   }
 
+  /* ---------- a small visual text editor (bold, italic, lists, links): staff never see HTML.
+     rte(html, onChange) -> { el, get() }; what it returns keeps only the tags a page's text may
+     hold (the build cleans it again before it reaches a page). ---------- */
+  var RTE_TAGS = { P: 1, BR: 1, STRONG: 1, B: 1, EM: 1, I: 1, UL: 1, OL: 1, LI: 1, A: 1, H3: 1, H4: 1 };
+  function cleanHtml(html) {
+    var box = document.createElement('div'); box.innerHTML = html;
+    (function walk(n) {
+      Array.prototype.slice.call(n.childNodes).forEach(function (c) {
+        if (c.nodeType === 8) { c.remove(); return; }
+        if (c.nodeType !== 1) return;
+        walk(c);
+        if (!RTE_TAGS[c.tagName]) { while (c.firstChild) c.parentNode.insertBefore(c.firstChild, c); c.remove(); return; }
+        Array.prototype.slice.call(c.attributes).forEach(function (a) { if (!(c.tagName === 'A' && a.name === 'href')) c.removeAttribute(a.name); });
+      });
+    })(box);
+    return box.innerHTML.replace(/<b>/g, '<strong>').replace(/<\/b>/g, '</strong>').replace(/<i>/g, '<em>').replace(/<\/i>/g, '</em>').replace(/(<br>\s*)+$/, '').trim();
+  }
+  function rte(html, onChange) {
+    var wrap = document.createElement('div'); wrap.className = 'ad-rte';
+    wrap.innerHTML = '<div class="ad-rte-tools" role="toolbar" aria-label="Formatting">' +
+      [['bold', '<b>B</b>', 'Bold'], ['italic', '<i>I</i>', 'Italic'], ['insertUnorderedList', '• List', 'Bullet list'], ['insertOrderedList', '1. List', 'Numbered list'], ['link', 'Link', 'Link'], ['removeFormat', 'Clear', 'Clear formatting']]
+        .map(function (b) { return '<button type="button" data-cmd="' + b[0] + '" title="' + b[2] + '">' + b[1] + '</button>'; }).join('') +
+      '</div><div class="ad-rte-area" contenteditable="true"></div>';
+    var area = wrap.querySelector('.ad-rte-area'); area.innerHTML = cleanHtml(html || '');
+    wrap.querySelector('.ad-rte-tools').addEventListener('mousedown', function (e) {
+      var b = e.target.closest('[data-cmd]'); if (!b) return; e.preventDefault(); area.focus();
+      var cmd = b.getAttribute('data-cmd');
+      if (cmd === 'link') { var u = prompt('Link address (https://… or /page/)', 'https://'); if (u) document.execCommand('createLink', false, u); }
+      else document.execCommand(cmd, false, null);
+      if (onChange) onChange();
+    });
+    area.addEventListener('input', function () { if (onChange) onChange(); });
+    return { el: wrap, get: function () { return cleanHtml(area.innerHTML); } };
+  }
+  var slugify = function (t) { return norm(t).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70); };
+
+  /* ---------- what the sections in their own files use (src/js/admin-*.js) ---------- */
+  window.SignelAdmin = {
+    ROOT: ROOT, ICON: ICON, me: ME, roles: ACCESS.roles, view: viewEl,
+    $: $, $$: $$, esc: esc, norm: norm, store: store, plural: plural, ago: ago, money: function (n) { return money(n); },
+    go: go, bindGo: bindGo, toast: toast, download: download, can: can, tile: tile, staff: staff, USERS: USERS, rte: rte, cleanHtml: cleanHtml, slugify: slugify,
+    changes: function () { return changes; }, save: function () { var ok = save(); return ok; }, badges: function () { paintBadges(); },
+    requests: function () { return requests(); }, saveRequests: function (l) { saveRequests(l); }, products: function () { return DATA ? DATA.products : []; },
+    // a section: { show(args), badge() -> number, tiles() -> [html], cards() -> [html], changes() -> [{ title, what, chip, go, undo }] }
+    section: function (id, def) { MOD[id] = def; if (DATA) { paintBadges(); if ((location.hash.replace(/^#/, '').split('/')[0] || 'overview') === id) route(); } }
+  };
+
   /* ---------- Requests: a board of what visitors sent ---------- */
   var COLS = [['new', 'New'], ['progress', 'In progress'], ['quoted', 'Quoted'], ['done', 'Done']];
   var TYPES = { quote: ['Quote', 'blue'], rental: ['Rental', 'amber'], account: ['New account', 'green'], message: ['Message', 'violet'] };
@@ -706,7 +815,7 @@
   function summary(r) {
     var d = r.data || {}, lines = d.lines || [];
     if (lines.length) { var n = lines.reduce(function (t, l) { return t + l.qty; }, 0); return plural(lines.length, 'line', 'lines') + ' · ' + plural(n, 'item', 'items') + (d.total ? ' · ' + money(d.total) : ''); }
-    if (r.type === 'account') return (r.review ? 'Approved · ' + r.review.cls : 'To review') + ' · ' + ((d.customer || {}).type || 'Account') + ((d.customer || {}).customer === 'yes' ? ' · existing customer' : '');
+    if (r.type === 'account') return ((window.SignelMembers && window.SignelMembers.statusOf((d.customer || {}).email)) || 'To review') + ' · ' + ((d.customer || {}).type || 'Account') + ((d.customer || {}).customer === 'yes' ? ' · existing customer' : '');
     return String(d.message || '').slice(0, 70) || '—';
   }
   function ago(iso) {
@@ -729,7 +838,7 @@
     var all = requests(), q = norm(RF.q);
     var list = all.filter(function (r) { return (!RF.type || r.type === RF.type) && (!q || norm(who(r) + ' ' + JSON.stringify((r.data || {}).customer || {})).indexOf(q) >= 0); });
     if (!all.length) {
-      board.outerHTML = '<div class="ad-empty-state" data-board>' + ICON.inbox + '<h2>No requests yet</h2><p>Requests appear here when a visitor sends their cart, asks for a rental, creates an account or writes to you. Until the back end is connected, only those sent from this browser show.</p>' +
+      board.outerHTML = '<div class="ad-empty-state" data-board>' + ICON.inbox + '<h2>No requests yet</h2><p>Requests appear here when a visitor creates an account or writes to you (carts sent from the site are in Orders). Until the back end is connected, only those sent from this browser show.</p>' +
         '<button type="button" class="ad-btn" data-examples>Add example requests to try the board</button></div>';
       $('[data-examples]').addEventListener('click', function () { saveRequests(examples()); showRequests(); });
       return;
@@ -786,28 +895,17 @@
       var t = e.target;
       if (t.closest('[data-drawer-close]')) return closeDrawer();
       var s = t.closest('[data-set-status]'); if (s) return setStatus(id, s.getAttribute('data-set-status'));
-      if (t.closest('[data-approve]')) {
-        var cls = $('[data-review-cls]', dr).value;
-        updateRequest(id, function (x) { x.review = { cls: cls, at: new Date().toISOString() }; if (x.status !== 'done') { (x.history = x.history || []).push({ at: x.review.at, to: 'done' }); x.status = 'done'; } });
-        // demo: an account created in this browser is approved here too; the back end will
-        // set the class on the account and email the customer
-        try { var acc = JSON.parse(localStorage.getItem('signel.account')); if (acc && c.email && acc.email === c.email) { acc.status = 'approved'; acc.cls = cls; localStorage.setItem('signel.account', JSON.stringify(acc)); } } catch (err) {}
-        toast('Account approved in class ' + cls + '.'); openRequest(id); paintBoard(); return;
-      }
+      var gm = t.closest('[data-go-member]'); if (gm) { closeDrawer(); go('members/' + encodeURIComponent(gm.getAttribute('data-go-member'))); return; }
       if (t.closest('[data-note-add]')) { var ta = $('[data-note]', dr); if (!ta.value.trim()) return; updateRequest(id, function (x) { (x.notes = x.notes || []).push({ at: new Date().toISOString(), text: ta.value.trim() }); }); openRequest(id); paintBoard(); return; }
       if (t.closest('[data-req-del]')) { if (!confirm('Delete this request?')) return; saveRequests(requests().filter(function (x) { return x.id !== id; })); closeDrawer(); paintBoard(); }
     };
     $('[data-assignee]', dr).addEventListener('change', function (e) { updateRequest(id, function (x) { x.assignee = e.target.value.trim(); }); paintBoard(); });
   }
-  // new accounts: Signel reviews each one and puts it in a price class (P1 to P7); until then
-  // the customer sees no prices (src/js/shop.js)
-  var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
+  // new accounts are reviewed in Members (src/js/admin-team.js): the request points there
   function reviewHtml(r) {
-    var rv = r.review;
-    return '<h3>Account review</h3><div class="ad-review' + (rv ? ' is-done' : '') + '">' +
-      (rv ? '<p><b>Approved, class ' + esc(rv.cls) + '</b> <small class="ad-muted">' + new Date(rv.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) + '</small></p>' : '<p class="ad-muted">The customer sees no prices until the account is approved. Choose the price class it gets.</p>') +
-      '<div class="ad-review-row"><label><span>Price class</span><select class="ad-input" data-review-cls>' + CLASSES.map(function (k) { return '<option' + (rv && rv.cls === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></label>' +
-      '<button type="button" class="ad-btn ad-btn--primary" data-approve>' + (rv ? 'Change class' : 'Approve account') + '</button></div></div>';
+    var c = (r.data || {}).customer || {};
+    return '<h3>Account review</h3><div class="ad-review"><p class="ad-muted">The customer sees no prices until the account is approved and given its price class.</p>' +
+      (can('members') ? '<div class="ad-review-row"><button type="button" class="ad-btn ad-btn--primary" data-go-member="' + esc(c.email || '') + '">Review in Members</button></div>' : '') + '</div>';
   }
   function closeDrawer() {
     var dr = $('[data-drawer]'); if (!dr || !dr.classList.contains('on')) return;
@@ -819,10 +917,9 @@
     var line = function (p, qty, opts) { return { id: p.id, sku: p.sku, name: p.name, url: p.url, img: (p.images || [])[0] || '', qty: qty, opts: opts || [], price: null }; };
     var t = function (h) { return new Date(Date.now() - h * 3600000).toISOString(); };
     return [
-      { id: 'ex1', example: true, type: 'quote', status: 'new', at: t(1), data: { customer: { name: 'Example contact', company: 'Example municipality', email: 'example@example.com', phone: '(450) 555-0100' }, lines: [line(pick('moose'), 4, [['Dimensions', '900 x 900 mm'], ['Thickness', '2.0'], ['Sheeting', 'Diamond Grade']]), line(pick('stop'), 10)] } },
-      { id: 'ex2', example: true, type: 'rental', status: 'progress', at: t(20), data: { customer: { name: 'Example contact', company: 'Example contractor', email: 'example@example.com' }, lines: [line(pick('rad62'), 2, [['Rental', '2026-11-03 → 2026-11-21'], ['Site', 'Example site']])] } },
+      { id: 'ex1', example: true, type: 'message', status: 'new', at: t(1), data: { customer: { name: 'Example contact', company: 'Example municipality', email: 'example@example.com', phone: '(450) 555-0100' }, message: 'Can you install the 911 address plates for 40 rural addresses this fall?' } },
       { id: 'ex3', example: true, type: 'account', status: 'new', at: t(48), data: { customer: { name: 'Example person', company: 'Example signage company', email: 'example@example.com', type: 'Signage', customer: 'no' } } },
-      { id: 'ex4', example: true, type: 'quote', status: 'quoted', at: t(96), data: { customer: { name: 'Example contact', company: 'Example engineering firm', email: 'example@example.com' }, lines: [line(pick('cone'), 50)] } }
+      { id: 'ex4', example: true, type: 'message', status: 'progress', at: t(96), data: { customer: { name: 'Example contact', company: 'Example engineering firm', email: 'example@example.com' }, message: 'Do you have a data sheet for the BOSS signals in English?' } }
     ];
   }
 

@@ -136,11 +136,95 @@
     if (s.hidden) rows += '<div class="cs-row cs-q">' + (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a>') + '</div>';
     var note = '<p class="cs-note">' + esc(t('taxes')) + (s.ranged ? ' ' + esc('* ' + t('range_note')) : '') + '</p>';
     var actions = page
-      ? '<button type="button" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" data-send>' + esc(t('send_request')) + '</button><p class="cs-hint">' + esc(t('send_hint')) + '</p>' +
+      ? (CI.title ? '<button type="submit" form="co-form" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full">' + esc(c(coState().pay === 'card' ? 'place_card' : 'place_invoice')) + '</button>' : '') +
         (s.hidden && !pending() ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
         '<div class="cs-links"><a href="' + R('/products/') + '">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
       : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/cart/') + '">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
     return (page ? '<h2>' + esc(t('summary')) + '</h2>' : '') + rows + note + actions;
+  }
+
+  /* ---------- checkout: delivery (Signel's transport rules), payment, then the order ----------
+     Delivery: the customer's carrier with their account number (Signel arranges it, at their
+     cost); pickup (they are called when the order is ready); or delivery billed on a second
+     invoice (the default: about 3/4 of orders). Payment: by card when every item has a price
+     and the account is approved, otherwise invoiced by Signel. The choices are kept in CO so
+     the summary can redraw (quantity changes) without losing them. */
+  var CI = {}; try { CI = JSON.parse($('#checkout-i18n').textContent); } catch (e) {}
+  var c = function (k, n) { return String(CI[k] || k).replace('{n}', n); };
+  var CO = null, LAST = null;
+  function coState() {
+    if (CO) return CO;
+    var a = account() || {};
+    CO = { method: (CI.shipping || {}).default || 'billed', carrier: '', account: '', pickup: 'client', pay: '', po: '', note: '', name: a.name || '', company: a.company || '', email: a.email || '', phone: a.phone || '' };
+    return CO;
+  }
+  // card payment needs an approved account and a firm price on every line (no quote, no rental)
+  function cardBlock(lines) {
+    if (!approved()) return c('pay_card_off_login');
+    if (lines.some(function (l) { var p = priceOf(l.id, l.key, l.qty); return l.rental || !p || p.max > p.min; })) return c('pay_card_off_quote');
+    return '';
+  }
+  function checkoutHtml(lines) {
+    if (!CI.title) return '';
+    var st = coState(), ship = CI.shipping || { carriers: [], pickup: [] }, off = cardBlock(lines);
+    if (!st.pay || (st.pay === 'card' && off)) st.pay = off ? 'invoice' : 'card';
+    var opt = function (name, value, title, text, sub, disabled) {
+      var on = st[name] === value;
+      return '<div class="co-opt' + (on ? ' is-on' : '') + (disabled ? ' is-off' : '') + '"><label><input type="radio" name="co-' + name + '" value="' + value + '"' + (on ? ' checked' : '') + (disabled ? ' disabled' : '') + '><span><b>' + esc(title) + '</b><small>' + esc(text) + '</small></span></label>' + (on && sub ? '<div class="co-sub">' + sub + '</div>' : '') + '</div>';
+    };
+    var field = function (k, label, type, opt) {
+      return '<label class="co-f"><span>' + esc(label) + (opt ? ' <small>(' + esc(c('optional')) + ')</small>' : '') + '</span><input name="' + k + '" type="' + (type || 'text') + '" value="' + esc(st[k]) + '" data-co-f="' + k + '"' + (opt ? '' : ' required') + '><small class="co-err" data-co-err="' + k + '" hidden></small></label>';
+    };
+    var carrierSub = '<label class="co-f"><span>' + esc(c('carrier_label')) + '</span><select data-co-f="carrier"><option value="">' + esc(c('carrier_choose')) + '</option>' +
+      ship.carriers.map(function (x) { return '<option' + (st.carrier === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select><small class="co-err" data-co-err="carrier" hidden></small></label>' +
+      field('account', c('account_label'));
+    var pickupSub = '<div class="co-pick" role="radiogroup">' + ship.pickup.map(function (k) {
+      return '<label><input type="radio" name="co-pickup" value="' + k + '"' + (st.pickup === k ? ' checked' : '') + '><span>' + esc(c('pickup_' + k)) + '</span></label>';
+    }).join('') + '</div>';
+    return '<form class="co" id="co-form" data-co novalidate><h2>' + esc(c('title')) + '</h2><h3>' + esc(c('delivery')) + '</h3><div class="co-opts co-opts--3">' +
+      opt('method', 'carrier', c('carrier_title'), c('carrier_text'), carrierSub) +
+      opt('method', 'pickup', c('pickup_title'), c('pickup_text'), pickupSub) +
+      opt('method', 'billed', c('billed_title'), c('billed_text'), '<p class="co-note">' + esc(c('billed_note')) + '</p>') + '</div>' +
+      '<h3>' + esc(c('payment')) + '</h3><div class="co-opts co-opts--2">' +
+      opt('pay', 'card', c('pay_card'), off || c('pay_card_text'), '<p class="co-note">' + esc(c('pay_card_preview')) + '</p>', !!off) +
+      opt('pay', 'invoice', c('pay_invoice'), c('pay_invoice_text')) + '</div>' +
+      (account() ? '' : '<h3>' + esc(c('contact')) + '</h3><div class="co-grid">' + field('name', c('name')) + field('company', c('company'), 'text', true) + field('email', c('email'), 'email') + field('phone', c('phone'), 'tel') + '</div>') +
+      '<div class="co-grid">' + field('po', c('po'), 'text', true) +
+      '<label class="co-f"><span>' + esc(c('note')) + ' <small>(' + esc(c('optional')) + ')</small></span><textarea rows="1" data-co-f="note">' + esc(st.note) + '</textarea></label></div></form>';
+  }
+  function placeOrder() {
+    var st = coState(), lines = cart(), form = $('[data-co]'), bad = null;
+    var need = function (k, msg) { var e = $('[data-co-err="' + k + '"]', form), miss = !String(st[k] || '').trim() || (k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st[k])); if (e) { e.hidden = !miss; e.textContent = miss ? msg : ''; } if (miss && !bad) bad = k; };
+    if (st.method === 'carrier') { need('carrier', c('choose_carrier')); need('account', c('need_account')); }
+    if (!account()) { need('name', c('required')); need('email', c('required')); need('phone', c('required')); }
+    if (bad) { var el = $('[data-co-f="' + bad + '"]', form); if (el) el.focus(); return; }
+    var acc = account(), s = totals(lines), d = new Date();
+    var num = 'W' + String(d.getFullYear()).slice(2) + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '-' + String(Math.floor(1000 + Math.random() * 9000));
+    var order = {
+      id: num, number: num, at: d.toISOString(), lang: LOCALE.slice(0, 2), status: 'new',
+      customer: acc ? { name: acc.name, company: acc.company, email: acc.email, phone: acc.phone, cls: approved() ? acc.cls || 'P1' : null, account: true }
+                    : { name: st.name, company: st.company, email: st.email, phone: st.phone, account: false },
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null }; }),
+      subtotal: s.priced ? s.subtotal : null,
+      delivery: { method: st.method, carrier: st.method === 'carrier' ? st.carrier : '', account: st.method === 'carrier' ? st.account : '', pickup: st.method === 'pickup' ? st.pickup : '' },
+      payment: { method: st.pay, status: st.pay === 'card' ? 'paid' : 'to_invoice' },
+      po: st.po, note: st.note
+    };
+    var all = read('signel.orders', []); all.unshift(order); write('signel.orders', all);
+    LAST = order; CO = null; save([]);
+  }
+  function orderEmail(o) {
+    var dl = o.delivery, how = dl.method === 'carrier' ? c('carrier_title') + ': ' + dl.carrier + ' (' + dl.account + ')' : dl.method === 'pickup' ? c('pickup_title') + ': ' + c('pickup_' + dl.pickup) : c('billed_title');
+    var body = o.lines.map(function (l) { return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name + (l.opts.length ? ' (' + l.opts.map(function (x) { return x[0] + ': ' + x[1]; }).join(', ') + ')' : '') + ' - ' + (l.unit != null ? money(l.unit) + ' ' + t('each') : t('price_on_request_tag')); }).join('\n') +
+      (o.subtotal != null ? '\n\n' + t('subtotal') + ': ' + money(o.subtotal) : '') + '\n\n' + c('delivery') + ': ' + how + '\n' + c('payment') + ': ' + c(o.payment.method === 'card' ? 'pay_card' : 'pay_invoice') +
+      (o.po ? '\n' + c('po') + ': ' + o.po : '') + (o.note ? '\n' + o.note : '') + '\n\n' + [o.customer.name, o.customer.company, o.customer.email, o.customer.phone].filter(Boolean).join('\n');
+    return 'mailto:' + (T.email || '') + '?subject=' + encodeURIComponent(c('order_subject', o.number)) + '&body=' + encodeURIComponent(body);
+  }
+  function doneHtml(o) {
+    return '<div class="co-done"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7 12 3.5 3.5L17 9"/></svg>' +
+      '<h2>' + esc(c('done_title', o.number)) + '</h2><p>' + esc(c(o.payment.method === 'card' ? 'done_card' : 'done_invoice')) + '</p>' +
+      (o.delivery.method === 'billed' ? '<p class="co-note">' + esc(c('billed_text')) + '</p>' : o.delivery.method === 'pickup' ? '<p class="co-note">' + esc(c('pickup_text')) + '</p>' : '') +
+      '<a class="ui-btn ui-btn--outline ui-btn--app" href="' + esc(orderEmail(o)) + '">' + esc(c('done_copy')) + '</a><p class="cs-hint">' + esc(c('done_preview')) + '</p></div>';
   }
 
   function emptyHtml() {
@@ -162,7 +246,8 @@
     }
     var page = $('[data-cart-page]');
     if (page) {
-      $('[data-cart-lines]', page).innerHTML = n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, true); }).join('') + '</ul>' : emptyHtml();
+      $('[data-cart-lines]', page).innerHTML = n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, true); }).join('') + '</ul>' : LAST ? doneHtml(LAST) : emptyHtml();
+      var co = $('[data-checkout]', page); if (co) { co.innerHTML = n ? checkoutHtml(lines) : ''; co.hidden = !n || !CI.title; }
       var sum = $('[data-cart-summary]', page); sum.innerHTML = n ? summaryHtml(lines, true) : ''; sum.hidden = !n;
       page.classList.toggle('is-empty', !n);
     }
@@ -203,9 +288,19 @@
       else if (el.closest('[data-line-remove]')) remove(key);
     }
     if (el.closest('[data-clear]')) save([]);
-    if (el.closest('[data-send]')) sendRequest();
+    var co = el.closest('[data-co] input[type=radio]');
+    if (co) { coState()[co.name.slice(3)] = co.value; render(); var again = $('[data-co] input[name="' + co.name + '"][value="' + co.value + '"]'); if (again) again.focus(); }
   });
+  // checkout fields keep their value through redraws
+  document.addEventListener('input', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-co-f'); if (!k) return;
+    coState()[k] = e.target.value;
+    var err = $('[data-co-err="' + k + '"]'); if (err && e.target.value.trim()) err.hidden = true;
+  });
+  document.addEventListener('submit', function (e) { if (e.target.matches('[data-co]')) { e.preventDefault(); placeOrder(); } });
   document.addEventListener('change', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-co-f');
+    if (k) { coState()[k] = e.target.value; var er = $('[data-co-err="' + k + '"]'); if (er && e.target.value) er.hidden = true; }
     if (e.target.matches && e.target.matches('[data-line-qty]')) setQty(e.target.closest('[data-key]').getAttribute('data-key'), parseInt(e.target.value, 10) || 1);
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
@@ -445,24 +540,6 @@
     window.addEventListener('load', fitFolds);
     window.addEventListener('resize', function () { clearTimeout(fitFolds.t); fitFolds.t = setTimeout(fitFolds, 150); });
     $$('.product .pgal img').forEach(function (im) { if (!im.complete) im.addEventListener('load', fitFolds); });
-  }
-
-  /* ---------- send the cart: an email with every line ---------- */
-  function sendRequest() {
-    var lines = cart(), acc = account(), s = totals(lines);
-    var body = lines.map(function (l) {
-      var p = priceOf(l.id, l.key, l.qty), code = (p && p.sku) || l.sku;
-      return l.qty + ' x ' + (code ? code + ' - ' : '') + l.name +
-        ((l.show || l.opts) && (l.show || l.opts).length ? ' (' + (l.show || l.opts).map(function (o) { return o[0] + ': ' + o[1]; }).join(', ') + ')' : '') +
-        ' - ' + (p ? priceText(p) + ' ' + t('each') : t('price_on_request_tag')) + '\n   ' + location.origin + ROOT + l.url;
-    }).join('\n\n');
-    if (s.priced) body += '\n\n' + (s.ranged ? t('subtotal_from') : t('subtotal')) + ': ' + money(s.subtotal);
-    if (acc) body += '\n\n' + [acc.name, acc.company, acc.email, acc.phone, acc.cls && approved() ? t('price_class_is', acc.cls) : ''].filter(Boolean).join('\n');
-    if (window.signelRequest) window.signelRequest(lines.some(function (l) { return l.rental; }) ? 'rental' : 'quote', {
-      customer: acc || null, total: s.priced ? s.subtotal : null,
-      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.opts || [], rental: !!l.rental, price: p ? p.min : null }; })
-    });
-    location.href = 'mailto:' + (T.email || '') + '?subject=' + encodeURIComponent(t('request_subject') + ' (' + count(lines) + ')') + '&body=' + encodeURIComponent(body);
   }
 
   /* ---------- login page ---------- */
