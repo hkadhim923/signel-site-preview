@@ -121,7 +121,8 @@
       var title = text[j.title] || DATA.texts[j.title] || {};
       if (!title.en || !title.fr) { A.toast('A posting needs its title in English and French.'); return; }
       var cat = $('[data-jcat]', form).value;
-      if (isNew) jobs[j.id] = { new: true, slug: A.slugify(title.fr), date: j.date, category: cat, sections: sections.length };
+      // its addresses, from its titles until it is published (then they stay)
+      if (isNew) jobs[j.id] = { new: true, slug: A.slugify(title.fr), slug_en: A.slugify(title.en) || A.slugify(title.fr), date: j.date, category: cat, sections: sections.length };
       else if (cat !== (DATA.jobs.filter(function (x) { return x.id === j.id; })[0] || {}).category) jobs[j.id] = Object.assign(jobs[j.id] || {}, { category: cat });
       A.save(); A.toast('Saved. Publish to put it on the website.'); A.go('jobs');
     });

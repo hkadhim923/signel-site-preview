@@ -360,6 +360,13 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 /* ---- toast, dialog ---- */
 .adm-toast { position: fixed; left: 50%; top: 18px; transform: translate(-50%, -16px); opacity: 0; z-index: 60; max-width: min(560px, calc(100vw - 32px)); padding: 12px 18px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px rgba(14,23,27,.3); transition: opacity .2s, transform .2s; pointer-events: none; }
 .adm-toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* the demo dashboard (no back end): nothing done here is published */
+.ad-demo-bar { margin: 0; padding: 9px 18px; background: var(--yellow); color: var(--ink); font-size: 13.5px; line-height: 1.4; }
+.ad-demo-bar[hidden] { display: none; }
+/* something did not happen (a change not saved): stays until it is read */
+.adm-alarm { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 14px; max-width: min(620px, calc(100vw - 32px)); padding: 14px 16px 14px 18px; border-radius: 12px; background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px var(--red), 0 12px 32px rgba(14,23,27,.28); font-size: 14px; font-weight: 600; }
+.adm-alarm[hidden] { display: none; }
+.adm-alarm p { margin: 0; }
 .adm-dialog { width: min(520px, calc(100vw - 32px)); border: 0; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(14,23,27,.3); }
 .adm-dialog::backdrop { background: rgba(14,23,27,.5); }
 .adm-dialog h3 { margin: 0 0 8px; }

@@ -163,7 +163,8 @@
   var domReady = new Promise(function (res) { if (document.readyState === 'complete') res(); else document.addEventListener('DOMContentLoaded', res); });
   // with a back end, the changes are its shared draft, not this browser's
   var fromServer = BACKEND.then(function (b) {
-    if (!b) return null;
+    // the demo (no back end): say so on every page, so no one works here by mistake
+    if (!b) { var bar = $('[data-demo-bar]'); if (bar) bar.hidden = false; return null; }
     SERVER = b;
     return Promise.all([api('GET', 'me'), api('GET', 'draft'), loadRecords()]).then(function (r) {
       var me = r[0].me;
@@ -201,7 +202,9 @@
     if (!can(parts[0])) { parts = ['overview']; history.replaceState(null, '', '#overview'); }
     $$('[data-nav]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-nav') === (parts[0] === 'product' ? 'products' : parts[0])); });
     var core = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1])); }, requests: showRequests,
-               prices: showPrices, publish: showPublish, versions: showVersions, backups: showBackups };
+               prices: showPrices, versions: showVersions, backups: showBackups,
+               // with a back end, the latest draft first: what everyone changed
+               publish: function () { if (!SERVER) return showPublish(); refreshDraft(true).then(function () { if (/^#?publish/.test(location.hash)) showPublish(); }); } };
     var fn = core[parts[0]] || (MOD[parts[0]] && MOD[parts[0]].show) || showOverview;
     fn(parts.slice(1));
     if (document.activeElement !== gsearch) viewEl.focus({ preventScroll: true });
@@ -695,15 +698,43 @@
     changes = d.changes; ['products', 'jobs', 'text'].forEach(function (k) { changes[k] = changes[k] || {}; }); changes.new = changes.new || [];
     BASE = clone(changes); REV = d.rev; PRICES_PENDING = d.prices || null;
   }
+  // what changed here since the server last had it: texts one by one, products and job
+  // postings field by field (two people on the same product keep both their changes), added
+  // products one by one (backend/lib/draft.js patchDraft reads the same paths)
   function diff() {
     var set = [], del = [];
-    ['products', 'jobs', 'text'].forEach(function (k) {
+    var ta = changes.text || {}, tb = BASE.text || {};
+    Object.keys(ta).forEach(function (id) { if (!same(ta[id], tb[id])) set.push([['text', id], clone(ta[id])]); });
+    Object.keys(tb).forEach(function (id) { if (!(id in ta)) del.push(['text', id]); });
+    ['products', 'jobs'].forEach(function (k) {
       var a = changes[k] || {}, b = BASE[k] || {};
-      Object.keys(a).forEach(function (id) { if (!same(a[id], b[id])) set.push([[k, id], clone(a[id])]); });
-      Object.keys(b).forEach(function (id) { if (!(id in a)) del.push([k, id]); });
+      Object.keys(a).concat(Object.keys(b)).forEach(function (id, i, all) {
+        if (all.indexOf(id) !== i) return;
+        var x = a[id] ? clone(a[id]) : {}, y = b[id] || {};
+        Object.keys(x).forEach(function (f) { if (!same(x[f], y[f])) set.push([[k, id, f], x[f]]); });
+        Object.keys(y).forEach(function (f) { if (!(f in x)) del.push([k, id, f]); });
+      });
     });
-    if (!same(changes.new, BASE.new)) set.push([['new'], clone(changes.new)]);
+    var na = {}, nb = {};
+    (changes.new || []).forEach(function (n) { na[n.id] = n; }); (BASE.new || []).forEach(function (n) { nb[n.id] = n; });
+    Object.keys(na).forEach(function (id) { if (!same(na[id], nb[id])) set.push([['new', id], clone(na[id])]); });
+    Object.keys(nb).forEach(function (id) { if (!(id in na)) del.push(['new', id]); });
     return { set: set, del: del };
+  }
+  var inSync = function () { if (!BASE) return false; var p = diff(); return !p.set.length && !p.del.length; };
+  // a patch the server took, applied to what this window knows it has (as patchDraft does)
+  function applyPatch(t, patch) {
+    patch.set.forEach(function (x) {
+      var p = x[0], v = clone(x[1]);
+      if (p[0] === 'new') { var i = -1; t.new.forEach(function (n, j) { if (String(n.id) === String(p[1])) i = j; }); if (i >= 0) t.new[i] = v; else t.new.push(v); }
+      else if (p.length === 3) (t[p[0]][p[1]] = t[p[0]][p[1]] || {})[p[2]] = v;
+      else t[p[0]][p[1]] = v;
+    });
+    patch.del.forEach(function (p) {
+      if (p[0] === 'new') t.new = t.new.filter(function (n) { return String(n.id) !== String(p[1]); });
+      else if (p.length === 3) { var o = t[p[0]][p[1]]; if (o) { delete o[p[2]]; if (!Object.keys(o).length) delete t[p[0]][p[1]]; } }
+      else delete t[p[0]][p[1]];
+    });
   }
   var syncing = null, again = false;
   function sync() {
@@ -711,24 +742,37 @@
     var patch = diff();
     if (!patch.set.length && !patch.del.length) return Promise.resolve();
     syncing = api('PATCH', 'draft', patch).then(function (d) {
-      patch.set.forEach(function (x) { if (x[0][0] === 'new') BASE.new = x[1]; else BASE[x[0][0]][x[0][1]] = x[1]; });
-      patch.del.forEach(function (p) { delete BASE[p[0]][p[1]]; });
+      applyPatch(BASE, patch);
       REV = d.rev;
     }).catch(function (e) {
-      if (e.status === 401) { toast('You were signed out. Sign in again: your last change was not saved.'); setTimeout(signOut, 2500); }
-      else toast('Not saved on the server: ' + e.message);
+      if (e.status === 401) { alarm('You were signed out, so your last change was not saved. Sign in again and redo it.'); setTimeout(signOut, 4000); return; }
+      // refused (or the server could not be reached): say so until it is read, and start again
+      // from what the server has, so the next changes are not refused with it
+      if (!e.status) { alarm('Your last change has not reached the server yet (no connection?). Keep this window open: it is sent with your next save. Reloading the page would lose it.'); return; }
+      alarm('Your last change was NOT saved: ' + e.message);
+      return api('GET', 'draft').then(function (d) { applyDraft(d); paintBadges(); if (!current) route(); }).catch(function () {});
     }).then(function () { syncing = null; if (again) { again = false; return sync(); } });
     return syncing;
   }
-  // someone else's changes: picked up when this window comes back, if nothing here is waiting
-  window.addEventListener('focus', function () {
-    if (!SERVER || dirty || syncing || !BASE || !same(changes, BASE)) return;
-    api('GET', 'draft').then(function (d) {
-      if (d.rev === REV) return;
+  // someone else's changes: picked up when this window comes back, every minute, and before
+  // the Publish page shows, when nothing here is waiting to be sent
+  function refreshDraft(force) {
+    if (!SERVER || dirty || syncing || !inSync()) return Promise.resolve(false);
+    return api('GET', 'draft').then(function (d) {
+      if (d.rev === REV && !force) return false;
       applyDraft(d); paintBadges();
-      if (/^#?publish/.test(location.hash)) route();
-    }).catch(function () {});
-  });
+      return true;
+    }).catch(function () { return false; });
+  }
+  window.addEventListener('focus', function () { refreshDraft().then(function (changed) { if (changed && /^#?publish/.test(location.hash)) route(); }); });
+  setInterval(function () { if (!document.hidden) refreshDraft().then(function (changed) { if (changed && /^#?publish/.test(location.hash) && !$('[data-pub-progress] .ad-pubrun')) route(); }); }, 60000);
+  // a message that stays until it is closed: something did not happen
+  function alarm(msg) {
+    var box = $('.adm-alarm') || document.body.appendChild(Object.assign(document.createElement('div'), { className: 'adm-alarm', role: 'alert' }));
+    box.innerHTML = '<p></p><button type="button" class="ad-btn">OK</button>';
+    box.firstChild.textContent = msg; box.hidden = false;
+    box.lastChild.addEventListener('click', function () { box.hidden = true; });
+  }
 
   /* ---------- requests, orders, member reviews on the back end (backend/lib/records.js) ---------- */
   // each one this role may open; the Members review also gets the customer accounts
