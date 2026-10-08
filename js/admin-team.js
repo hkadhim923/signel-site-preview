@@ -124,17 +124,34 @@
     }
   });
 
-  /* ---------- Users: staff and their role (Administration) ---------- */
+  /* ---------- Users: staff and their role (Administration) ----------
+     With the back end, these are the real accounts (backend/data/staff.json): a new user and
+     a new password come with a password shown once, to hand over. Without it (the demo), the
+     list is kept in this browser and everyone signs in with the demo password. */
   function showUsers() {
-    var list = A.staff(), roles = A.roles;
+    if (A.backend()) {
+      A.view.innerHTML = '<div class="ad-page"><div class="ad-loading">Loading the users…</div></div>';
+      A.api('GET', 'staff').then(function (d) { drawUsers(d.staff, true); }).catch(function (e) { A.view.innerHTML = '<div class="ad-page"><p class="ad-bad">' + esc(e.message) + '</p></div>'; });
+    } else drawUsers(A.staff(), false);
+  }
+  // a password to hand over, shown once
+  function handOver(u, pw) {
+    var box = $('[data-upw]', A.view);
+    box.innerHTML = '<div class="ad-card ad-pwcard"><h2>Password for ' + esc(u.name) + '</h2><p class="ad-muted">Give it to ' + esc(u.name) + ' (' + esc(u.email) + '). It is shown only now; they change it after signing in (the key next to their name).</p><p class="ad-pw"><code>' + esc(pw) + '</code></p></div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function drawUsers(list, server) {
+    var roles = A.roles;
     var sections = JSON.parse($('#admin-access').textContent).sections;
-    A.view.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Users</h1><p class="ad-muted">The staff who sign in to this dashboard and what each one can open. At launch, a new user gets an email to set their password; until then everyone signs in with the demo password.</p></div></div>' +
+    A.view.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Users</h1><p class="ad-muted">The staff who sign in to this dashboard and what each one can open. ' +
+      (server ? 'Each person has their own password; a new user gets one here, to hand over.' : 'This is the demo dashboard: the list is kept in this browser and everyone signs in with the demo password.') + '</p></div></div>' +
+      '<div data-upw></div>' +
       '<div class="ad-card ad-card--flush"><table class="ad-table ad-users"><thead><tr><th>Person</th><th>Role</th><th>Access</th><th></th></tr></thead><tbody>' + list.map(function (u, i) {
         var self = u.email === A.me.email;
-        return '<tr' + (u.active ? '' : ' class="is-off"') + '><td><b>' + esc(u.name) + (self ? ' <em class="ad-chip">You</em>' : '') + '</b><small>' + esc(u.email) + '</small></td>' +
+        return '<tr' + (u.active ? '' : ' class="is-off"') + '><td><b>' + esc(u.name) + (self ? ' <em class="ad-chip">You</em>' : '') + '</b><small>' + esc(u.email) + (server && !u.changedAt ? ' · has not chosen a password yet' : '') + '</small></td>' +
           '<td><select class="ad-input" data-urole="' + i + '"' + (self ? ' disabled title="You cannot change your own role"' : '') + '>' + Object.keys(roles).map(function (k) { return '<option value="' + k + '"' + (u.role === k ? ' selected' : '') + '>' + esc(roles[k].label) + '</option>'; }).join('') + '</select></td>' +
           '<td><label class="ad-switch"><input type="checkbox" data-uactive="' + i + '"' + (u.active ? ' checked' : '') + (self ? ' disabled' : '') + '><span></span>' + (u.active ? 'Can sign in' : 'Switched off') + '</label></td>' +
-          '<td>' + (self ? '' : '<button type="button" class="ad-icon-btn" data-udel="' + i + '" title="Remove" aria-label="Remove">' + A.ICON.x + '</button>') + '</td></tr>';
+          '<td><div class="ad-user-acts">' + (server && !self ? '<button type="button" class="ad-btn" data-upass="' + i + '">New password</button>' : '') + (self ? '' : '<button type="button" class="ad-icon-btn" data-udel="' + i + '" title="Remove" aria-label="Remove">' + A.ICON.x + '</button>') + '</div></td></tr>';
       }).join('') + '</tbody></table></div>' +
       '<form class="ad-card ad-user-add" data-uadd><h2>Add a user</h2><div class="ad-user-add-row">' +
       '<label><span>Name</span><input class="ad-input" name="name" required></label><label><span>Work email</span><input class="ad-input" name="email" type="email" required></label>' +
@@ -143,15 +160,27 @@
       '<div class="ad-card"><h2>What each role opens</h2><div class="ad-roles">' + Object.keys(roles).map(function (k) {
         return '<div class="ad-role"><b>' + esc(roles[k].label) + '</b><small>' + esc(roles[k].hint) + '</small><ul>' + sections.filter(function (s) { return s.roles.indexOf(k) >= 0; }).map(function (s) { return '<li>' + esc(s.label) + '</li>'; }).join('') + '</ul></div>';
       }).join('') + '</div></div></div>';
-    var put = function (l) { A.store.set(A.USERS, l); showUsers(); };
-    $$('[data-urole]', A.view).forEach(function (sel) { sel.addEventListener('change', function () { var l = A.staff(); l[+sel.getAttribute('data-urole')].role = sel.value; put(l); A.toast('Role changed.'); }); });
-    $$('[data-uactive]', A.view).forEach(function (cb) { cb.addEventListener('change', function () { var l = A.staff(); l[+cb.getAttribute('data-uactive')].active = cb.checked; put(l); }); });
-    $$('[data-udel]', A.view).forEach(function (b) { b.addEventListener('click', function () { var l = A.staff(), i = +b.getAttribute('data-udel'); if (!confirm('Remove ' + l[i].name + '? They will not be able to sign in.')) return; l.splice(i, 1); put(l); }); });
+    // the same actions on either store
+    var op = server ? {
+      patch: function (u, ch, done) { A.api('PATCH', 'staff/' + encodeURIComponent(u.email), ch).then(function (d) { done && done(d); if (!(d && d.password)) showUsers(); }).catch(function (e) { A.toast(e.message); showUsers(); }); },
+      remove: function (u) { A.api('DELETE', 'staff/' + encodeURIComponent(u.email)).then(showUsers).catch(function (e) { A.toast(e.message); }); },
+      add: function (u) { A.api('POST', 'staff', u).then(function (d) { A.api('GET', 'staff').then(function (x) { drawUsers(x.staff, true); handOver(d.user, d.password); }); A.toast('User added.'); }).catch(function (e) { A.toast(e.message); }); }
+    } : {
+      patch: function (u, ch) { var l = A.staff(); Object.assign(l.filter(function (x) { return x.email === u.email; })[0], ch); A.store.set(A.USERS, l); showUsers(); },
+      remove: function (u) { A.store.set(A.USERS, A.staff().filter(function (x) { return x.email !== u.email; })); showUsers(); },
+      add: function (u) { var l = A.staff(); if (l.some(function (x) { return x.email.toLowerCase() === u.email; })) { A.toast('That email already has an account.'); return; } l.push(Object.assign({ active: true }, u)); A.store.set(A.USERS, l); showUsers(); A.toast('User added.'); }
+    };
+    $$('[data-urole]', A.view).forEach(function (sel) { sel.addEventListener('change', function () { op.patch(list[+sel.getAttribute('data-urole')], { role: sel.value }); A.toast('Role changed.'); }); });
+    $$('[data-uactive]', A.view).forEach(function (cb) { cb.addEventListener('change', function () { op.patch(list[+cb.getAttribute('data-uactive')], { active: cb.checked }); }); });
+    $$('[data-udel]', A.view).forEach(function (b) { b.addEventListener('click', function () { var u = list[+b.getAttribute('data-udel')]; if (!confirm('Remove ' + u.name + '? They will not be able to sign in.')) return; op.remove(u); }); });
+    $$('[data-upass]', A.view).forEach(function (b) { b.addEventListener('click', function () {
+      var u = list[+b.getAttribute('data-upass')]; if (!confirm('Give ' + u.name + ' a new password? The current one stops working.')) return;
+      op.patch(u, { resetPassword: true }, function (d) { handOver(u, d.password); });
+    }); });
     $('[data-uadd]', A.view).addEventListener('submit', function (e) {
       e.preventDefault();
-      var f = e.target, email = f.email.value.trim().toLowerCase(), l = A.staff();
-      if (l.some(function (u) { return u.email.toLowerCase() === email; })) { A.toast('That email already has an account.'); return; }
-      l.push({ name: f.name.value.trim(), email: email, role: f.role.value, active: true }); put(l); A.toast('User added.');
+      var f = e.target;
+      op.add({ name: f.name.value.trim(), email: f.email.value.trim().toLowerCase(), role: f.role.value });
     });
   }
   A.section('users', { show: showUsers });

@@ -132,7 +132,7 @@ function sheetXml(sh, strings) {
     (sh.filter ? `<autoFilter ref="${sh.filter}"/>` : '') +
     (sh.merges?.length ? `<mergeCells count="${sh.merges.length}">${sh.merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '') +
     (sh.validations?.length ? `<dataValidations count="${sh.validations.length}">${sh.validations.map(d =>
-      `<dataValidation type="${d.type}" operator="${d.op}" allowBlank="1" showInputMessage="1" showErrorMessage="1"${d.title ? ` errorTitle="${esc(d.title)}" promptTitle="${esc(d.title)}"` : ''}${d.text ? ` error="${esc(d.text)}" prompt="${esc(d.prompt || d.text)}"` : ''} sqref="${d.sqref}"><formula1>${d.f1}</formula1></dataValidation>`).join('')}</dataValidations>` : '') +
+      `<dataValidation type="${d.type}"${d.op ? ` operator="${d.op}"` : ''} allowBlank="1" showInputMessage="1" showErrorMessage="1"${d.title ? ` errorTitle="${esc(d.title)}" promptTitle="${esc(d.title)}"` : ''}${d.text ? ` error="${esc(d.text)}" prompt="${esc(d.prompt || d.text)}"` : ''} sqref="${d.sqref}"><formula1>${d.f1}</formula1></dataValidation>`).join('')}</dataValidations>` : '') +
     '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>' +
     '<pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
 }

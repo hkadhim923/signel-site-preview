@@ -2,8 +2,12 @@
  *
  *  account  demo sign-in kept in localStorage ('signel.account': { email, name, cls, status });
  *           swapped for the real account system later. Signel reviews every new account and
- *           puts it in a price class (cls, P1 to P7); until then it is 'pending' and sees no
- *           prices. An approved account loads /prices.json and sees its class's prices.
+ *           puts it in a price class (cls, P1 to P7); until then it is 'pending'. An approved
+ *           account loads /prices.json and sees its class's prices.
+ *  display  each product's price category (data-price-mode): "show" prices are public (the
+ *           page prints the P1 price; /prices/p/<id>.json has them by item and quantity, for
+ *           the box and the cart), "login" ones need an approved account, and products
+ *           without data-priced are quoted.
  *  prices   per item and quantity tier (src/model/prices.js): the quantity ordered picks the
  *           code (AD2001Q1 for 1-24, Q2 for 25-124...), the class picks the price; an empty
  *           class price takes the class before it.
@@ -37,6 +41,17 @@
   var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
   var classIndex = function () { var a = account(), i = CLASSES.indexOf((a && a.cls) || 'P1'); return i < 0 ? 0 : i; };
   var prices = null, pricesLoading = null, RANGE = null;
+  // "show" products' public prices (P1), by line key, as /prices/p/<id>.json gives them
+  var PUB = {}, PUBIDS = {};
+  function loadPublic(ids) {
+    var want = ids.filter(function (id, i) { return id && ids.indexOf(id) === i && !(id in PUBIDS); });
+    return Promise.all(want.map(function (id) {
+      return (PUBIDS[id] = fetch(ROOT + '/prices/p/' + id + '.json').then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { if (d && d.lines) Object.keys(d.lines).forEach(function (k) { PUB[k] = d.lines[k]; }); RANGE = null; })
+        .catch(function () {}));
+    }));
+  }
+  var full = function () { return approved() && prices && prices.lines ? prices.lines : null; };
   function loadPrices() {
     if (!approved()) return Promise.resolve(null);
     if (prices) return Promise.resolve(prices);
@@ -53,22 +68,23 @@
     if (!Array.isArray(pairs)) return null;
     return key.slice(0, i) + '|' + JSON.stringify(pairs.slice().sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }));
   };
-  // one item at one quantity: the tier (code) that covers it, at this class's price
+  // one item at one quantity: the tier (code) that covers it, at this class's price (an
+  // approved account), else at the public price of a "show" product
   var lineAt = function (key, qty) {
-    var k = prices && prices.lines && key ? lineKey(key) : null, tiers = k && prices.lines[k];
+    var k = key ? lineKey(key) : null, all = full(), tiers = k && ((all && all[k]) || PUB[k]);
     if (!tiers) return null;
     var q = Math.max(1, qty || 1), hit = tiers[0];
     tiers.forEach(function (t) { if (q >= t[0]) hit = t; });
-    var p = classPrice(hit[3]);
+    var p = all && all[k] ? classPrice(hit[3]) : hit[3][0] || null;
     return p ? { price: p, sku: hit[2] } : null;
   };
   // a product's range ("from"): the one-unit price of each of its items, for this class
   var rangeOf = function (id) {
-    if (!prices || !prices.lines) return null;
-    if (!RANGE || RANGE.cls !== classIndex()) {
-      RANGE = { cls: classIndex(), map: {} };
-      Object.keys(prices.lines).forEach(function (k) {
-        var pid = k.slice(0, k.indexOf('|')), p = classPrice(prices.lines[k][0][3]); if (!p) return;
+    var all = full(), lines = all || PUB, ci = all ? classIndex() : -1;
+    if (!RANGE || RANGE.cls !== ci) {
+      RANGE = { cls: ci, map: {} };
+      Object.keys(lines).forEach(function (k) {
+        var pid = k.slice(0, k.indexOf('|')), p = all ? classPrice(lines[k][0][3]) : lines[k][0][3][0]; if (!p) return;
         var r = RANGE.map[pid] || (RANGE.map[pid] = { min: p, max: p });
         if (p < r.min) r.min = p; if (p > r.max) r.max = p;
       });
@@ -106,7 +122,7 @@
     lines.forEach(function (l) {
       var p = priceOf(l.id, l.key, l.qty);
       if (p) { out.priced += l.qty; out.subtotal += p.min * l.qty; if (p.max > p.min) out.ranged = true; }
-      else if (l.priced && !approved()) out.hidden += l.qty;
+      else if (l.priced && l.mode !== 'show' && !approved()) out.hidden += l.qty;
       else out.quoted += l.qty;
     });
     return out;
@@ -117,7 +133,7 @@
     var p = priceOf(l.id, l.key, l.qty), code = (p && p.sku) || l.sku;   // the code for this quantity (AD2001Q2)
     var opts = (l.show || l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
-      : (l.priced && !approved() ? (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>') : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
+      : (l.priced && l.mode !== 'show' && !approved() ? (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>') : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
     return '<li class="cl' + (big ? ' cl--big' : '') + '" data-key="' + esc(l.key) + '">' +
       '<a class="cl-img" href="' + ROOT + esc(l.url) + '">' + (l.img ? '<img src="' + ROOT + esc(l.img) + '" alt="" loading="lazy">' : '') + '</a>' +
       '<div class="cl-main"><a class="cl-name" href="' + ROOT + esc(l.url) + '">' + esc(l.name) + '</a>' +
@@ -251,11 +267,14 @@
       var sum = $('[data-cart-summary]', page); sum.innerHTML = n ? summaryHtml(lines, true) : ''; sum.hidden = !n;
       page.classList.toggle('is-empty', !n);
     }
-    // product cards: the price replaces "Log in for price" once signed in
+    // product cards: an approved account's own price replaces "Log in for price", and the
+    // public price of a "show" product (printed by the build)
     $$('.pcard[data-priced] [data-card-price]').forEach(function (el) {
-      var p = priceOf(el.closest('.pcard').getAttribute('data-id'));
-      el.textContent = p ? priceText(p) : t(pending() ? 'pending_short' : 'login_for_price_short');
-      el.classList.toggle('is-price', !!p);
+      var card = el.closest('.pcard'), show = card.getAttribute('data-price-mode') === 'show';
+      if (!el.dataset.orig) el.dataset.orig = el.textContent;
+      var p = full() ? priceOf(card.getAttribute('data-id')) : null;
+      el.textContent = p ? priceText(p) : show ? el.dataset.orig : t(pending() ? 'pending_short' : 'login_for_price_short');
+      el.classList.toggle('is-price', !!p || show);
     });
     $$('[data-buy]').forEach(paintBuy);
     $$('[data-pt]').forEach(paintTable);
@@ -343,8 +362,12 @@
     var code = box.closest('.pinfo') && $('.psku b', box.closest('.pinfo'));
     if (code) { if (!code.dataset.orig) code.dataset.orig = code.textContent; code.textContent = (p && p.sku) || code.dataset.orig; }
     if (box.hasAttribute('data-priced')) {
+      var show = box.getAttribute('data-price-mode') === 'show';
+      if (!slot.dataset.orig) slot.dataset.orig = slot.innerHTML;
       if (!p) p = priceOf(box.getAttribute('data-id'));
-      if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = true; }
+      // a "show" price keeps its line ("Have an account? Log in...") until someone signs in
+      if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); text.hidden = !show || !!account(); }
+      else if (show) { slot.innerHTML = slot.dataset.orig; text.hidden = !!account(); }
       else { slot.innerHTML = noPrice(false); note.hidden = true; text.hidden = false; }
     }
   }
@@ -352,7 +375,9 @@
   function paintHead(box) {
     if (!box.hasAttribute('data-priced')) return;
     var slot = $('[data-price-slot]', box), note = $('[data-price-note]', box), p = priceOf(box.getAttribute('data-id'));
+    if (!slot.dataset.orig) slot.dataset.orig = slot.innerHTML;
     if (p) { slot.textContent = p.max > p.min ? money(p.min) + ' – ' + money(p.max) : money(p.min); note.hidden = !(p.max > p.min); }
+    else if (box.getAttribute('data-price-mode') === 'show') slot.innerHTML = slot.dataset.orig;
     else { slot.innerHTML = noPrice(false); note.hidden = true; }
   }
   var keyOf = function (box, line) { return box.getAttribute('data-id') + '|' + line.getAttribute('data-line'); };
@@ -428,7 +453,7 @@
         var opts = JSON.parse(l.getAttribute('data-line')).map(function (o) { return o[1] == null ? [o[0], set[o[0]]] : o; });
         var show = l.hasAttribute('data-show') ? JSON.parse(l.getAttribute('data-show')).concat(setShow) : null;
         add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), show: show, sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
-              url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: box.hasAttribute('data-priced'), opts: opts, qty: q });
+              url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: box.hasAttribute('data-priced'), mode: box.getAttribute('data-price-mode') || '', opts: opts, qty: q });
         $('[data-q]', l).value = ''; added++;
       });
       if (!added) return;
@@ -501,7 +526,7 @@
       });
       add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'),
             name: box.getAttribute('data-name'), url: box.getAttribute('data-url'), img: box.getAttribute('data-img'),
-            priced: box.hasAttribute('data-priced'), opts: opts, show: show, qty: Math.max(1, parseInt(qty.value, 10) || 1) });
+            priced: box.hasAttribute('data-priced'), mode: box.getAttribute('data-price-mode') || '', opts: opts, show: show, qty: Math.max(1, parseInt(qty.value, 10) || 1) });
       btn.classList.add('is-added'); var label = $('span', btn), was = label.textContent; label.textContent = t('added');
       setTimeout(function () { btn.classList.remove('is-added'); label.textContent = was; }, 1600);
       openDrawer();
@@ -591,9 +616,15 @@
     paintAuth();
   }
 
+  // the public prices this page needs: its "show" product boxes and the cart's "show" lines
+  var publicIds = function () {
+    return $$('[data-buy][data-price-mode="show"], [data-pt][data-price-mode="show"]').map(function (b) { return b.getAttribute('data-id'); })
+      .concat(cart().filter(function (l) { return l.mode === 'show'; }).map(function (l) { return l.id; }));
+  };
+  var refresh = function () { return Promise.all([loadPrices(), loadPublic(publicIds())]).then(render); };
   // Other tabs changing the cart or the account
-  window.addEventListener('storage', function (e) { if (e.key === CART || e.key === ACCOUNT) { prices = null; pricesLoading = null; loadPrices().then(render); } });
+  window.addEventListener('storage', function (e) { if (e.key === CART || e.key === ACCOUNT) { prices = null; pricesLoading = null; refresh(); } });
 
   render();
-  loadPrices().then(render);
+  refresh();
 })();

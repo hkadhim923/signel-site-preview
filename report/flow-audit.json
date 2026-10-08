@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-07T21:01:36.629Z",
+ "generated": "2026-10-08T15:53:50.533Z",
  "results": [
   {
    "width": 1440,
@@ -45,9 +45,15 @@
   },
   {
    "width": 1440,
-   "name": "quantity picks the code and the price (AD2001Q1 at 24, Q2 at 25)",
+   "name": "quantity picks the code and the price (T-85-7: Q1 at 9, Q2 at 10, class P2)",
    "ok": true,
-   "detail": "24: $71.70 · 25: $67.40"
+   "detail": "visitor $85.80 · P2 9: $80.90 · 10: $77.90"
+  },
+  {
+   "width": 1440,
+   "name": "price categories: show for everyone, login after sign-in, quote never",
+   "ok": true,
+   "detail": "show \"$848.00 – $1,300.00\" · login \"Log in to see your price\" · quote \"Price on request\""
   },
   {
    "width": 1440,
@@ -201,9 +207,15 @@
   },
   {
    "width": 390,
-   "name": "quantity picks the code and the price (AD2001Q1 at 24, Q2 at 25)",
+   "name": "quantity picks the code and the price (T-85-7: Q1 at 9, Q2 at 10, class P2)",
    "ok": true,
-   "detail": "24: $71.70 · 25: $67.40"
+   "detail": "visitor $85.80 · P2 9: $80.90 · 10: $77.90"
+  },
+  {
+   "width": 390,
+   "name": "price categories: show for everyone, login after sign-in, quote never",
+   "ok": true,
+   "detail": "show \"$848.00 – $1,300.00\" · login \"Log in to see your price\" · quote \"Price on request\""
   },
   {
    "width": 390,

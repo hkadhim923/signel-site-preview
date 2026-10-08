@@ -1,6 +1,6 @@
 # signel.ca — what is broken on the original site
 
-Compiled 2026-10-07. Every link below was fetched from the live site.
+Compiled 2026-10-08. Every link below was fetched from the live site.
 Open the page in the **Where to check** column and you will see the problem there.
 
 ## 1. Download links that lead to a missing file
@@ -178,12 +178,13 @@ Open the page in the **Where to check** column and you will see the problem ther
 
 ## 4. Links to pages that no longer exist
 
-6 links inside page and post content point at URLs that return 404.
+7 links inside page and post content point at URLs that return 404.
 
 | Where to check | The link on that page points to | What happens |
 |---|---|---|
 | https://www.signel.ca/remorque-pour-signaleurs/ | https://www.signel.ca/product/remorque-pour-signaleur/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/boite-de-controle-rf-pour-feu-de-chantier-feuflex/ | 404 |
+| https://www.signel.ca/produit/logiciel-de-programmation-cgepro/<br>https://www.signel.ca/produit/boitier-de-controle-2/<br>https://www.signel.ca/produit/boitier-de-controle/ | https://www.signel.ca/produit/clavier-6-touches/ | 404 |
 | https://www.signel.ca/produit/support-motorise-sbm22/<br>https://www.signel.ca/produit/support-motorise-profil-bas/ | https://www.signel.ca/produit/fleche-de-signalisation-moulee-avec-capteur-photosensible/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/option-chargeur-de-batterie/ | 404 |
 | https://www.signel.ca/produit/feux-de-chantier-a-radio-frequence-copie/ | https://www.signel.ca/produit/option-panneau-solaire-pour-feuflex/ | 404 |
@@ -250,7 +251,7 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 9. Products with no SKU
 
-13 products. A customer cannot quote a part number and your team cannot look them up.
+8 products. A customer cannot quote a part number and your team cannot look them up.
 
 | Product | WordPress ID | Page |
 |---|---|---|
@@ -262,11 +263,6 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 | UltraFlex bollard | 112458 | https://www.signel.ca/produit/bollard-ultraflex/ |
 | No smoking or vaping signs – Cannabis | 78693 | https://www.signel.ca/produit/panneaux-interdiction-de-fumer-de-vapoter-cannabis/ |
 | Zero Tolerance for Cannabis at Work signs | 78683 | https://www.signel.ca/produit/panneaux-tolerance-zero-cannabis-travail/ |
-| OSHA standard signs: Fire extinguisher | 20998 | https://www.signel.ca/produit/panneaux-norme-osha-extincteur/ |
-| OSHA standard signs: Danger – Electrical hazard, authorized personnel only | 20255 | https://www.signel.ca/produit/panneaux-norme-osha-danger-danger-electrique-personnel-autorise-seulement/ |
-| CSA standard signs: Fire cabinet | 19494 | https://www.signel.ca/produit/panneaux-norme-csa-cabinet-dincendie-fire-cabinet/ |
-| CSA standard signs: Caution – Obstacle | 18734 | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
-| CSA standard signs: No running | 17973 | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
 
 ## 10. Products with no image
 
@@ -289,15 +285,10 @@ reader reads it out backwards. On a phone there is no way to use it at all.
 
 ## 11. Products in no category
 
-5 products. They cannot be reached by browsing, only by direct link or search.
+0 products. They cannot be reached by browsing, only by direct link or search.
 
 | Product | SKU | Page |
 |---|---|---|
-| OSHA standard signs: Fire extinguisher | (none) | https://www.signel.ca/produit/panneaux-norme-osha-extincteur/ |
-| OSHA standard signs: Danger – Electrical hazard, authorized personnel only | (none) | https://www.signel.ca/produit/panneaux-norme-osha-danger-danger-electrique-personnel-autorise-seulement/ |
-| CSA standard signs: Fire cabinet | (none) | https://www.signel.ca/produit/panneaux-norme-csa-cabinet-dincendie-fire-cabinet/ |
-| CSA standard signs: Caution – Obstacle | (none) | https://www.signel.ca/produit/panneaux-norme-csa-attention-obstacle/ |
-| CSA standard signs: No running | (none) | https://www.signel.ca/produit/panneaux-norme-csa-interdiction-de-courir/ |
 
 ## 12. Pages that are published but show nothing
 
@@ -324,7 +315,6 @@ and the injected content is a symptom rather than the problem. None of it is car
 | https://www.signel.ca/produit/moraillon-bouchon-de-cadenassage/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/cloture-temporaire/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/kit-pour-brigadier-scolaire/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
-| https://www.signel.ca/produit/interdiction-de-jeter-des-dechets/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/enseigne-pliante-pour-dissimuler-le-pictogramme/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/amortisseur-apneu/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |
 | https://www.signel.ca/produit/support-de-fleche-pivotant-en-acier/ | View the page source and search for `div-comments` | A link to ewpacfo.com, positioned off-screen |

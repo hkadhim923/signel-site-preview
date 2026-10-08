@@ -501,3 +501,20 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
   .ad-pair-l { padding-top: 0; }
   .ad-pair > select.ad-input { grid-column: auto; }
 }
+/* publishing from the back end: the steps as they run, and a password to hand over */
+.ad-pubrun h2 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.ad-pubsteps { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.ad-pubsteps li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--ad-ink2); }
+.ad-pubsteps li b { width: 18px; text-align: center; }
+.ad-pubsteps li.is-done b { color: #1E6B33; }
+.ad-pubsteps li.is-running b { color: var(--blue); }
+.ad-pubsteps li.is-failed b, .ad-bad { color: #B42318; }
+.ad-pubsteps li small { color: var(--muted); }
+.ad-pubrun.is-running { border: 1px solid #BFD3EA; }
+.ad-pubrun.is-done { border: 1px solid #A8DDB8; }
+.ad-pubrun.is-failed { border: 1px solid #F4B4AE; }
+.ad-publog { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--ad-soft); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color: var(--ad-ink2); white-space: pre-wrap; max-height: 140px; overflow: auto; }
+.ad-pwcard { border: 1px solid #A8DDB8; }
+.ad-pw code { display: inline-block; padding: 8px 14px; border-radius: 10px; background: var(--ad-soft); font: 700 20px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; user-select: all; }
+.ad-user-acts { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.ad-publish .ad-switch { margin: 4px 0 12px; }

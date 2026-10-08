@@ -8,10 +8,13 @@
      Publish           the changes made here (products, jobs, page text), and how they go online
      Website versions  every published version (rollback switched on at launch)
      Backups           copies of the changes, to go back to
-   Product changes are kept in this browser (localStorage 'signel.admin.changes') and published
-   as catalog.json, the file the build applies (src/model/catalog-edits.js). Requests are kept
-   in 'signel.requests' (written by the site: src/js/log.js signelRequest). A back end will
-   replace both stores and the demo sign-in, with the same shapes. */
+   Served by the back end (backend/server.js, on a computer at Signel), the dashboard signs
+   in against it, keeps every change in its shared draft (each save sends what changed: one
+   product, one job, one text) and publishes with one button: the site is rebuilt and goes
+   online. Served by the static preview (no back end), it is a demo: changes stay in this
+   browser (localStorage 'signel.admin.changes') and are downloaded as catalog.json, the file
+   the build applies (src/model/catalog-edits.js). Requests stay in 'signel.requests' (written
+   by the site: src/js/log.js signelRequest) either way, until the site itself has a server. */
 (function () {
   'use strict';
   var ROOT = document.documentElement.getAttribute('data-root') || '';
@@ -36,6 +39,19 @@
     x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>'
   };
 
+  /* ---------- the back end, when this page is served by it (backend/server.js) ---------- */
+  var BACKEND = fetch(ROOT + '/api/status', { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { return d && d.backend ? d : null; }).catch(function () { return null; });
+  function api(method, url, data) {
+    var o = { method: method, credentials: 'same-origin', headers: { 'X-Signel': '1' } };
+    if (data !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(data); }
+    return fetch(ROOT + '/api/' + url, o).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var e = new Error(d.error || 'The server said ' + r.status); e.status = r.status; throw e; } return d; });
+    });
+  }
+  var clone = function (v) { return JSON.parse(JSON.stringify(v)); };
+  var signIn = function (me) { sessionStorage.setItem(SESSION, JSON.stringify({ email: me.email, name: me.name, role: me.role, at: Date.now(), backend: true })); };
+
   /* ---------- roles and staff (src/model/admin-roles.js) ---------- */
   var ACCESS = { roles: {}, sections: [], staff: [] };
   try { ACCESS = JSON.parse($('#admin-access').textContent); } catch (e) {}
@@ -50,24 +66,46 @@
   /* ---------- sign-in (demo: the back end will check real accounts and passwords) ---------- */
   var login = $('[data-admin-login]');
   if (login) {
-    if (sessionStorage.getItem(SESSION)) location.replace(ROOT + '/admin/dashboard/');
+    var enter = function () { location.href = ROOT + '/admin/dashboard/'; };
+    BACKEND.then(function (b) {
+      if (!b) { if (sessionStorage.getItem(SESSION)) location.replace(ROOT + '/admin/dashboard/'); return; }
+      // real accounts: no demo list
+      var demo = $('.adm-demo'); if (demo) demo.hidden = true;
+      if (b.signedIn) api('GET', 'me').then(function (d) { signIn(d.me); enter(); }).catch(function () {});
+    });
     $$('[data-demo-email]').forEach(function (b) { b.addEventListener('click', function () { login.email.value = b.getAttribute('data-demo-email'); login.password.value = 'signel-admin'; login.password.focus(); }); });
     login.addEventListener('submit', function (e) {
       e.preventDefault();
       var email = login.email.value.trim().toLowerCase(), pw = login.password.value, err = $('[data-admin-err]');
-      var u = staff().filter(function (x) { return x.email.toLowerCase() === email; })[0];
-      if (u && u.active && pw === 'signel-admin') {
-        sessionStorage.setItem(SESSION, JSON.stringify({ email: u.email, name: u.name, role: u.role, at: Date.now() }));
-        location.href = ROOT + '/admin/dashboard/';
-      } else { err.textContent = u && !u.active ? 'This account is switched off. Ask Administration.' : 'Wrong email or password.'; err.hidden = false; }
+      BACKEND.then(function (b) {
+        if (b) {
+          api('POST', 'login', { email: email, password: pw }).then(function (d) { signIn(d.me); enter(); })
+            .catch(function (x) { err.textContent = x.message; err.hidden = false; });
+          return;
+        }
+        var u = staff().filter(function (x) { return x.email.toLowerCase() === email; })[0];
+        if (u && u.active && pw === 'signel-admin') {
+          sessionStorage.setItem(SESSION, JSON.stringify({ email: u.email, name: u.name, role: u.role, at: Date.now() }));
+          enter();
+        } else { err.textContent = u && !u.active ? 'This account is switched off. Ask Administration.' : 'Wrong email or password.'; err.hidden = false; }
+      });
     });
     return;
   }
 
   var app = $('[data-admin-app]');
   if (!app) return;
-  if (!sessionStorage.getItem(SESSION)) { location.replace(ROOT + '/admin/'); return; }
-  $('[data-admin-logout]').addEventListener('click', function () { sessionStorage.removeItem(SESSION); location.href = ROOT + '/admin/'; });
+  if (!sessionStorage.getItem(SESSION)) {
+    // a new tab of someone signed in to the back end: ask it who they are
+    BACKEND.then(function (b) { return b && b.signedIn ? api('GET', 'me') : null; })
+      .then(function (d) { if (d) { signIn(d.me); location.reload(); } else location.replace(ROOT + '/admin/'); })
+      .catch(function () { location.replace(ROOT + '/admin/'); });
+    return;
+  }
+  var signOut = function () { sessionStorage.removeItem(SESSION); location.href = ROOT + '/admin/'; };
+  $('[data-admin-logout]').addEventListener('click', function () {
+    BACKEND.then(function (b) { return b ? api('POST', 'logout', {}).catch(function () {}) : null; }).then(signOut);
+  });
   // who is signed in, and what their role may open
   var ME = JSON.parse(sessionStorage.getItem(SESSION));
   if (!ME.role) { var u0 = staff().filter(function (x) { return x.email === ME.email; })[0]; ME.role = u0 ? u0.role : 'administration'; ME.name = u0 ? u0.name : 'Administration'; }
@@ -95,6 +133,9 @@
   var changes = store.get(CHANGES, { products: {}, new: [] });
   // job postings and page text changed here go online with the products (Publish)
   changes.jobs = changes.jobs || {}; changes.text = changes.text || {};
+  // with a back end: its status, the draft as last saved there (BASE), its revision, and a
+  // price list imported and not published yet
+  var SERVER = null, BASE = null, REV = 0, PRICES_PENDING = null;
   var FIELDS = ['name', 'name_fr', 'sku', 'internalId', 'categories', 'description', 'description_fr', 'priceStyle', 'images', 'images_fr', 'documents', 'options', 'specs', 'weight', 'dimensions', 'pricing', 'hidden'];
   // the language being edited: name, description, pictures and option wording show in it;
   // everything else (SKU, categories, prices...) is the same in both and shows once
@@ -108,7 +149,19 @@
 
   // the sections in their own files load after this one: start once they have registered
   var domReady = new Promise(function (res) { if (document.readyState === 'complete') res(); else document.addEventListener('DOMContentLoaded', res); });
-  Promise.all([fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }), domReady]).then(function (all) {
+  // with a back end, the changes are its shared draft, not this browser's
+  var fromServer = BACKEND.then(function (b) {
+    if (!b) return null;
+    SERVER = b;
+    return Promise.all([api('GET', 'me'), api('GET', 'draft')]).then(function (r) {
+      var me = r[0].me;
+      if (me.role !== ME.role || me.name !== ME.name) { signIn(me); location.reload(); return new Promise(function () {}); }
+      applyDraft(r[1]);
+      var pw = $('[data-admin-password]'); if (pw) { pw.hidden = false; pw.addEventListener('click', changePassword); }
+      return b;
+    }, function (e) { if (e.status === 401) { signOut(); return new Promise(function () {}); } throw e; });
+  });
+  Promise.all([fetch(ROOT + '/admin/catalog-data.json').then(function (r) { return r.json(); }), domReady, fromServer]).then(function (all) {
     var d = all[0];
     DATA = d;
     d.products.forEach(function (p) {
@@ -154,7 +207,7 @@
     if (e.key === 'Escape') closeDrawer();
   });
 
-  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length; }
+  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length + (PRICES_PENDING ? 1 : 0); }
   function paintBadges() {
     var counts = { publish: pendingCount(), requests: requests().filter(function (x) { return x.status === 'new'; }).length };
     Object.keys(MOD).forEach(function (k) { if (MOD[k].badge) counts[k] = MOD[k].badge(); });
@@ -621,7 +674,55 @@
     if (!quiet) toast('Saved. Publish when you are ready to put it on the website.');
     return true;
   }
-  function save() { var ok = store.set(CHANGES, changes); paintBadges(); return ok; }
+  function save() {
+    if (!SERVER) { var ok = store.set(CHANGES, changes); paintBadges(); return ok; }
+    sync(); paintBadges(); return true;
+  }
+  /* ---------- the back end's draft: what changed since the last save is sent, part by part ---------- */
+  function applyDraft(d) {
+    changes = d.changes; ['products', 'jobs', 'text'].forEach(function (k) { changes[k] = changes[k] || {}; }); changes.new = changes.new || [];
+    BASE = clone(changes); REV = d.rev; PRICES_PENDING = d.prices || null;
+  }
+  function diff() {
+    var set = [], del = [];
+    ['products', 'jobs', 'text'].forEach(function (k) {
+      var a = changes[k] || {}, b = BASE[k] || {};
+      Object.keys(a).forEach(function (id) { if (!same(a[id], b[id])) set.push([[k, id], clone(a[id])]); });
+      Object.keys(b).forEach(function (id) { if (!(id in a)) del.push([k, id]); });
+    });
+    if (!same(changes.new, BASE.new)) set.push([['new'], clone(changes.new)]);
+    return { set: set, del: del };
+  }
+  var syncing = null, again = false;
+  function sync() {
+    if (syncing) { again = true; return syncing; }
+    var patch = diff();
+    if (!patch.set.length && !patch.del.length) return Promise.resolve();
+    syncing = api('PATCH', 'draft', patch).then(function (d) {
+      patch.set.forEach(function (x) { if (x[0][0] === 'new') BASE.new = x[1]; else BASE[x[0][0]][x[0][1]] = x[1]; });
+      patch.del.forEach(function (p) { delete BASE[p[0]][p[1]]; });
+      REV = d.rev;
+    }).catch(function (e) {
+      if (e.status === 401) { toast('You were signed out. Sign in again: your last change was not saved.'); setTimeout(signOut, 2500); }
+      else toast('Not saved on the server: ' + e.message);
+    }).then(function () { syncing = null; if (again) { again = false; return sync(); } });
+    return syncing;
+  }
+  // someone else's changes: picked up when this window comes back, if nothing here is waiting
+  window.addEventListener('focus', function () {
+    if (!SERVER || dirty || syncing || !BASE || !same(changes, BASE)) return;
+    api('GET', 'draft').then(function (d) {
+      if (d.rev === REV) return;
+      applyDraft(d); paintBadges();
+      if (/^#?publish/.test(location.hash)) route();
+    }).catch(function () {});
+  });
+  function changePassword() {
+    var current = prompt('Your current password'); if (current == null) return;
+    var next = prompt('Your new password (10 characters or more)'); if (next == null) return;
+    if (prompt('Your new password, once more') !== next) { toast('The two new passwords are not the same.'); return; }
+    api('POST', 'me/password', { current: current, next: next }).then(function () { toast('Password changed.'); }).catch(function (e) { toast(e.message); });
+  }
   function toast(msg) {
     var t = $('.adm-toast') || document.body.appendChild(Object.assign(document.createElement('div'), { className: 'adm-toast', role: 'status' }));
     t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('on'); }, 3500);
@@ -651,14 +752,21 @@
       if (!MOD[k].changes) return;
       MOD[k].changes().forEach(function (c, i) { var key = k + ':' + i; undoers[key] = c.undo; list.push(Object.assign({ thumb: '<span class="ad-thumb ad-thumb--none">' + (c.icon || ICON.up) + '</span>', undo: key, undoTitle: 'Undo these changes' }, c)); });
     });
-    var chipTone = { New: 'green', Edited: 'amber', Closed: 'gray' };
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(list.length, 'change', 'changes') + ' made in this browser, not on the website yet.' : 'Everything you changed is on the website.') + '</p></div></div>' +
+    if (PRICES_PENDING) list.unshift({ thumb: '<span class="ad-thumb ad-thumb--none">' + ICON.tag + '</span>', title: 'Price list: ' + PRICES_PENDING.file,
+      what: plural(PRICES_PENDING.cells, 'price', 'prices') + ' changed on ' + plural(PRICES_PENDING.lines, 'line', 'lines') + ', imported ' + ago(PRICES_PENDING.at), chip: 'Imported', go: can('prices') ? 'prices' : '', undo: 'prices', undoTitle: 'Undo the import' });
+    var chipTone = { New: 'green', Edited: 'amber', Closed: 'gray', Imported: 'green' };
+    var publishCard = SERVER
+      ? '<div class="ad-card ad-publish ad-publish--one"><div class="ad-step"><b>1</b><div><h2>Publish</h2><p class="ad-muted">Everything above, by everyone, goes on the website: the site is rebuilt (a minute or two) and a version is saved, so it can be undone.</p>' +
+        (SERVER.online ? '<label class="ad-switch"><input type="checkbox" data-pub-online checked><span></span><b>Also put it online</b><small class="ad-muted">' + esc(SERVER.url.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</small></label>' : '<p class="ad-muted ad-small">Online publishing is not set up on this computer: the changes go on the website here (' + esc(location.host) + '). backend/README.md explains how to set it up.</p>') +
+        '<button type="button" class="ad-btn ad-btn--primary" data-pub-go>Publish now</button></div></div></div>'
+      : '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Download the changes</h2><p class="ad-muted">One file with every change above (catalog.json).</p><button type="button" class="ad-btn ad-btn--primary" data-export>Download the changes</button></div></div>' +
+        '<div class="ad-step"><b>2</b><div><h2>Send it to put it online</h2><p class="ad-muted">This is the demo dashboard (no back end): the file is added to the website project (data/admin/catalog.json) and the site is rebuilt. Run the dashboard from the back end (backend/server.js) to publish with one button.</p></div></div></div>';
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(list.length, 'change', 'changes') + (SERVER ? ' not on the website yet.' : ' made in this browser, not on the website yet.') : 'Everything you changed is on the website.') + '</p></div></div>' +
+      '<div data-pub-progress></div>' +
       (list.length ? '<div class="ad-card ad-card--flush"><ul class="ad-change-list">' + list.map(function (c) {
         return '<li>' + c.thumb + '<span class="ad-mini-t"><b>' + esc(c.title) + '</b><small>' + esc(c.what) + '</small></span><em class="ad-chip ad-chip--' + (chipTone[c.chip] || 'amber') + '">' + esc(c.chip) + '</em>' +
           (c.go ? '<button type="button" class="ad-btn" data-go="' + esc(c.go) + '">Open</button>' : '') + '<button type="button" class="ad-icon-btn" data-undo="' + esc(c.undo) + '" title="' + esc(c.undoTitle) + '" aria-label="Undo">' + ICON.x + '</button></li>';
-      }).join('') + '</ul></div>' +
-      '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Download the changes</h2><p class="ad-muted">One file with every change above (catalog.json).</p><button type="button" class="ad-btn ad-btn--primary" data-export>Download the changes</button></div></div>' +
-      '<div class="ad-step"><b>2</b><div><h2>Send it to put it online</h2><p class="ad-muted">Until the back end is connected, the file is added to the website project (data/admin/catalog.json) and the site is rebuilt: new products appear in their categories and in search. Once the back end is connected, this page will have a single Publish button.</p></div></div></div>' : '<div class="ad-empty-state">' + ICON.up + '<h2>Nothing to publish</h2><p>Changes you save to products appear here until they are on the website.</p><button type="button" class="ad-btn ad-btn--primary" data-go="products">Go to products</button></div>') +
+      }).join('') + '</ul></div>' + publishCard : '<div class="ad-empty-state">' + ICON.up + '<h2>Nothing to publish</h2><p>Changes you save to products appear here until they are on the website.</p><button type="button" class="ad-btn ad-btn--primary" data-go="products">Go to products</button></div>') +
       '<div class="ad-card"><h2>Changes file from someone else?</h2><p class="ad-muted">Load a catalog.json or a backup to continue where they left off. It replaces the changes in this browser.</p><label class="ad-btn">Load a file…<input type="file" accept="application/json" data-import hidden></label></div></div>';
     bindGo(viewEl);
     var ex = $('[data-export]', viewEl);
@@ -667,9 +775,25 @@
         products: changes.products, new: changes.new.map(function (n) { var c = Object.assign({}, n); delete c.isNew; return c; }), jobs: changes.jobs, text: changes.text });
       toast('catalog.json downloaded.');
     });
+    var pubBtn = $('[data-pub-go]', viewEl);
+    if (pubBtn) pubBtn.addEventListener('click', function () {
+      var online = $('[data-pub-online]', viewEl);
+      pubBtn.disabled = true;
+      // what is still being sent goes first, so it is published too
+      Promise.resolve(syncing).then(function () { return sync(); })
+        .then(function () { return api('POST', 'publish', { online: !!(online && online.checked) }); })
+        .then(function () { watchPublish(); })
+        .catch(function (e) { pubBtn.disabled = false; toast(e.message); });
+    });
+    if (SERVER) api('GET', 'publish').then(function (d) { if (d.job && d.job.state === 'running') watchPublish(); }).catch(function () {});
     viewEl.addEventListener('click', function (e) {
       var u = e.target.closest('[data-undo]'); if (!u) return;
       var key = u.getAttribute('data-undo');
+      if (key === 'prices') {
+        if (!confirm('Undo the price list import? The prices go back to what is on the website.')) return;
+        api('DELETE', 'prices').then(function () { PRICES_PENDING = null; paintBadges(); showPublish(); toast('Import undone.'); }).catch(function (x) { toast(x.message); });
+        return;
+      }
       if (key.indexOf('p:') !== 0) { if (!confirm('Undo these changes?')) return; undoers[key](); save(); showPublish(); return; }
       var id = Number(key.slice(2));
       if (!confirm(byId[id] ? 'Undo the changes to this product?' : 'Delete this new product?')) return;
@@ -691,6 +815,32 @@
     });
   }
 
+  // a publish on the back end, step by step; once done, the dashboard reloads the new site's data
+  function watchPublish() {
+    var box = $('[data-pub-progress]', viewEl); if (!box) return;
+    $$('[data-pub-go]', viewEl).forEach(function (b) { b.disabled = true; });
+    var mark = { done: '✓', running: '…', failed: '✕', skipped: '–' };
+    var tick = function () {
+      api('GET', 'publish').then(function (d) {
+        var j = d.job; if (!j || !document.body.contains(box)) return;
+        var res = j.result || {};
+        box.innerHTML = '<div class="ad-card ad-pubrun is-' + j.state + '"><h2>' + (j.state === 'running' ? 'Publishing…' : j.state === 'done' ? 'Published' : 'Not published') + ' <small class="ad-muted">by ' + esc(j.by.name) + ', ' + ago(j.startedAt) + '</small></h2>' +
+          '<ol class="ad-pubsteps">' + j.steps.map(function (st) { return '<li class="is-' + st.state + '"><b>' + mark[st.state] + '</b> ' + esc(st.name) + (st.ms && st.state !== 'running' ? ' <small>' + Math.round(st.ms / 1000) + ' s</small>' : '') + (st.error ? '<small class="ad-bad"> ' + esc(st.error) + '</small>' : '') + '</li>'; }).join('') + '</ol>' +
+          (j.state === 'failed' ? '<p class="ad-bad">' + esc(j.error || '') + '</p><p class="ad-muted">The website is as it was, and every change is still here: fix what the message says, then publish again.</p>' : '') +
+          (j.state === 'done' ? '<p class="ad-muted">' + [res.git ? 'Version: ' + res.git : '', res.online ? 'Online: ' + res.online : ''].filter(Boolean).map(esc).join('<br>') + '</p><button type="button" class="ad-btn ad-btn--primary" data-pub-reload>Continue</button>' : '') +
+          (j.state === 'running' ? '<pre class="ad-publog">' + esc(j.log.slice(-6).join('\n')) + '</pre>' : '') + '</div>';
+        var r = $('[data-pub-reload]', box); if (r) r.addEventListener('click', function () { location.reload(); });
+        if (j.state === 'running') setTimeout(tick, 1500);
+        else {
+          $$('[data-pub-go]', viewEl).forEach(function (b) { b.disabled = false; });
+          // what is left in the draft (changes made during the publish stay)
+          if (j.state === 'done') { toast('Published.'); api('GET', 'draft').then(function (d) { applyDraft(d); paintBadges(); }).catch(function () {}); }
+        }
+      }).catch(function (e) { box.innerHTML = '<div class="ad-card"><p class="ad-bad">' + esc(e.message) + '</p></div>'; });
+    };
+    tick();
+  }
+
   /* ---------- Prices: the Excel price list (in French), out and back in ----------
      Export downloads the list the build wrote (src/model/price-sheet.js). Import reads a
      returned sheet here, with the same code as tools/price-sheet.mjs (/admin/xlsx.js and
@@ -703,20 +853,22 @@
   }
   function showPrices() {
     var day = new Date().toISOString().slice(0, 10);
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Prices</h1><p class="ad-muted">One Excel price list, in French: every item the website sells, with its parent and child codes, the quantities each code covers and its price for each class, P1 to P7. Export it, change the prices, import it back.</p></div></div>' +
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Prices</h1><p class="ad-muted">One Excel price list, in French: every item the website sells, with its codes (parent, child, Code SIGNEL), its price for each class P1 to P7, its quantity breaks (QTY2, QTY3) and how its price shows on the site (Price Category). Road signs and reflective sheeting have their prices in their own tabs. Export it, change it, import it back.</p></div></div>' +
       '<div class="ad-tiles" data-price-tiles></div>' +
       '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Export the price list</h2><p class="ad-muted">Always the latest prices. Codes that belong together (a parent and its versions, AB1022 and AB1022P) sit together; versions fold under their parent.</p>' +
       '<a class="ad-btn ad-btn--primary" href="' + ROOT + '/admin/liste-de-prix.xlsx" download="liste-de-prix-' + day + '.xlsx">' + ICON.up.replace('M12 16V4M7 9l5-5 5 5', 'M12 4v12M7 11l5 5 5-5') + 'Export to Excel</a></div></div>' +
-      '<div class="ad-step"><b>2</b><div><h2>Import the changed list</h2><p class="ad-muted">Change the yellow P1 to P7 columns, and the green « Quantité » column for quantity codes. You will see every change before anything is kept.</p>' +
+      '<div class="ad-step"><b>2</b><div><h2>Import the changed list</h2><p class="ad-muted">Change the yellow P1 to P7 columns, the green QTY2 and QTY3, the purple Price Category (show price, login to see price, ask for quote, remove from website) and the comments. You will see every change before anything is kept.</p>' +
       '<label class="ad-drop" data-price-drop><input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-price-file hidden><b>Choose the Excel file</b><span>or drop it here (.xlsx)</span></label></div></div></div>' +
       '<div data-price-result></div></div>';
     priceList().then(function (d) {
       var sold = d.rows.filter(function (r) { return r.kind !== 'parent'; }), priced = sold.filter(function (r) { return r.prices[0]; }).length;
-      var classed = sold.filter(function (r) { return r.prices.slice(1).some(Boolean); }).length;
+      var products = {}; d.rows.forEach(function (r) { products[r.pid] = r.display || 'login'; });
+      var shows = { show: 0, login: 0, quote: 0, remove: 0 }; Object.keys(products).forEach(function (k) { shows[products[k]]++; });
       $('[data-price-tiles]', viewEl).innerHTML =
-        '<div class="ad-tile"><small>Items sold</small><b>' + sold.length.toLocaleString('en-CA') + '</b><span>versions and items, each with its code</span></div>' +
-        '<div class="ad-tile"><small>With a P1 price</small><b>' + priced.toLocaleString('en-CA') + '</b><span>' + (sold.length - priced).toLocaleString('en-CA') + ' on request</span></div>' +
-        '<div class="ad-tile"><small>With P2 to P7 prices</small><b>' + classed.toLocaleString('en-CA') + '</b><span>the others use their P1 price for every class</span></div>';
+        '<div class="ad-tile"><small>Items sold</small><b>' + sold.length.toLocaleString('en-CA') + '</b><span>' + priced.toLocaleString('en-CA') + ' with a P1 price</span></div>' +
+        '<div class="ad-tile"><small>Price shown to everyone</small><b>' + shows.show.toLocaleString('en-CA') + '</b><span>products (show price)</span></div>' +
+        '<div class="ad-tile"><small>Price after login</small><b>' + shows.login.toLocaleString('en-CA') + '</b><span>products; ' + shows.quote + ' on quote only</span></div>' +
+        '<div class="ad-tile"><small>Off the site for now</small><b>' + shows.remove.toLocaleString('en-CA') + '</b><span>products (remove from website)</span></div>';
     }).catch(function () { $('[data-price-tiles]', viewEl).innerHTML = '<p class="ad-muted">The price list could not be loaded (admin/price-list.json).</p>'; });
     var drop = $('[data-price-drop]', viewEl), input = $('[data-price-file]', viewEl);
     input.addEventListener('change', function () { if (input.files[0]) readSheet(input.files[0]); });
@@ -733,7 +885,7 @@
       var list = function (items, cls) { return items.length ? '<ul class="ad-notes ' + cls + '">' + items.slice(0, 50).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + (items.length > 50 ? '<li>… and ' + (items.length - 50) + ' more</li>' : '') + '</ul>' : ''; };
       if (!res.next) { out.innerHTML = '<div class="ad-card"><h2>This file cannot be imported</h2>' + list(res.errors, 'is-bad') + '</div>'; return; }
       var ch = res.changes, MAX = 300;
-      var head = res.cells === 1 ? '1 price changes' : res.cells ? res.cells.toLocaleString('en-CA') + ' prices change' : ch.length ? 'Quantities change' : 'No price changes';
+      var head = res.cells === 1 ? '1 price changes' : res.cells ? res.cells.toLocaleString('en-CA') + ' prices change' : ch.length ? 'Breaks or price categories change' : 'No changes';
       out.innerHTML = '<div class="ad-card"><div class="ad-card-head"><h2>' + head + (ch.length ? ' <small class="ad-muted">on ' + plural(ch.length, 'line', 'lines') + '</small>' : '') + '</h2><span class="ad-muted">' + esc(file.name) + ' · ' + res.read.toLocaleString('en-CA') + ' lines read</span></div>' +
         list(res.errors, 'is-bad') + list(res.warnings, 'is-warn') +
         (ch.length ? '<div class="ad-table-wrap"><table class="ad-table ad-price-diff"><thead><tr><th>Code</th><th>Product</th><th>Changes</th></tr></thead><tbody>' + ch.slice(0, MAX).map(function (c) {
@@ -742,13 +894,30 @@
             return '<span class="ad-pchg is-' + how + '"><b>' + x.cls + '</b> ' + (x.from == null ? '—' : cad(x.from)) + ' → ' + (x.to == null ? 'empty' : cad(x.to)) + '</span>';
           });
           if (c.qty) bits.push('<span class="ad-pchg"><b>Quantité</b> ' + esc(c.qty.from || '—') + ' → ' + esc(c.qty.to || '—') + '</span>');
+          var brk = function (b) { return b ? b[0] + ' / ' + (b[1] || '—') : '—'; };
+          if (c.breaks) bits.push('<span class="ad-pchg"><b>QTY2 / QTY3</b> ' + esc(brk(c.breaks.from)) + ' → ' + esc(brk(c.breaks.to)) + '</span>');
+          var SHOW = { show: 'show price', login: 'login to see price', quote: 'ask for quote', remove: 'remove from website' };
+          if (c.display) bits.push('<span class="ad-pchg is-' + (c.display.to === 'remove' ? 'off' : 'new') + '"><b>Price Category</b> ' + esc(SHOW[c.display.from || 'login']) + ' → ' + esc(SHOW[c.display.to]) + '</span>');
           return '<tr><td><b>' + esc(c.code || '—') + '</b></td><td>' + esc(c.name) + (c.options ? '<small>' + esc(c.options) + '</small>' : '') + '</td><td><div class="ad-pchgs">' + bits.join('') + '</div></td></tr>';
         }).join('') + '</tbody></table></div>' + (ch.length > MAX ? '<p class="ad-muted">… and ' + (ch.length - MAX) + ' more lines, all in the file below.</p>' : '') +
-        '<div class="ad-publish ad-publish--one"><div class="ad-step"><b>3</b><div><h2>Put the new prices online</h2><p class="ad-muted">Until the back end is connected, the file below goes into the website project (data/prices/prix.json) and the site is rebuilt. Once the back end is connected, this step is a single Apply button.</p><button type="button" class="ad-btn ad-btn--primary" data-price-save>Download prix.json</button></div></div></div>' : '') + '</div>';
+        (SERVER
+          ? '<div class="ad-publish ad-publish--one"><div class="ad-step"><b>3</b><div><h2>Apply the new prices</h2><p class="ad-muted">They join the changes waiting on the Publish page, and go on the website at the next publish.</p><button type="button" class="ad-btn ad-btn--primary" data-price-apply>Apply these prices</button></div></div></div>'
+          : '<div class="ad-publish ad-publish--one"><div class="ad-step"><b>3</b><div><h2>Put the new prices online</h2><p class="ad-muted">This is the demo dashboard (no back end): the file below goes into the website project (data/prices/prix.json) and the site is rebuilt. From the back end (backend/server.js), this step is one button.</p><button type="button" class="ad-btn ad-btn--primary" data-price-save>Download prix.json</button></div></div></div>') : '') + '</div>';
+      var ap = $('[data-price-apply]', out);
+      if (ap) ap.addEventListener('click', function () {
+        ap.disabled = true;
+        api('POST', 'prices', { file: file.name, next: res.next, cells: res.cells, lines: ch.length }).then(function (d) {
+          PRICES_PENDING = d.prices; PRICES = null; paintBadges();
+          toast('Prices applied. Publish to put them on the website.');
+          go(can('publish') ? 'publish' : 'prices');
+        }).catch(function (e) { ap.disabled = false; toast(e.message); });
+      });
       var b = $('[data-price-save]', out);
       if (b) b.addEventListener('click', function () {
-        download('prix.json', { _about: 'Prices in CAD before taxes, by customer class P1..P7 (index 0..6): products sold as is and versions (codes), by id; quantities: the quantities a tier code covers. Empty class = the class before it; no P1 = Prix sur demande. See src/model/prices.js.',
-          updated: new Date().toISOString().slice(0, 10), source: file.name, classes: CLASSES, products: res.next.products, versions: res.next.versions, quantities: res.next.quantities });
+        var n = res.next;
+        download('prix.json', { _about: 'Prices in CAD before taxes, by customer class P1..P7 (index 0..6): products sold as is and versions (codes), by id. breaks: QTY2 and QTY3 of a code; quantities: older ranges for codes without breaks. display: show | login | quote | remove, login when absent; a product with no P1 price is quoted. sources: signs | sheeting (else Dynacom). codes: Code SIGNEL; notes: comments. See src/model/prices.js.',
+          updated: new Date().toISOString().slice(0, 10), source: file.name, classes: CLASSES, products: n.products, versions: n.versions, breaks: n.breaks, quantities: n.quantities,
+          display: n.display, sources: n.sources, codes: n.codes, notes: n.notes });
         toast('prix.json downloaded.');
       });
     }).catch(function (err) {
@@ -798,6 +967,7 @@
     $: $, $$: $$, esc: esc, norm: norm, store: store, plural: plural, ago: ago, money: function (n) { return money(n); },
     go: go, bindGo: bindGo, toast: toast, download: download, can: can, tile: tile, staff: staff, USERS: USERS, rte: rte, cleanHtml: cleanHtml, slugify: slugify,
     changes: function () { return changes; }, save: function () { var ok = save(); return ok; }, badges: function () { paintBadges(); },
+    backend: function () { return SERVER; }, api: api,
     requests: function () { return requests(); }, saveRequests: function (l) { saveRequests(l); }, products: function () { return DATA ? DATA.products : []; },
     // a section: { show(args), badge() -> number, tiles() -> [html], cards() -> [html], changes() -> [{ title, what, chip, go, undo }] }
     section: function (id, def) { MOD[id] = def; if (DATA) { paintBadges(); if ((location.hash.replace(/^#/, '').split('/')[0] || 'overview') === id) route(); } }
