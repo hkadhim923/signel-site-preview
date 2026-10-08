@@ -9,8 +9,9 @@
  *           the box and the cart), "login" ones need an approved account, and products
  *           without data-priced are quoted.
  *  prices   per item and quantity tier (src/model/prices.js): the quantity ordered picks the
- *           code (AD2001Q1 for 1-24, Q2 for 25-124...), the class picks the price; an empty
- *           class price takes the class before it.
+ *           tier (1, 2, 3: QTY2 and QTY3), the class picks the price; an empty class price
+ *           takes the class before it. The code shown is Dynacom's (no Q1/Q2/Q3); an order
+ *           line keeps its tier number for Signel.
  *  cart     localStorage ('signel.cart'): [{ key, id, sku, name, url, img, opts, qty }].
  *           Lines are "priced" (a price is known and the visitor is signed in) or "quote"
  *           (priced per order). Both go in the same cart; "Send request" emails the lot.
@@ -73,10 +74,10 @@
   var lineAt = function (key, qty) {
     var k = key ? lineKey(key) : null, all = full(), tiers = k && ((all && all[k]) || PUB[k]);
     if (!tiers) return null;
-    var q = Math.max(1, qty || 1), hit = tiers[0];
-    tiers.forEach(function (t) { if (q >= t[0]) hit = t; });
+    var q = Math.max(1, qty || 1), hit = tiers[0], tier = 1;
+    tiers.forEach(function (t, i) { if (q >= t[0]) { hit = t; tier = i + 1; } });
     var p = all && all[k] ? classPrice(hit[3]) : hit[3][0] || null;
-    return p ? { price: p, sku: hit[2] } : null;
+    return p ? { price: p, sku: hit[2], tier: tiers.length > 1 ? tier : null } : null;
   };
   // a product's range ("from"): the one-unit price of each of its items, for this class
   var rangeOf = function (id) {
@@ -93,7 +94,7 @@
   };
   var priceOf = function (id, key, qty) {
     var l = key ? lineAt(key, qty) : null;
-    if (l) return { min: l.price, max: l.price, sku: l.sku };
+    if (l) return { min: l.price, max: l.price, sku: l.sku, tier: l.tier };
     return rangeOf(id);
   };
   // where a price would be: the sign-in link, or for an account waiting for review, that
@@ -220,7 +221,7 @@
       id: num, number: num, at: d.toISOString(), lang: LOCALE.slice(0, 2), status: 'new',
       customer: acc ? { name: acc.name, company: acc.company, email: acc.email, phone: acc.phone, cls: approved() ? acc.cls || 'P1' : null, account: true }
                     : { name: st.name, company: st.company, email: st.email, phone: st.phone, account: false },
-      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null }; }),
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null, tier: (p && p.tier) || null }; }),
       subtotal: s.priced ? s.subtotal : null,
       delivery: { method: st.method, carrier: st.method === 'carrier' ? st.carrier : '', account: st.method === 'carrier' ? st.account : '', pickup: st.method === 'pickup' ? st.pickup : '' },
       payment: { method: st.pay, status: st.pay === 'card' ? 'paid' : 'to_invoice' },

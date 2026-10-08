@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-08T15:53:50.533Z",
+ "generated": "2026-10-08T17:47:31.739Z",
  "results": [
   {
    "width": 1440,
@@ -45,7 +45,7 @@
   },
   {
    "width": 1440,
-   "name": "quantity picks the code and the price (T-85-7: Q1 at 9, Q2 at 10, class P2)",
+   "name": "quantity picks the tier and the price (T-85-7: tier 1 at 9, tier 2 at 10, class P2)",
    "ok": true,
    "detail": "visitor $85.80 · P2 9: $80.90 · 10: $77.90"
   },
@@ -207,7 +207,7 @@
   },
   {
    "width": 390,
-   "name": "quantity picks the code and the price (T-85-7: Q1 at 9, Q2 at 10, class P2)",
+   "name": "quantity picks the tier and the price (T-85-7: tier 1 at 9, tier 2 at 10, class P2)",
    "ok": true,
    "detail": "visitor $85.80 · P2 9: $80.90 · 10: $77.90"
   },
