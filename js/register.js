@@ -1,8 +1,10 @@
 /* Signel Services - /create-account/ (src/pages/register.js).
  * Three steps; each field is checked when it is left and again on Continue. The postal code
  * fills in the province. A draft (everything but the password) is kept on this device so a
- * closed tab loses nothing. Until a back end exists, finishing signs the visitor in on this
- * device, the same as /login/ (localStorage 'signel.account', read by src/js/shop.js). */
+ * closed tab loses nothing. Served by the back end, finishing creates the account there (it
+ * waits for the team's review in Members) and signs it in; on a static host it is the demo,
+ * signed in on this device only. Either way the account is remembered in localStorage
+ * 'signel.account', read by src/js/shop.js. */
 (function () {
   'use strict';
   var root = document.querySelector('[data-register]'); if (!root) return;
@@ -129,14 +131,36 @@
     var acc = { email: get('email'), name: (get('first_name') + ' ' + get('last_name')).trim(), company: get('company'), phone: get('phone') + (get('ext') ? ' ext. ' + get('ext') : ''),
                 type: get('type'), position: get('position'), address: [get('address'), get('city'), (form.province.selectedOptions[0] || {}).text || get('province'), get('postal')].filter(Boolean).join(', '),
                 customer: get('customer'), customer_no: get('customer_no'), news: !!f.get('news'), message: get('message'),
-                status: 'pending' };   // Signel reviews the account and gives it its price class (dashboard, Requests)
-    try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {}
-    if (window.signelRequest) window.signelRequest('account', { customer: acc });
+                status: 'pending' };   // Signel reviews the account and gives it its price class (dashboard, Members)
+    var btn = $('[data-rg-submit]'), out = $('[data-rg-server-err]');
+    out.hidden = true; btn.disabled = true;
+    backend().then(function (yes) {
+      // on a static host: the demo, this device only
+      if (!yes) { remember(acc); if (window.signelRequest) window.signelRequest('account', { customer: acc }); return done(); }
+      // the back end creates the account (and its request for the team) and signs it in
+      return fetch(ROOT + '/api/account/register', { method: 'POST', credentials: 'same-origin', headers: { 'X-Signel': '1', 'X-Signel-Lang': /^fr/.test(document.documentElement.lang) ? 'fr' : 'en', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account: acc, password: form.password.value, page: location.pathname }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
+        .then(function (x) {
+          if (x.ok) { remember(Object.assign({ backend: true }, x.d.account)); return done(); }
+          if (x.status === 409) { go(1); show(form.email, msg('exists')); form.email.focus(); return; }
+          fail(x.d.error || String(x.status));
+        }, function () { fail(''); });
+    }).then(function () { btn.disabled = false; });
+    function fail(why) { out.textContent = msg('server').replace('{n}', why).replace(/\s*:\s*$/, '.'); out.hidden = false; out.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  });
+  // the back end (backend/server.js), when the site is served by it: it marks its pages
+  var BACKEND = Promise.resolve(document.documentElement.hasAttribute('data-backend'));
+  function backend() { return BACKEND; }
+  backend().then(function (yes) { if (yes) $$('[data-preview-note]', document).forEach(function (n) { n.hidden = true; }); });
+  function remember(acc) { try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {} }
+  function done() {
+    var get = function (k) { return (form[k] && form[k].value || '').trim(); };
     form.hidden = true;
-    var done = $('[data-rg-done]'); done.hidden = false;
+    var box = $('[data-rg-done]'); box.hidden = false;
     $('[data-rg-done-title]').textContent = root.getAttribute('data-done').replace('{name}', get('first_name'));
-    done.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    box.scrollIntoView({ block: 'center', behavior: 'smooth' });
     var next = new URLSearchParams(location.search).get('next');
     if (next && next.charAt(0) === '/') setTimeout(function () { location.href = ROOT + next; }, 1400);
-  });
+  }
 })();

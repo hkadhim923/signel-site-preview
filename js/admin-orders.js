@@ -5,7 +5,8 @@
      pickup   customer pickup, carrier pickup, immediate pickup (+ fee) or Signel installation;
               the customer is told when the order is ready
      billed   delivery calculated per order and billed on a second invoice
-   Kept in this browser ('signel.orders') until the back end exists, in the same shape. */
+   Kept in this browser ('signel.orders') without a back end; with one, on the server
+   (backend/data/orders.json, the same shape), through A.store. */
 (function () {
   'use strict';
   var A = window.SignelAdmin; if (!A) return;
@@ -52,8 +53,9 @@
     var box = $('[data-olist]'); if (!box) return;
     var all = orders(), q = A.norm(OF.q);
     if (!all.length) {
-      box.innerHTML = '<div class="ad-empty-state">' + A.ICON.inbox + '<h2>No orders yet</h2><p>Orders sent from the website\'s cart appear here. Until the back end is connected, only those sent from this browser show.</p><button type="button" class="ad-btn" data-oex>Add example orders to try it</button></div>';
-      $('[data-oex]').addEventListener('click', function () { put(examples()); show(); });
+      var srv = A.backend();
+      box.innerHTML = '<div class="ad-empty-state">' + A.ICON.inbox + '<h2>No orders yet</h2><p>Orders sent from the website\'s cart appear here.' + (srv ? '' : ' Until the back end is connected, only those sent from this browser show.') + '</p>' + (srv ? '' : '<button type="button" class="ad-btn" data-oex>Add example orders to try it</button>') + '</div>';
+      if (!srv) $('[data-oex]').addEventListener('click', function () { put(examples()); show(); });
       return;
     }
     var list = all.filter(function (o) {

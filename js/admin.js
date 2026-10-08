@@ -8,13 +8,14 @@
      Publish           the changes made here (products, jobs, page text), and how they go online
      Website versions  every published version (rollback switched on at launch)
      Backups           copies of the changes, to go back to
-   Served by the back end (backend/server.js, on a computer at Signel), the dashboard signs
-   in against it, keeps every change in its shared draft (each save sends what changed: one
-   product, one job, one text) and publishes with one button: the site is rebuilt and goes
-   online. Served by the static preview (no back end), it is a demo: changes stay in this
+   Served by the back end (backend/server.js), the dashboard signs in against it, keeps every
+   change in its shared draft (each save sends what changed: one product, one job, one text)
+   and publishes with one button: the site is rebuilt and goes online. Requests, orders and
+   member reviews are the server's too (what the website sent there), through the same store
+   keys. Served by the static preview (no back end), it is a demo: changes stay in this
    browser (localStorage 'signel.admin.changes') and are downloaded as catalog.json, the file
-   the build applies (src/model/catalog-edits.js). Requests stay in 'signel.requests' (written
-   by the site: src/js/log.js signelRequest) either way, until the site itself has a server. */
+   the build applies (src/model/catalog-edits.js); requests, orders and reviews are those of
+   this browser ('signel.requests', 'signel.orders', 'signel.members'). */
 (function () {
   'use strict';
   var ROOT = document.documentElement.getAttribute('data-root') || '';
@@ -23,9 +24,19 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+  // with a back end, what the website sends (requests, orders) and the member reviews live on
+  // the server: the same keys, read from what was last fetched (RECORDS), and what a section
+  // changes goes back as a patch (sendRecords)
+  var SHARED = { 'signel.requests': 'requests', 'signel.orders': 'orders', 'signel.members': 'members' }, RECORDS = null, CUSTOMERS = [];
   var store = {
-    get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
-    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+    get: function (k, d) {
+      if (RECORDS && SHARED[k]) return RECORDS[k] == null ? d : clone(RECORDS[k]);
+      try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; }
+    },
+    set: function (k, v) {
+      if (RECORDS && SHARED[k]) { sendRecords(k, v); return true; }
+      try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; }
+    }
   };
   var ICON = {
     pic: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
@@ -40,7 +51,8 @@
   };
 
   /* ---------- the back end, when this page is served by it (backend/server.js) ---------- */
-  var BACKEND = fetch(ROOT + '/api/status', { credentials: 'same-origin' })
+  // (it marks the pages it serves <html data-backend>; a static host makes no call)
+  var BACKEND = !document.documentElement.hasAttribute('data-backend') ? Promise.resolve(null) : fetch(ROOT + '/api/status', { credentials: 'same-origin' })
     .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { return d && d.backend ? d : null; }).catch(function () { return null; });
   function api(method, url, data) {
     var o = { method: method, credentials: 'same-origin', headers: { 'X-Signel': '1' } };
@@ -153,7 +165,7 @@
   var fromServer = BACKEND.then(function (b) {
     if (!b) return null;
     SERVER = b;
-    return Promise.all([api('GET', 'me'), api('GET', 'draft')]).then(function (r) {
+    return Promise.all([api('GET', 'me'), api('GET', 'draft'), loadRecords()]).then(function (r) {
       var me = r[0].me;
       if (me.role !== ME.role || me.name !== ME.name) { signIn(me); location.reload(); return new Promise(function () {}); }
       applyDraft(r[1]);
@@ -717,6 +729,48 @@
       if (/^#?publish/.test(location.hash)) route();
     }).catch(function () {});
   });
+
+  /* ---------- requests, orders, member reviews on the back end (backend/lib/records.js) ---------- */
+  // each one this role may open; the Members review also gets the customer accounts
+  function loadRecords() {
+    var got = {};
+    return Promise.all(Object.keys(SHARED).map(function (k) {
+      if (!can(SHARED[k])) return null;
+      return api('GET', 'records/' + SHARED[k]).then(function (d) { got[k] = d[SHARED[k]]; if (d.customers) CUSTOMERS = d.customers; }, function () {});
+    })).then(function () { var was = RECORDS; RECORDS = got; return !was || !same(was, got); });
+  }
+  // what a section saved, compared with what it read: lists by id, the review by email
+  function sendRecords(k, v) {
+    var old = RECORDS[k], patch;
+    if (Array.isArray(v)) {
+      var was = {}, now = {};
+      (old || []).forEach(function (x) { was[x.id] = x; });
+      v.forEach(function (x) { now[x.id] = true; });
+      patch = { set: v.filter(function (x) { return !was[x.id] || !same(x, was[x.id]); }), del: (old || []).filter(function (x) { return !now[x.id]; }).map(function (x) { return x.id; }) };
+      if (!patch.set.length && !patch.del.length) return;
+    } else {
+      old = old || {}; patch = { set: {}, del: Object.keys(old).filter(function (x) { return !(x in v); }) };
+      Object.keys(v).forEach(function (x) { if (!same(v[x], old[x])) patch.set[x] = v[x]; });
+      if (!Object.keys(patch.set).length && !patch.del.length) return;
+    }
+    RECORDS[k] = clone(v);
+    api('PATCH', 'records/' + SHARED[k], patch).catch(function (e) {
+      if (e.status === 401) { toast('You were signed out. Sign in again: your last change was not saved.'); setTimeout(signOut, 2500); return; }
+      toast('Not saved on the server: ' + e.message);
+      loadRecords().then(function () { paintBadges(); refreshRecords(); });
+    });
+  }
+  // new orders and requests: when this window comes back, and every minute while it is open
+  function refreshRecords() {
+    if (!/^#?(overview|orders|requests|members)?(\/|$)/.test(location.hash) || dirty || $('[data-drawer].on')) return;
+    route();
+  }
+  function pollRecords() {
+    if (!RECORDS || document.hidden) return;
+    loadRecords().then(function (changed) { if (changed) { paintBadges(); refreshRecords(); } }).catch(function () {});
+  }
+  window.addEventListener('focus', pollRecords);
+  setInterval(pollRecords, 60000);
   function changePassword() {
     var current = prompt('Your current password'); if (current == null) return;
     var next = prompt('Your new password (10 characters or more)'); if (next == null) return;
@@ -967,7 +1021,7 @@
     $: $, $$: $$, esc: esc, norm: norm, store: store, plural: plural, ago: ago, money: function (n) { return money(n); },
     go: go, bindGo: bindGo, toast: toast, download: download, can: can, tile: tile, staff: staff, USERS: USERS, rte: rte, cleanHtml: cleanHtml, slugify: slugify,
     changes: function () { return changes; }, save: function () { var ok = save(); return ok; }, badges: function () { paintBadges(); },
-    backend: function () { return SERVER; }, api: api,
+    backend: function () { return SERVER; }, api: api, customers: function () { return CUSTOMERS; },
     requests: function () { return requests(); }, saveRequests: function (l) { saveRequests(l); }, products: function () { return DATA ? DATA.products : []; },
     // a section: { show(args), badge() -> number, tiles() -> [html], cards() -> [html], changes() -> [{ title, what, chip, go, undo }] }
     section: function (id, def) { MOD[id] = def; if (DATA) { paintBadges(); if ((location.hash.replace(/^#/, '').split('/')[0] || 'overview') === id) route(); } }
@@ -1008,9 +1062,9 @@
     var all = requests(), q = norm(RF.q);
     var list = all.filter(function (r) { return (!RF.type || r.type === RF.type) && (!q || norm(who(r) + ' ' + JSON.stringify((r.data || {}).customer || {})).indexOf(q) >= 0); });
     if (!all.length) {
-      board.outerHTML = '<div class="ad-empty-state" data-board>' + ICON.inbox + '<h2>No requests yet</h2><p>Requests appear here when a visitor creates an account or writes to you (carts sent from the site are in Orders). Until the back end is connected, only those sent from this browser show.</p>' +
-        '<button type="button" class="ad-btn" data-examples>Add example requests to try the board</button></div>';
-      $('[data-examples]').addEventListener('click', function () { saveRequests(examples()); showRequests(); });
+      board.outerHTML = '<div class="ad-empty-state" data-board>' + ICON.inbox + '<h2>No requests yet</h2><p>Requests appear here when a visitor creates an account or writes to you (carts sent from the site are in Orders).' + (SERVER ? '' : ' Until the back end is connected, only those sent from this browser show.') + '</p>' +
+        (SERVER ? '' : '<button type="button" class="ad-btn" data-examples>Add example requests to try the board</button>') + '</div>';
+      if (!SERVER) $('[data-examples]').addEventListener('click', function () { saveRequests(examples()); showRequests(); });
       return;
     }
     board.innerHTML = COLS.map(function (c) {

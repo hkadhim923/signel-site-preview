@@ -3,8 +3,9 @@
               Administration approves it with its price class (P1 to P7) or refuses it.
      Users    staff accounts and their role (Administration only); the roles and what each opens
               are in src/model/admin-roles.js.
-   Kept in this browser until the back end exists ('signel.members', 'signel.admin.users'),
-   in the shapes the back end will use. */
+   Without a back end, kept in this browser ('signel.members', 'signel.admin.users'); with one,
+   the reviews are on the server (backend/data/members.json, through A.store) and Users is its
+   staff accounts. */
 (function () {
   'use strict';
   var A = window.SignelAdmin; if (!A) return;
@@ -24,11 +25,17 @@
       if (seen[k]) return; seen[k] = true;
       out.push(Object.assign({ key: k, applied: r.at, example: !!r.example, request: r.id }, c, rv[k] || { status: 'pending' }));
     });
-    // the account signed in on this browser, if it never went through the sign-up form
-    var acc = A.store.get('signel.account', null);
+    // with a back end: every account it holds, also when its request was deleted from the board
+    A.customers().forEach(function (c) {
+      var k = c.email.toLowerCase(); if (seen[k]) return; seen[k] = true;
+      out.push(Object.assign({ key: k, applied: c.createdAt }, c, rv[k] || { status: 'pending' }));
+    });
+    // the account signed in on this browser, if it never went through the sign-up form (demo)
+    var acc = !A.backend() && A.store.get('signel.account', null);
     if (acc && acc.email && !seen[acc.email.toLowerCase()]) out.push(Object.assign({ key: acc.email.toLowerCase(), applied: null }, acc, rv[acc.email.toLowerCase()] || { status: acc.status || 'approved', cls: acc.cls || 'P1' }));
     return out.sort(function (a, b) { return (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || String(b.applied).localeCompare(String(a.applied)); });
   }
+  var hasAccount = function (key) { return A.customers().some(function (c) { return c.email.toLowerCase() === key; }); };
   var STATUS = { pending: ['To review', 'amber'], approved: ['Approved', 'green'], refused: ['Refused', 'gray'] };
   var chip = function (st) { var s = STATUS[st] || STATUS.pending; return '<em class="ad-chip ad-chip--' + s[1] + '">' + s[0] + '</em>'; };
   window.SignelMembers = { statusOf: function (email) { var m = email && reviews()[email.toLowerCase()]; return m ? (m.status === 'approved' ? 'Approved · ' + m.cls : STATUS[m.status][0]) : null; } };
@@ -37,8 +44,9 @@
     var rv = reviews();
     rv[key] = Object.assign({ status: 'pending' }, rv[key] || {}, patch, { at: new Date().toISOString(), by: A.me.email });
     A.store.set(MEMBERS, rv);
-    // demo: the account on this browser follows the review; the back end will update the real one
-    var acc = A.store.get('signel.account', null);
+    // demo: the account on this browser follows the review (with a back end, the customer's
+    // next page asks the server)
+    var acc = !A.backend() && A.store.get('signel.account', null);
     if (acc && acc.email && acc.email.toLowerCase() === key) {
       acc.status = rv[key].status === 'approved' ? 'approved' : 'pending'; if (rv[key].cls) acc.cls = rv[key].cls;
       A.store.set('signel.account', acc);
@@ -68,8 +76,9 @@
     var box = $('[data-mlist]'); if (!box) return;
     var all = members(), q = A.norm(MF.q);
     if (!all.length) {
-      box.innerHTML = '<div class="ad-empty-state">' + A.ICON.inbox + '<h2>No accounts yet</h2><p>Accounts created on the website appear here for review. Until the back end is connected, only those created in this browser show.</p><button type="button" class="ad-btn" data-mex>Add example accounts to try it</button></div>';
-      $('[data-mex]').addEventListener('click', function () {
+      var srv = A.backend();
+      box.innerHTML = '<div class="ad-empty-state">' + A.ICON.inbox + '<h2>No accounts yet</h2><p>Accounts created on the website appear here for review.' + (srv ? '' : ' Until the back end is connected, only those created in this browser show.') + '</p>' + (srv ? '' : '<button type="button" class="ad-btn" data-mex>Add example accounts to try it</button>') + '</div>';
+      if (!srv) $('[data-mex]').addEventListener('click', function () {
         var t = function (h) { return new Date(Date.now() - h * 3600000).toISOString(); };
         A.saveRequests(A.requests().concat([
           { id: 'mx1', example: true, type: 'account', status: 'new', at: t(3), data: { customer: { name: 'Example buyer', company: 'Example municipality', email: 'buyer@example.com', phone: '(450) 555-0101', type: 'City or municipality', customer: 'yes', customer_no: 'C-1042' } } },
@@ -102,10 +111,19 @@
       '<button type="button" class="ad-btn ad-btn--primary" data-approve>' + (m.status === 'approved' ? 'Change class' : 'Approve account') + '</button>' +
       (m.status !== 'refused' ? '<button type="button" class="ad-btn" data-refuse>' + (m.status === 'approved' ? 'Suspend' : 'Refuse') + '</button>' : '') + '</div></div>' +
       '<p class="ad-muted ad-small">At launch, approving or refusing also emails the customer.</p></div>' +
-      '<footer class="ad-drawer-foot">' + (m.email ? '<a class="ad-btn ad-btn--primary" href="mailto:' + esc(m.email) + '?subject=' + encodeURIComponent('Your Signel account') + '">Email ' + esc((m.name || m.email).split(' ')[0]) + '</a>' : '') + '</footer>';
+      '<footer class="ad-drawer-foot">' + (m.email ? '<a class="ad-btn ad-btn--primary" href="mailto:' + esc(m.email) + '?subject=' + encodeURIComponent('Your Signel account') + '">Email ' + esc((m.name || m.email).split(' ')[0]) + '</a>' : '') +
+      (A.backend() && hasAccount(key) ? '<button type="button" class="ad-btn" data-newpw>Give a new password</button>' : '') + '</footer>';
     dr.setAttribute('aria-hidden', 'false'); dr.classList.add('on'); $('[data-drawer-scrim]').hidden = false; dr.focus();
     dr.onclick = function (e) {
       if (e.target.closest('[data-dclose]')) return close();
+      // a customer who lost their password: a new one, shown once, to give them by phone or email
+      if (e.target.closest('[data-newpw]')) {
+        if (!confirm('Give ' + (m.name || m.email) + ' a new password? The old one stops working, and they are signed out.')) return;
+        A.api('POST', 'customers/password', { email: m.email }).then(function (d) {
+          prompt('The new password for ' + m.email + ' (shown once: copy it and give it to them):', d.password);
+        }).catch(function (x) { A.toast(x.message); });
+        return;
+      }
       if (e.target.closest('[data-approve]')) { var cls = $('[data-cls]', dr).value; review(key, { status: 'approved', cls: cls }); A.toast('Approved in class ' + cls + '.'); paint(); openMember(key); return; }
       if (e.target.closest('[data-refuse]')) {
         var why = prompt('Why? (kept with the account; optional)', '') ; if (why === null) return;

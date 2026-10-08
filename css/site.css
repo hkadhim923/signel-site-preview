@@ -1656,6 +1656,7 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .rg-consent:has(input:focus-visible)::before { outline: 2px solid var(--blue); outline-offset: 2px; }
 .rg-consent.is-bad { box-shadow: inset 0 0 0 2px var(--red); }
 .rg-consent .rg-err { flex-basis: 100%; }
+.rg-server-err { margin: 0 0 4px; padding: 10px 14px; border-radius: 12px; box-shadow: inset 0 0 0 2px var(--red); color: var(--ink, #111); font-size: 14px; }
 .rg-nav { display: flex; gap: 10px; margin-top: 4px; }
 .rg-nav .ui-btn { min-height: 52px; border-radius: 14px; font-size: 16px; }
 .rg-next { flex: 1; }

@@ -1,9 +1,13 @@
-/* Signel Services - account, prices, cart. No dependencies, no server.
+/* Signel Services - account, prices, cart. No dependencies.
  *
- *  account  demo sign-in kept in localStorage ('signel.account': { email, name, cls, status });
- *           swapped for the real account system later. Signel reviews every new account and
- *           puts it in a price class (cls, P1 to P7); until then it is 'pending'. An approved
- *           account loads /prices.json and sees its class's prices.
+ *  account  the signed-in account, remembered in localStorage ('signel.account': { email, name,
+ *           cls, status, backend }). Signel reviews every new account and puts it in a price
+ *           class (cls, P1 to P7); until then it is 'pending'. Served by the back end
+ *           (backend/server.js, <html data-backend>), it is a real account: each page asks the
+ *           server for its review, an approved one gets its class's prices from
+ *           /api/account/prices, and orders go to the server, which sets their prices. On a
+ *           static host it is the demo: any sign-in, the class picked on the form, every
+ *           class's prices from /prices.json, orders kept in this browser.
  *  display  each product's price category (data-price-mode): "show" prices are public (the
  *           page prints the P1 price; /prices/p/<id>.json has them by item and quantity, for
  *           the box and the cart), "login" ones need an approved account, and products
@@ -38,7 +42,27 @@
 
   /* ---------- account + prices ---------- */
   var account = function () { return read(ACCOUNT, null); };
-  var approved = function () { var a = account(); return !!a && a.status !== 'pending'; };
+  var approved = function () { var a = account(); return !!a && a.status === 'approved'; };
+  /* the back end (backend/server.js), when the site is served by it (it marks its pages
+     <html data-backend>): real accounts, orders and per-class prices */
+  var BACKEND = Promise.resolve(document.documentElement.hasAttribute('data-backend'));
+  var backend = function () { return BACKEND; };
+  function api(method, url, data) {
+    var o = { method: method, credentials: 'same-origin', headers: { 'X-Signel': '1', 'X-Signel-Lang': LOCALE.slice(0, 2) } };
+    if (data !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(data); }
+    return fetch(ROOT + '/api/' + url, o).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var e = new Error(d.error || String(r.status)); e.status = r.status; throw e; } return d; });
+    });
+  }
+  // an account signed in on the back end: its review (pending, approved and class) as the team set it
+  function syncAccount() {
+    var a = account();
+    if (!a || !a.backend) return Promise.resolve();
+    return api('GET', 'account/me').then(function (d) {
+      var was = JSON.stringify(a), now = Object.assign({ backend: true }, d.account);
+      if (JSON.stringify(now) !== was) { write(ACCOUNT, now); prices = null; pricesLoading = null; RANGE = null; }
+    }).catch(function (e) { if (e.status === 401) { write(ACCOUNT, null); prices = null; pricesLoading = null; } });
+  }
   var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
   var classIndex = function () { var a = account(), i = CLASSES.indexOf((a && a.cls) || 'P1'); return i < 0 ? 0 : i; };
   var prices = null, pricesLoading = null, RANGE = null;
@@ -56,7 +80,8 @@
   function loadPrices() {
     if (!approved()) return Promise.resolve(null);
     if (prices) return Promise.resolve(prices);
-    if (!pricesLoading) pricesLoading = fetch(ROOT + '/prices.json').then(function (r) { return r.json(); })
+    // from the back end, only this account's class; on a static host, the demo's file
+    if (!pricesLoading) pricesLoading = (account().backend ? api('GET', 'account/prices') : fetch(ROOT + '/prices.json').then(function (r) { return r.json(); }))
       .then(function (d) { prices = d; RANGE = null; return d; }).catch(function () { return null; });
     return pricesLoading;
   }
@@ -221,14 +246,23 @@
       id: num, number: num, at: d.toISOString(), lang: LOCALE.slice(0, 2), status: 'new',
       customer: acc ? { name: acc.name, company: acc.company, email: acc.email, phone: acc.phone, cls: approved() ? acc.cls || 'P1' : null, account: true }
                     : { name: st.name, company: st.company, email: st.email, phone: st.phone, account: false },
-      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null, tier: (p && p.tier) || null }; }),
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, key: l.key, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null, tier: (p && p.tier) || null }; }),
       subtotal: s.priced ? s.subtotal : null,
       delivery: { method: st.method, carrier: st.method === 'carrier' ? st.carrier : '', account: st.method === 'carrier' ? st.account : '', pickup: st.method === 'pickup' ? st.pickup : '' },
       payment: { method: st.pay, status: st.pay === 'card' ? 'paid' : 'to_invoice' },
       po: st.po, note: st.note
     };
-    var all = read('signel.orders', []); all.unshift(order); write('signel.orders', all);
-    LAST = order; CO = null; save([]);
+    var done = function (o) { LAST = o; CO = null; save([]); };
+    var btn = $('button[form="co-form"]'); if (btn) btn.disabled = true;
+    backend().then(function (yes) {
+      // on the back end the order is kept there, its prices checked by the server
+      if (yes) return api('POST', 'orders', { order: order }).then(function (d) { done(d.order); });
+      var all = read('signel.orders', []); all.unshift(order); write('signel.orders', all);
+      done(order);
+    }).catch(function (e) {
+      if (btn) btn.disabled = false;
+      var box = $('[data-cart-summary]'); if (box) box.insertAdjacentHTML('afterbegin', '<p class="co-err">' + esc(t('order_failed').replace('{n}', e.message)) + '</p>');
+    });
   }
   function orderEmail(o) {
     var dl = o.delivery, how = dl.method === 'carrier' ? c('carrier_title') + ': ' + dl.carrier + ' (' + dl.account + ')' : dl.method === 'pickup' ? c('pickup_title') + ': ' + c('pickup_' + dl.pickup) : c('billed_title');
@@ -588,7 +622,10 @@
     };
     auth.addEventListener('click', function (e) {
       var tab = e.target.closest('[data-auth-tab]'); if (tab) { showTab(tab.getAttribute('data-auth-tab')); return; }
-      if (e.target.closest('[data-logout]')) { write(ACCOUNT, null); prices = null; pricesLoading = null; paintAuth(); render(); }
+      if (e.target.closest('[data-logout]')) {
+        if ((account() || {}).backend) api('POST', 'account/logout', {}).catch(function () {});
+        write(ACCOUNT, null); prices = null; pricesLoading = null; paintAuth(); render();
+      }
     });
     $$('[data-auth-form]', auth).forEach(function (form) {
       form.addEventListener('submit', function (e) {
@@ -604,17 +641,38 @@
         });
         if (!ok) return;
         var f = new FormData(form);
-        // demo: the class picked on the form; the real account system knows each account's class
-        write(ACCOUNT, { email: f.get('email'), name: f.get('name') || '', company: f.get('company') || '', phone: f.get('phone') || '', cls: f.get('cls') || 'P1', status: 'approved' });
-        prices = null; pricesLoading = null; RANGE = null;
-        loadPrices().then(function () {
-          var next = new URLSearchParams(location.search).get('next');
-          if (next && next.charAt(0) === '/') location.href = ROOT + next; else { paintAuth(); render(); }
+        var signedIn = function () {
+          prices = null; pricesLoading = null; RANGE = null;
+          loadPrices().then(function () {
+            var next = new URLSearchParams(location.search).get('next');
+            if (next && next.charAt(0) === '/') location.href = ROOT + next; else { paintAuth(); render(); }
+          });
+        };
+        backend().then(function (yes) {
+          if (yes) {
+            // the real account: its class is what the team gave it
+            return api('POST', 'account/login', { email: f.get('email'), password: f.get('password') })
+              .then(function (d) { write(ACCOUNT, Object.assign({ backend: true }, d.account)); signedIn(); })
+              .catch(function (x) {
+                var inp = form.querySelector('input[name=password]'), msg = inp.parentNode.querySelector('.af-err');
+                if (!msg) { msg = document.createElement('small'); msg.className = 'af-err'; inp.parentNode.appendChild(msg); }
+                msg.textContent = x.status === 401 ? t('bad_login') : x.message; inp.classList.add('is-bad');
+              });
+          }
+          // demo: the class picked on the form
+          write(ACCOUNT, { email: f.get('email'), name: f.get('name') || '', company: f.get('company') || '', phone: f.get('phone') || '', cls: f.get('cls') || 'P1', status: 'approved' });
+          signedIn();
         });
       });
     });
     window.addEventListener('hashchange', paintAuth);
     paintAuth();
+    // real accounts: no demo class to pick, no demo note
+    backend().then(function (yes) {
+      if (!yes) return;
+      $$('[data-auth] select[name=cls]').forEach(function (sel) { var l = sel.closest('label') || sel.parentNode; l.hidden = true; });
+      $$('[data-preview-note]').forEach(function (n) { n.hidden = true; });
+    });
   }
 
   // the public prices this page needs: its "show" product boxes and the cart's "show" lines
@@ -622,7 +680,7 @@
     return $$('[data-buy][data-price-mode="show"], [data-pt][data-price-mode="show"]').map(function (b) { return b.getAttribute('data-id'); })
       .concat(cart().filter(function (l) { return l.mode === 'show'; }).map(function (l) { return l.id; }));
   };
-  var refresh = function () { return Promise.all([loadPrices(), loadPublic(publicIds())]).then(render); };
+  var refresh = function () { return syncAccount().then(function () { return Promise.all([loadPrices(), loadPublic(publicIds())]); }).then(render); };
   // Other tabs changing the cart or the account
   window.addEventListener('storage', function (e) { if (e.key === CART || e.key === ACCOUNT) { prices = null; pricesLoading = null; refresh(); } });
 
