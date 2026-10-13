@@ -299,6 +299,23 @@
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  function toBackend(f, data, msg) {
+    var files = Array.prototype.slice.call((f.querySelector('input[type=file]') || {}).files || []);
+    if (files.reduce(function (t, x) { return t + x.size; }, 0) > 10 * 1024 * 1024) { msg.className = 'msg err'; msg.textContent = say('form_too_big'); return; }
+    var btn = f.querySelector('[type=submit]'); if (btn) btn.disabled = true;
+    Promise.all(files.map(function (file) {
+      return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res({ name: file.name, data: r.result }); }; r.onerror = rej; r.readAsDataURL(file); });
+    })).then(function (attachments) {
+      return fetch((document.documentElement.getAttribute('data-root') || '') + '/api/requests', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Signel': '1', 'X-Signel-Lang': /^fr/.test(document.documentElement.lang) ? 'fr' : 'en' },
+        body: JSON.stringify({ type: 'message', page: location.pathname, attachments: attachments,
+          data: { customer: { name: [data.first_name, data.last_name].filter(Boolean).join(' '), company: data.company || '', email: data.email || '', phone: data.phone || '' }, message: data.message || '' } }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw new Error(d.error || ''); }); });
+    }).then(function () { msg.className = 'msg ok'; msg.textContent = say('form_sent'); f.reset(); })
+      .catch(function (e) { msg.className = 'msg err'; msg.textContent = e && e.message ? e.message : say('form_failed'); })
+      .then(function () { if (btn) btn.disabled = false; });
+  }
+
   /* ---- forms: post JSON to the configured endpoint. Never pretend to succeed. ---- */
   document.querySelectorAll('form[data-form]').forEach(function (f) {
     var endpoint = f.getAttribute('data-endpoint') || document.documentElement.getAttribute('data-form-endpoint') || '';
@@ -306,8 +323,11 @@
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!f.checkValidity()) { f.reportValidity(); return; }
-      var data = {}; new FormData(f).forEach(function (v, k) { data[k] = v; });
+      var data = {}; new FormData(f).forEach(function (v, k) { if (typeof v === 'string') data[k] = v; });
       data._form = f.getAttribute('data-form'); data._page = location.href;
+      // served by the back end (backend/server.js): the message goes to the team's Requests
+      // board, with the files chosen (10 MB at most in all)
+      if (document.documentElement.hasAttribute('data-backend')) { toBackend(f, data, msg); return; }
       if (!endpoint) {
         msg.className = 'msg err';
         msg.textContent = say('form_offline').replace('{email}', f.getAttribute('data-fallback') || 'info@signel.ca');

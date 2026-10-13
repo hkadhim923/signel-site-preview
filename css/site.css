@@ -1656,6 +1656,10 @@ a.cl-tag--login{background:#F2F6FB;color:var(--blue)}
 .rg-consent:has(input:focus-visible)::before { outline: 2px solid var(--blue); outline-offset: 2px; }
 .rg-consent.is-bad { box-shadow: inset 0 0 0 2px var(--red); }
 .rg-consent .rg-err { flex-basis: 100%; }
+/* the team viewing the website as a customer (src/js/shop.js paintPreview) */
+.preview-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; padding: 9px 16px; background: var(--yellow); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.4; text-align: center; }
+.preview-bar p { margin: 0; max-width: 820px; }
+.preview-bar .ui-btn { min-height: 34px; padding: 6px 16px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 14px; }
 .rg-server-err { margin: 0 0 4px; padding: 10px 14px; border-radius: 12px; box-shadow: inset 0 0 0 2px var(--red); color: var(--ink, #111); font-size: 14px; }
 .rg-nav { display: flex; gap: 10px; margin-top: 4px; }
 .rg-nav .ui-btn { min-height: 52px; border-radius: 14px; font-size: 16px; }

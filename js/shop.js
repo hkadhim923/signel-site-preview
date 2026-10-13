@@ -42,7 +42,10 @@
 
   /* ---------- account + prices ---------- */
   var account = function () { return read(ACCOUNT, null); };
-  var approved = function () { var a = account(); return !!a && a.status === 'approved'; };
+  // a public copy of the website (the demo, on a static host) carries no sign-in prices: its
+  // demo accounts then see the public prices only
+  var NOPRICES = false;
+  var approved = function () { var a = account(); return !NOPRICES && !!a && a.status === 'approved'; };
   /* the back end (backend/server.js), when the site is served by it (it marks its pages
      <html data-backend>): real accounts, orders and per-class prices */
   var BACKEND = Promise.resolve(document.documentElement.hasAttribute('data-backend'));
@@ -81,7 +84,10 @@
     if (!approved()) return Promise.resolve(null);
     if (prices) return Promise.resolve(prices);
     // from the back end, only this account's class; on a static host, the demo's file
-    if (!pricesLoading) pricesLoading = (account().backend ? api('GET', 'account/prices') : fetch(ROOT + '/prices.json').then(function (r) { return r.json(); }))
+    if (!pricesLoading) pricesLoading = (account().backend ? api('GET', 'account/prices') : fetch(ROOT + '/prices.json').then(function (r) {
+      if (r.status === 404) { NOPRICES = true; throw new Error('no prices on this copy'); }
+      return r.json();
+    }))
       .then(function (d) { prices = d; RANGE = null; return d; }).catch(function () { return null; });
     return pricesLoading;
   }
@@ -202,6 +208,8 @@
   }
   // card payment needs an approved account and a firm price on every line (no quote, no rental)
   function cardBlock(lines) {
+    // on the real website no card is charged yet (no payment service): invoice only
+    if (document.documentElement.hasAttribute('data-backend')) return c('pay_card_off_soon');
     if (!approved()) return c('pay_card_off_login');
     if (lines.some(function (l) { var p = priceOf(l.id, l.key, l.qty); return l.rental || !p || p.max > p.min; })) return c('pay_card_off_quote');
     return '';
@@ -236,6 +244,11 @@
   }
   function placeOrder() {
     var st = coState(), lines = cart(), form = $('[data-co]'), bad = null;
+    if ((account() || {}).preview) {
+      var sum = $('[data-cart-summary]'), old = sum && $('.co-err', sum); if (old) old.remove();
+      if (sum) sum.insertAdjacentHTML('afterbegin', '<p class="co-err">' + esc(t('preview_no_send')) + '</p>');
+      return;
+    }
     var need = function (k, msg) { var e = $('[data-co-err="' + k + '"]', form), miss = !String(st[k] || '').trim() || (k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st[k])); if (e) { e.hidden = !miss; e.textContent = miss ? msg : ''; } if (miss && !bad) bad = k; };
     if (st.method === 'carrier') { need('carrier', c('choose_carrier')); need('account', c('need_account')); }
     if (!account()) { need('name', c('required')); need('email', c('required')); need('phone', c('required')); }
@@ -283,9 +296,34 @@
       '<p class="cart-empty-t">' + esc(t('empty')) + '</p><p>' + esc(t('empty_hint')) + '</p><a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/products/') + '">' + esc(t('browse')) + '</a></div>';
   }
 
+  /* ---------- the team looking at the website as a customer (dashboard: Members, "View as
+     customer"): a bar says so, with Exit; nothing can be ordered or sent ---------- */
+  function paintPreview() {
+    var acc = account(), bar = $('[data-preview-bar]');
+    if (!acc || !acc.preview) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = document.createElement('div'); bar.className = 'preview-bar'; bar.setAttribute('data-preview-bar', ''); bar.setAttribute('role', 'status');
+      bar.innerHTML = '<p></p><button type="button" class="ui-btn ui-btn--app" data-preview-exit></button>';
+      document.body.insertBefore(bar, document.body.firstChild);
+      $('[data-preview-exit]', bar).addEventListener('click', exitPreview);
+    }
+    var who = acc.email ? (acc.company || acc.name || acc.email) + (acc.status === 'approved' && acc.cls ? ' (' + acc.cls + ')' : '') : t('preview_class', acc.cls);
+    $('p', bar).textContent = t('preview_bar', who);
+    $('[data-preview-exit]', bar).textContent = t('preview_exit');
+  }
+  function exitPreview() {
+    api('POST', 'account/logout', {}).catch(function () {}).then(function () {
+      write(ACCOUNT, null); prices = null; pricesLoading = null; RANGE = null;
+      // opened from the dashboard: back to it; otherwise the website as a visitor
+      if (window.opener) { try { window.close(); } catch (e) {} }
+      location.reload();
+    });
+  }
+
   /* ---------- render everything that shows the cart or prices ---------- */
   function render() {
     var lines = cart(), n = count(lines), acc = account();
+    paintPreview();
     $$('[data-cart-badge]').forEach(function (b) { b.textContent = n; b.hidden = !n; });
     $$('[data-cart-count]').forEach(function (b) { b.textContent = n ? '(' + n + ')' : ''; });
     $$('[data-account-label]').forEach(function (el) { if (!el.dataset.orig) el.dataset.orig = el.textContent; el.textContent = acc ? (acc.name || acc.email).split(/[\s@]/)[0] : el.dataset.orig; });
@@ -618,7 +656,7 @@
       $('[data-auth-done]', auth).hidden = !acc;
       if (acc) $('[data-auth-name]', auth).textContent = acc.name || acc.email;
       var st = $('[data-auth-status]', auth);
-      if (st) st.textContent = !acc ? '' : approved() ? t('price_class_is', acc.cls || 'P1') : t('pending_price');
+      if (st) st.textContent = !acc ? '' : NOPRICES ? t('demo_no_prices') : approved() ? t('price_class_is', acc.cls || 'P1') : t('pending_price');
     };
     auth.addEventListener('click', function (e) {
       var tab = e.target.closest('[data-auth-tab]'); if (tab) { showTab(tab.getAttribute('data-auth-tab')); return; }
@@ -669,7 +707,12 @@
     paintAuth();
     // real accounts: no demo class to pick, no demo note
     backend().then(function (yes) {
-      if (!yes) return;
+      // a public copy without sign-in prices: no class to pick either
+      if (!yes) return fetch(ROOT + '/prices.json', { method: 'HEAD' }).then(function (r) {
+        if (r.status !== 404) return;
+        NOPRICES = true; paintAuth();
+        $$('[data-auth] select[name=cls]').forEach(function (sel) { var l = sel.closest('label') || sel.parentNode; l.hidden = true; });
+      }).catch(function () {});
       $$('[data-auth] select[name=cls]').forEach(function (sel) { var l = sel.closest('label') || sel.parentNode; l.hidden = true; });
       $$('[data-preview-note]').forEach(function (n) { n.hidden = true; });
     });

@@ -29,7 +29,8 @@
 
   function show(args) {
     load().then(function () {
-      if (args && args[0]) return openPage(decodeURIComponent(args.join('/')));
+      // "#pages/<address>", or "#pages/<address>|ref=<text>" from the Overview's To fix list
+      if (args && args[0]) { var a = decodeURIComponent(args.join('/')).split('|ref='); return openPage(a[0], a[1]); }
       var list = (DATA.shared.length ? [pageOf('*')] : []).concat(DATA.pages);
       A.view.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Pages</h1><p class="ad-muted">The words on each page of the website, in English and French. Products and job postings are edited in their own sections. Changes go online when they are published.</p></div>' +
         '<div class="ad-head-tools"><input class="ad-input" type="search" placeholder="Find a page" data-pfind aria-label="Find a page"></div></div>' +
@@ -49,8 +50,14 @@
     });
   }
 
-  function openPage(url) {
+  function openPage(url, spot) {
     var p = pageOf(url); if (!p) { A.go('pages'); return; }
+    // the text an item of the To fix list is about: shown and lit up once the page is drawn
+    if (spot) setTimeout(function () {
+      var el = A.view.querySelector('.ad-pair[data-ref="' + spot.replace(/"/g, '') + '"]'); if (!el) return;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('ad-spot'); setTimeout(function () { el.classList.remove('ad-spot'); }, 2600);
+    }, 120);
     var rtes = {};
     var field = function (ref) {
       var w = word(ref), table = tableOf(ref), rich = table === 'rich';

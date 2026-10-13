@@ -27,7 +27,7 @@
   // with a back end, what the website sends (requests, orders) and the member reviews live on
   // the server: the same keys, read from what was last fetched (RECORDS), and what a section
   // changes goes back as a patch (sendRecords)
-  var SHARED = { 'signel.requests': 'requests', 'signel.orders': 'orders', 'signel.members': 'members' }, RECORDS = null, CUSTOMERS = [];
+  var SHARED = { 'signel.requests': 'requests', 'signel.orders': 'orders', 'signel.members': 'members', 'signel.checked': 'checked' }, RECORDS = null, CUSTOMERS = [];
   var store = {
     get: function (k, d) {
       if (RECORDS && SHARED[k]) return RECORDS[k] == null ? d : clone(RECORDS[k]);
@@ -122,7 +122,7 @@
   var ME = JSON.parse(sessionStorage.getItem(SESSION));
   if (!ME.role) { var u0 = staff().filter(function (x) { return x.email === ME.email; })[0]; ME.role = u0 ? u0.role : 'administration'; ME.name = u0 ? u0.name : 'Administration'; }
   var SECTION = {}; ACCESS.sections.forEach(function (x) { SECTION[x.id] = x; });
-  function can(id) { var x = SECTION[id === 'product' ? 'products' : id]; return !!x && x.roles.indexOf(ME.role) >= 0; }
+  function can(id) { var x = SECTION[id === 'product' || id === 'fix' ? 'products' : id]; return !!x && x.roles.indexOf(ME.role) >= 0; }
   $('[data-me-name]').textContent = ME.name || ME.email;
   // the role under the name, or the address when the name is the role's
   var roleLabel = (ACCESS.roles[ME.role] || {}).label || ME.role;
@@ -137,6 +137,28 @@
   });
   $('[data-search-box]').hidden = $('[data-admin-new]').hidden = !can('products');
 
+  /* ---------- the website as a customer sees it (back end only): a class from the top bar,
+     a particular customer from Members. A session of 4 hours in this browser; the website
+     shows a bar with Exit, and nothing can be ordered or sent from it ---------- */
+  function viewAs(what) {
+    // the tab opens now, while the click counts (one opened after the server answers is blocked)
+    var w = window.open('', '_blank');
+    if (!w) { toast('Your browser blocked the new tab: allow pop-ups for this address, then try again.'); return; }
+    api('POST', 'view-as', what).then(function (d) {
+      try { localStorage.setItem('signel.account', JSON.stringify(Object.assign({ backend: true }, d.account))); } catch (e) {}
+      w.location.href = ROOT + '/';
+    }).catch(function (e) { w.close(); toast(e.message); });
+  }
+  var viewBox = $('[data-viewas]');
+  function paintViewAs() {
+    if (!viewBox) return;
+    viewBox.hidden = !SERVER || !(can('members') || can('prices'));
+    var tog = $('[data-viewas-toggle]', viewBox), menu = $('[data-viewas-menu]', viewBox);
+    tog.onclick = function () { menu.hidden = !menu.hidden; tog.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true'); };
+    $('[data-viewas-go]', viewBox).onclick = function () { menu.hidden = true; tog.setAttribute('aria-expanded', 'false'); viewAs({ cls: $('[data-viewas-cls]', viewBox).value }); };
+    document.addEventListener('click', function (e) { if (!menu.hidden && !e.target.closest('[data-viewas]')) { menu.hidden = true; tog.setAttribute('aria-expanded', 'false'); } });
+  }
+
   // sections in their own files (src/js/admin-*.js) register here: { show(args), badge(), tiles(), changes() }
   var MOD = {};
 
@@ -144,7 +166,7 @@
   // changes: { products: { id: {field: value} }, new: [ {...} ] } — the catalog.json shape
   var changes = store.get(CHANGES, { products: {}, new: [] });
   // job postings and page text changed here go online with the products (Publish)
-  changes.jobs = changes.jobs || {}; changes.text = changes.text || {};
+  changes.jobs = changes.jobs || {}; changes.text = changes.text || {}; changes.replace = changes.replace || {};
   // with a back end: its status, the draft as last saved there (BASE), its revision, and a
   // price list imported and not published yet
   var SERVER = null, BASE = null, REV = 0, PRICES_PENDING = null;
@@ -165,7 +187,7 @@
   var fromServer = BACKEND.then(function (b) {
     // the demo (no back end): say so on every page, so no one works here by mistake
     if (!b) { var bar = $('[data-demo-bar]'); if (bar) bar.hidden = false; return null; }
-    SERVER = b;
+    SERVER = b; paintViewAs();
     return Promise.all([api('GET', 'me'), api('GET', 'draft'), loadRecords()]).then(function (r) {
       var me = r[0].me;
       if (me.role !== ME.role || me.name !== ME.name) { signIn(me); location.reload(); return new Promise(function () {}); }
@@ -198,10 +220,11 @@
     if (!DATA) return;
     var h = location.hash.replace(/^#/, '') || 'overview', parts = h.split('/');
     dirty = false; app.classList.remove('nav-open');
+    viewEl.onclick = null;   // a section's own click handling ends with it
     if (parts[0] !== 'product') { current = null; closePreview(); }
     if (!can(parts[0])) { parts = ['overview']; history.replaceState(null, '', '#overview'); }
     $$('[data-nav]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-nav') === (parts[0] === 'product' ? 'products' : parts[0])); });
-    var core = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1])); }, requests: showRequests,
+    var core = { overview: showOverview, products: showProducts, product: function () { openProduct(Number(parts[1]), parts[2]); }, requests: showRequests, fix: showFix,
                prices: showPrices, versions: showVersions, backups: showBackups,
                // with a back end, the latest draft first: what everyone changed
                publish: function () { if (!SERVER) return showPublish(); refreshDraft(true).then(function () { if (/^#?publish/.test(location.hash)) showPublish(); }); } };
@@ -222,7 +245,7 @@
     if (e.key === 'Escape') closeDrawer();
   });
 
-  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length + (PRICES_PENDING ? 1 : 0); }
+  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length + Object.keys(changes.replace || {}).length + (PRICES_PENDING ? 1 : 0); }
   function paintBadges() {
     var counts = { publish: pendingCount(), requests: requests().filter(function (x) { return x.status === 'new'; }).length };
     Object.keys(MOD).forEach(function (k) { if (MOD[k].badge) counts[k] = MOD[k].badge(); });
@@ -308,13 +331,115 @@
     viewEl.innerHTML = '<div class="ad-page">' +
       '<div class="ad-head"><div><p class="ad-eyebrow">' + new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + esc((ACCESS.roles[ME.role] || {}).label || '') + '</p><h1>Good ' + (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + ', ' + esc((ME.name || '').split(' ')[0]) + '</h1></div></div>' +
       '<div class="ad-stats">' + tiles.join('') + '</div>' +
+      (can('fix') ? '<section class="ad-card ad-fix" data-fix-card></section>' : '') +
       (cards.length ? '<div class="ad-cols">' + cards.join('') + '</div>' : '') + '</div>';
+    if (can('fix')) { paintFixCard($('[data-fix-card]', viewEl)); loadHealth().then(function () { paintFixCard($('[data-fix-card]', viewEl)); }); }
     bindGo(viewEl);
     $$('[data-req]', viewEl).forEach(function (b) { b.addEventListener('click', function () { go('requests'); setTimeout(function () { openRequest(b.getAttribute('data-req')); }, 60); }); });
     Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].bindOverview) MOD[k].bindOverview(viewEl); });
   }
+  // the part of the product editor an item of the To fix list is about, shown and lit up
+  function spotlight(part) {
+    var f = $('[data-admin-form]'); if (!f) return;
+    var el = { pictures: $('[data-pics-card]', f), documents: ($('[data-docs]', f) || {}).closest && $('[data-docs]', f).closest('.ad-card'),
+               categories: ($('[data-cats]', f) || {}).closest && $('[data-cats]', f).closest('.ad-card'), sku: f.sku && f.sku.closest('label') }[part];
+    if (!el) return;
+    var fold = el.closest('details'); if (fold) fold.open = true;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.add('ad-spot'); setTimeout(function () { el.classList.remove('ad-spot'); }, 2600);
+  }
   function bindGo(root) { $$('[data-go]', root).forEach(function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); }); }
   function thumb(v, size) { var i = (v.images || [])[0]; return i ? '<img class="ad-thumb' + (size ? ' ad-thumb--' + size : '') + '" src="' + esc(src(i)) + '" alt="" loading="lazy">' : '<span class="ad-thumb ad-thumb--none' + (size ? ' ad-thumb--' + size : '') + '">' + ICON.pic + '</span>'; }
+
+  /* ---------- To fix: the website's own checks (tools/link-report.js writes dist/admin/health.json
+     after each publish), each item opening the place where it is fixed ---------- */
+  var HEALTH = null, HEALTH_AT = 0, CHECKED = 'signel.checked';
+  function loadHealth(force) {
+    if (HEALTH && !force && Date.now() - HEALTH_AT < 120000) return Promise.resolve(HEALTH);
+    return fetch(ROOT + '/admin/health.json', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (h) { if (h) { HEALTH = h; HEALTH_AT = Date.now(); } return HEALTH; });
+  }
+  function checkedItems() { return store.get(CHECKED, {}); }
+  function setChecked(id, how) {
+    var c = checkedItems();
+    if (how) c[id] = { how: how, at: new Date().toISOString(), by: ME.email }; else delete c[id];
+    store.set(CHECKED, c);
+  }
+  // fixed in this dashboard, waiting for the next publish
+  function fixedHere(i) {
+    if (i.replace && changes.replace && changes.replace[i.replace]) return true;
+    var m = /^product\/(\d+)\/(\w+)/.exec(i.target || '');
+    if (m) { var ch = changes.products[m[1]] || {}; return { pictures: !!(ch.images || ch.images_fr), documents: !!ch.documents, categories: !!ch.categories }[m[2]] || false; }
+    // a page's text: "pages/<address|ref=text>", encoded (tools/link-report.js)
+    var r = /\|ref=(.+)$/.exec(decodeURIComponent(i.target || '')); return !!(r && changes.text[r[1]]);
+  }
+  function paintFixCard(box) {
+    if (!box) return;
+    if (!HEALTH) {
+      box.innerHTML = '<div class="ad-card-head"><h2>To fix on the website</h2></div><p class="ad-muted">' + (SERVER ? 'The website is being checked. The list appears here in a minute, and is checked again after each publish.' : 'The website\'s checks are in the team\'s dashboard.') + '</p>';
+      return;
+    }
+    var c = checkedItems(), groups = HEALTH.groups.map(function (g) { return { g: g, n: g.items.filter(function (i) { return !c[i.id]; }).length }; }).filter(function (x) { return x.n; });
+    box.innerHTML = '<div class="ad-card-head"><h2>To fix on the website</h2><small class="ad-muted">Checked ' + ago(HEALTH.generated) + '</small></div>' +
+      (groups.length ? '<ul class="ad-fix-groups">' + groups.map(function (x) {
+        return '<li><button type="button" data-go="fix/' + esc(x.g.id) + '"><b class="ad-fix-n">' + x.n.toLocaleString('en-CA') + '</b><span><b>' + esc(x.g.title) + '</b><small>' + esc(x.g.help) + '</small></span>' + ICON.right + '</button></li>';
+      }).join('') + '</ul>' : '<p class="ad-ok">Nothing to fix: every check passes.</p>');
+    bindGo(box);
+  }
+  var FX = { done: false };
+  function showFix(args) {
+    var gid = args && args[0];
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-loading">Loading…</div></div>';
+    loadHealth().then(function (h) {
+      var g = h && h.groups.filter(function (x) { return x.id === gid; })[0];
+      if (!/^#?fix\//.test(location.hash)) return;
+      if (!g) { go('overview'); return; }
+      paintFix(g);
+    });
+  }
+  function fixItem(i, state) {
+    var here = fixedHere(i);
+    var media = i.img ? '<a href="' + esc(src(i.img)) + '" target="_blank" rel="noopener" class="ad-fix-media"><img src="' + esc(src(i.replace && changes.replace[i.replace] || i.img)) + '" alt="" loading="lazy"></a>'
+      : i.doc ? '<a href="' + esc(src(i.doc)) + '" target="_blank" rel="noopener" class="ad-fix-media ad-fix-media--doc">PDF</a>' : '';
+    return '<li class="ad-fix-item" data-fix="' + esc(i.id) + '">' + media + '<div class="ad-fix-t"><b>' + esc(i.label) + '</b><small>' + esc(i.detail || '') + '</small>' +
+      ((i.original || here || state) ? '<span class="ad-fix-tags">' + (i.original ? '<a class="ad-link" href="' + esc(src(i.original)) + '" target="_blank" rel="noopener">The original</a>' : '') +
+        (here ? '<em class="ad-chip ad-chip--green">Fixed here: publish to finish</em>' : '') +
+        (state ? '<em class="ad-chip">' + (state.how === 'ok' ? 'Looks right' : 'Left out') + ' · ' + esc(String(state.by || '').split('@')[0]) + ' · ' + ago(state.at) + '</em>' : '') + '</span>' : '') + '</div>' +
+      '<div class="ad-fix-acts">' +
+      (state ? '<button type="button" class="ad-btn" data-fx-undo>Undo</button>' :
+        (i.target ? '<button type="button" class="ad-btn ad-btn--primary" data-go="' + esc(i.target) + '">Open</button>' : '') +
+        (i.replace ? (here && changes.replace[i.replace] ? '<button type="button" class="ad-btn" data-fx-unreplace>Undo the replacement</button>' : '<label class="ad-btn">Replace…<input type="file" accept="' + (i.doc ? 'application/pdf' : 'image/jpeg,image/png,image/webp,image/gif') + '" data-fx-file hidden></label>') : '') +
+        (i.check ? '<button type="button" class="ad-btn" data-fx-ok>Looks right</button>' : '') +
+        (i.leave ? '<button type="button" class="ad-btn" data-fx-leave>Leave it out</button>' : '')) +
+      (i.view ? '<a class="ad-btn ad-btn--ghost" href="' + esc(ROOT + i.view) + '" target="_blank" rel="noopener">View on the site</a>' : '') +
+      '</div></li>';
+  }
+  function paintFix(g) {
+    changes.replace = changes.replace || {};   // changes restored from an older backup have none
+    var c = checkedItems(), open = g.items.filter(function (i) { return !c[i.id]; }), done = g.items.filter(function (i) { return c[i.id]; });
+    var list = FX.done ? done : open;
+    viewEl.innerHTML = '<div class="ad-page ad-page--wide"><div class="ad-head"><div><button type="button" class="ad-back" data-go="overview">' + ICON.left + 'Overview</button><h1>' + esc(g.title) + '</h1><p class="ad-muted">' + esc(g.help) + '</p></div>' +
+      '<div class="ad-head-tools"><div class="ad-chips" role="group" aria-label="Show"><button type="button" class="ad-chip-btn' + (FX.done ? '' : ' on') + '" data-fx-show="open">To do <small>' + open.length + '</small></button><button type="button" class="ad-chip-btn' + (FX.done ? ' on' : '') + '" data-fx-show="done">Done <small>' + done.length + '</small></button></div></div></div>' +
+      (list.length ? '<ul class="ad-fix-items">' + list.map(function (i) { return fixItem(i, c[i.id]); }).join('') + '</ul>'
+        : '<div class="ad-empty-state">' + ICON.inbox + '<h2>' + (FX.done ? 'Nothing here yet' : 'All done') + '</h2><p>' + (FX.done ? 'Items checked or left out show here, with who did it.' : 'Every item of this list is fixed, checked or left out.') + '</p></div>') + '</div>';
+    bindGo(viewEl);
+    $$('[data-fx-show]', viewEl).forEach(function (b) { b.addEventListener('click', function () { FX.done = b.getAttribute('data-fx-show') === 'done'; paintFix(g); }); });
+    var itemOf = function (el) { var id = el.closest('[data-fix]').getAttribute('data-fix'); return g.items.filter(function (i) { return i.id === id; })[0]; };
+    viewEl.onclick = function (e) {
+      var t = e.target, i;
+      if (t.closest('[data-fx-ok]')) { i = itemOf(t); setChecked(i.id, 'ok'); toast('Marked as checked.'); paintFix(g); return; }
+      if (t.closest('[data-fx-leave]')) { i = itemOf(t); setChecked(i.id, 'leave'); toast('Left out for good.'); paintFix(g); return; }
+      if (t.closest('[data-fx-undo]')) { i = itemOf(t); setChecked(i.id, null); paintFix(g); return; }
+      if (t.closest('[data-fx-unreplace]')) { i = itemOf(t); delete changes.replace[i.replace]; save(); paintFix(g); return; }
+    };
+    $$('[data-fx-file]', viewEl).forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var file = inp.files[0], i = itemOf(inp); if (!file) return;
+        readFile(file, function (d) { changes.replace[i.replace] = d; save(); toast('Replaced. Publish to put it on the website.'); paintFix(g); });
+      });
+    });
+  }
 
   /* ---------- Products: table with filters ---------- */
   var PF = { q: '', filter: 'all', cat: 0, page: 1 };
@@ -375,13 +500,14 @@
   });
 
   /* ---------- the product editor: tabs over one form, a save bar while there are edits ---------- */
-  function openProduct(id) {
+  function openProduct(id, part) {
     var p = find(id); if (!p) { go('products'); return; }
     var isNew = !byId[id];
     current = { id: id, isNew: isNew };
     var v = isNew ? p : Object.assign({}, p, changes.products[id] || {});
     viewEl.innerHTML = editorHtml(v, isNew);
     bindEditor(v);
+    if (part) setTimeout(function () { spotlight(part); }, 80);
     saved = JSON.stringify(collect($('[data-admin-form]')));
     paintDirty();
   }
@@ -496,8 +622,16 @@
   }
 
   function readFile(file, cb) {
-    if (file.size > 3 * 1024 * 1024) { toast(file.name + ' is over 3 MB. Use a smaller file, or put it on the site and add it by address.'); return; }
-    var r = new FileReader(); r.onload = function () { cb(r.result); }; r.readAsDataURL(file);
+    var max = SERVER ? 25 : 3;
+    if (file.size > max * 1024 * 1024) { toast(file.name + ' is over ' + max + ' MB. Use a smaller file.'); return; }
+    var r = new FileReader();
+    r.onload = function () {
+      if (!SERVER) return cb(r.result);
+      // with a back end: stored as a file of the website at once; the change keeps its address
+      toast('Sending ' + file.name + '…');
+      api('POST', 'upload', { name: file.name, data: r.result }).then(function (d) { toast(file.name + ' is ready.'); cb(d.path); }).catch(function (e) { toast(e.message); });
+    };
+    r.readAsDataURL(file);
   }
   function relabelPics(f) {
     $$('[data-imgs]', f).forEach(function (g) { $$('[data-pic]:not(.ad-pic--add)', g).forEach(function (t, i) { var m = $('.ad-pic-main', t); if (i === 0 && !m) t.insertAdjacentHTML('beforeend', '<em class="ad-pic-main">Main picture</em>'); if (i && m) m.remove(); }); });
@@ -695,7 +829,7 @@
   }
   /* ---------- the back end's draft: what changed since the last save is sent, part by part ---------- */
   function applyDraft(d) {
-    changes = d.changes; ['products', 'jobs', 'text'].forEach(function (k) { changes[k] = changes[k] || {}; }); changes.new = changes.new || [];
+    changes = d.changes; ['products', 'jobs', 'text', 'replace'].forEach(function (k) { changes[k] = changes[k] || {}; }); changes.new = changes.new || [];
     BASE = clone(changes); REV = d.rev; PRICES_PENDING = d.prices || null;
   }
   // what changed here since the server last had it: texts one by one, products and job
@@ -703,9 +837,11 @@
   // products one by one (backend/lib/draft.js patchDraft reads the same paths)
   function diff() {
     var set = [], del = [];
-    var ta = changes.text || {}, tb = BASE.text || {};
-    Object.keys(ta).forEach(function (id) { if (!same(ta[id], tb[id])) set.push([['text', id], clone(ta[id])]); });
-    Object.keys(tb).forEach(function (id) { if (!(id in ta)) del.push(['text', id]); });
+    ['text', 'replace'].forEach(function (k) {
+      var ta = changes[k] || {}, tb = BASE[k] || {};
+      Object.keys(ta).forEach(function (id) { if (!same(ta[id], tb[id])) set.push([[k, id], clone(ta[id])]); });
+      Object.keys(tb).forEach(function (id) { if (!(id in ta)) del.push([k, id]); });
+    });
     ['products', 'jobs'].forEach(function (k) {
       var a = changes[k] || {}, b = BASE[k] || {};
       Object.keys(a).concat(Object.keys(b)).forEach(function (id, i, all) {
@@ -852,6 +988,12 @@
     });
     if (PRICES_PENDING) list.unshift({ thumb: '<span class="ad-thumb ad-thumb--none">' + ICON.tag + '</span>', title: 'Price list: ' + PRICES_PENDING.file,
       what: plural(PRICES_PENDING.cells, 'price', 'prices') + ' changed on ' + plural(PRICES_PENDING.lines, 'line', 'lines') + ', imported ' + ago(PRICES_PENDING.at), chip: 'Imported', go: can('prices') ? 'prices' : '', undo: 'prices', undoTitle: 'Undo the import' });
+    Object.keys(changes.replace || {}).forEach(function (from) {
+      var pdf = /\.pdf$/i.test(from), key = 'r:' + from;
+      undoers[key] = function () { delete changes.replace[from]; };
+      list.push({ thumb: pdf ? '<span class="ad-thumb ad-thumb--none">PDF</span>' : '<img class="ad-thumb" src="' + esc(src(changes.replace[from])) + '" alt="">', title: (pdf ? 'Document replaced: ' : 'Picture replaced: ') + from.split('/').pop(),
+        what: 'Everywhere it appears on the website', chip: 'Edited', go: '', undo: key, undoTitle: 'Undo the replacement' });
+    });
     var chipTone = { New: 'green', Edited: 'amber', Closed: 'gray', Imported: 'green' };
     var publishCard = SERVER
       ? '<div class="ad-card ad-publish ad-publish--one"><div class="ad-step"><b>1</b><div><h2>Publish</h2><p class="ad-muted">Everything above, by everyone, goes on the website: the site is rebuilt (a minute or two) and a version is saved, so it can be undone.</p>' +
@@ -870,7 +1012,7 @@
     var ex = $('[data-export]', viewEl);
     if (ex) ex.addEventListener('click', function () {
       download('catalog.json', { _about: 'Changes from the Signel admin dashboard. Put this file at data/admin/catalog.json; the next build applies it (products: src/model/catalog-edits.js, jobs: src/model/jobs.js, text: src/lib/i18n.js).', exported: new Date().toISOString(),
-        products: changes.products, new: changes.new.map(function (n) { var c = Object.assign({}, n); delete c.isNew; return c; }), jobs: changes.jobs, text: changes.text });
+        products: changes.products, new: changes.new.map(function (n) { var c = Object.assign({}, n); delete c.isNew; return c; }), jobs: changes.jobs, text: changes.text, replace: changes.replace });
       toast('catalog.json downloaded.');
     });
     var pubBtn = $('[data-pub-go]', viewEl);
@@ -884,7 +1026,8 @@
         .catch(function (e) { pubBtn.disabled = false; toast(e.message); });
     });
     if (SERVER) api('GET', 'publish').then(function (d) { if (d.job && d.job.state === 'running') watchPublish(); }).catch(function () {});
-    viewEl.addEventListener('click', function (e) {
+    // on this page's own content (a handler on the view itself would add up at each visit)
+    viewEl.firstElementChild.addEventListener('click', function (e) {
       var u = e.target.closest('[data-undo]'); if (!u) return;
       var key = u.getAttribute('data-undo');
       if (key === 'prices') {
@@ -904,9 +1047,9 @@
       r.onload = function () {
         try {
           var d = JSON.parse(r.result), c = d.kind === 'signel-admin-backup' ? d.changes : d;
-          if (!c || (!c.products && !c.new && !c.jobs && !c.text)) throw new Error('no changes');
+          if (!c || (!c.products && !c.new && !c.jobs && !c.text && !c.replace)) throw new Error('no changes');
           if (!confirm('Replace the changes in this browser with the ones in ' + file.name + '?')) return;
-          changes = { products: c.products || {}, new: c.new || [], jobs: c.jobs || {}, text: c.text || {} }; save(); showPublish(); toast('Loaded ' + file.name);
+          changes = { products: c.products || {}, new: c.new || [], jobs: c.jobs || {}, text: c.text || {}, replace: c.replace || {} }; save(); showPublish(); toast('Loaded ' + file.name);
         } catch (err) { toast('That file is not a Signel changes file or backup.'); }
       };
       r.readAsText(file);
@@ -1065,7 +1208,7 @@
     $: $, $$: $$, esc: esc, norm: norm, store: store, plural: plural, ago: ago, money: function (n) { return money(n); },
     go: go, bindGo: bindGo, toast: toast, download: download, can: can, tile: tile, staff: staff, USERS: USERS, rte: rte, cleanHtml: cleanHtml, slugify: slugify,
     changes: function () { return changes; }, save: function () { var ok = save(); return ok; }, badges: function () { paintBadges(); },
-    backend: function () { return SERVER; }, api: api, customers: function () { return CUSTOMERS; },
+    backend: function () { return SERVER; }, api: api, customers: function () { return CUSTOMERS; }, viewAs: viewAs,
     requests: function () { return requests(); }, saveRequests: function (l) { saveRequests(l); }, products: function () { return DATA ? DATA.products : []; },
     // a section: { show(args), badge() -> number, tiles() -> [html], cards() -> [html], changes() -> [{ title, what, chip, go, undo }] }
     section: function (id, def) { MOD[id] = def; if (DATA) { paintBadges(); if ((location.hash.replace(/^#/, '').split('/')[0] || 'overview') === id) route(); } }
@@ -1142,6 +1285,9 @@
     var d = r.data || {}, c = d.customer || {}, lines = d.lines || [];
     var contact = [['Email', c.email, c.email ? 'mailto:' + c.email : ''], ['Phone', c.phone, c.phone ? 'tel:' + c.phone.replace(/[^\d+]/g, '') : ''], ['Company', c.company], ['Type', c.type], ['Role', c.position], ['Address', c.address], ['Customer no.', c.customer_no]]
       .filter(function (x) { return x[1]; });
+    // files sent with the message: kept by the back end, downloaded from it (never shown in the page)
+    var files = SERVER && Array.isArray(d.attachments) ? d.attachments.filter(function (a) { return a && /^[a-f0-9]{24}\.[a-z]{2,4}$/.test(a.file); }) : [];
+    var size = function (n) { n = Number(n) || 0; return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; };
     dr.setAttribute('data-open', id);
     dr.innerHTML = '<header class="ad-drawer-head"><div>' + typeChip(r.type) + (r.example ? ' <em class="ad-chip">Example</em>' : '') + '<h2>' + esc(who(r)) + '</h2><small class="ad-muted">' + new Date(r.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) + (c.name && c.name !== who(r) ? ' · ' + esc(c.name) : '') + '</small></div>' +
       '<button type="button" class="ad-icon-btn" data-drawer-close aria-label="Close">' + ICON.x + '</button></header>' +
@@ -1153,6 +1299,9 @@
       }).join('') + '</ul>' + (d.total ? '<p class="ad-total">Listed prices: <b>' + money(d.total) + '</b></p>' : '') : '') +
       (r.type === 'account' ? reviewHtml(r) : '') +
       (d.message || c.message ? '<h3>Message</h3><blockquote>' + esc(d.message || c.message) + '</blockquote>' : '') +
+      (files.length ? '<h3>Files</h3><ul class="ad-lines">' + files.map(function (a) {
+        return '<li><span class="ad-thumb ad-thumb--none">' + esc(a.file.split('.').pop().toUpperCase()) + '</span><span><a class="ad-link" href="' + esc(ROOT + '/api/attachments/' + a.file + '?name=' + encodeURIComponent(a.name || a.file)) + '" download>' + esc(a.name || a.file) + '</a><small>' + esc(size(a.size)) + '</small></span></li>';
+      }).join('') + '</ul>' : '') +
       '<h3>Handled by</h3><input class="ad-input" type="text" placeholder="Name of the person in charge" value="' + esc(r.assignee || '') + '" data-assignee>' +
       '<h3>Notes</h3><ul class="ad-notes">' + (r.notes || []).map(function (n) { return '<li><p>' + esc(n.text) + '</p><small>' + new Date(n.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) + '</small></li>'; }).join('') + '</ul>' +
       '<div class="ad-note-add"><textarea class="ad-input" rows="2" placeholder="Add a note: called back, quote sent, waiting for PO…" data-note></textarea><button type="button" class="ad-btn" data-note-add>Add note</button></div>' +

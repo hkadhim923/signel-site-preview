@@ -333,6 +333,7 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ad-lines img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #fff; }
 .ad-lines li > span { flex: 1; display: grid; min-width: 0; font-size: 14px; }
 .ad-lines small { color: var(--muted); font-size: 12.5px; }
+.ad-lines a { overflow-wrap: anywhere; text-align: left; }
 .ad-lines em { font-style: normal; font-weight: 700; font-size: 14px; white-space: nowrap; }
 .ad-total { margin: 0; text-align: right; font-size: 14px; }
 .ad-drawer blockquote { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--ad-soft); font-size: 14px; line-height: 1.5; }
@@ -360,6 +361,37 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 /* ---- toast, dialog ---- */
 .adm-toast { position: fixed; left: 50%; top: 18px; transform: translate(-50%, -16px); opacity: 0; z-index: 60; max-width: min(560px, calc(100vw - 32px)); padding: 12px 18px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px rgba(14,23,27,.3); transition: opacity .2s, transform .2s; pointer-events: none; }
 .adm-toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* To fix on the website (Overview) and its lists (#fix/<group>) */
+.ad-fix { margin: 0 0 20px; }
+.ad-fix-groups { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+.ad-fix-groups button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--off, #F3F6FA); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ad-fix-groups button:hover { background: #E8EEF6; }
+.ad-fix-groups button > span { flex: 1; display: grid; gap: 2px; }
+.ad-fix-groups small { color: var(--muted, #5B6770); font-size: 13px; line-height: 1.4; }
+.ad-fix-n { min-width: 46px; padding: 4px 8px; border-radius: 10px; background: #FFF1D6; color: #7A4B00; font-size: 15px; text-align: center; }
+.ad-ok { margin: 6px 0 0; padding: 12px 14px; border-radius: 10px; background: #E4F4E8; color: #1E6B34; font-weight: 600; }
+.ad-back { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 6px; padding: 0; border: 0; background: none; color: var(--blue, #004EA4); font: 600 14px/1.4 inherit; cursor: pointer; }
+.ad-fix-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ad-fix-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(14,23,27,.06), 0 0 0 1px rgba(14,23,27,.05); }
+.ad-fix-media { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; background: var(--off, #F3F6FA); color: var(--muted, #5B6770); font: 700 13px/1 inherit; text-decoration: none; }
+.ad-fix-media img { width: 100%; height: 100%; object-fit: contain; }
+.ad-fix-t { display: grid; gap: 3px; min-width: 0; }
+.ad-fix-t small { color: var(--muted, #5B6770); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.ad-fix-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 2px; }
+.ad-fix-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.ad-fix-acts label.ad-btn { cursor: pointer; }
+.ad-btn--ghost { background: none; box-shadow: none; }
+@media (max-width: 760px) { .ad-fix-item { grid-template-columns: auto 1fr; } .ad-fix-acts { grid-column: 1 / -1; justify-content: flex-start; } }
+/* what an item of To fix opens: lit up for a moment */
+.ad-spot { animation: ad-spot 2.6s ease-out; border-radius: 12px; }
+@keyframes ad-spot { 0%, 60% { box-shadow: 0 0 0 3px var(--yellow, #FFD200), 0 0 0 8px rgba(255,210,0,.25); } 100% { box-shadow: 0 0 0 0 rgba(255,210,0,0); } }
+/* View as customer (top bar): a class to see the website with */
+.ad-viewas { position: relative; margin-left: auto; }
+.ad-viewas[hidden] { display: none; }
+.ad-viewas-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(320px, calc(100vw - 32px)); padding: 16px; border-radius: 14px; background: #fff; box-shadow: 0 14px 40px rgba(14,23,27,.18), 0 0 0 1px rgba(14,23,27,.06); display: grid; gap: 12px; }
+.ad-viewas-menu[hidden] { display: none; }
+.ad-viewas-menu p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--muted, #5B6770); }
+.ad-viewas-menu label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
 /* the demo dashboard (no back end): nothing done here is published */
 .ad-demo-bar { margin: 0; padding: 9px 18px; background: var(--yellow); color: var(--ink); font-size: 13.5px; line-height: 1.4; }
 .ad-demo-bar[hidden] { display: none; }

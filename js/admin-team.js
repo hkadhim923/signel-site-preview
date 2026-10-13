@@ -112,10 +112,12 @@
       (m.status !== 'refused' ? '<button type="button" class="ad-btn" data-refuse>' + (m.status === 'approved' ? 'Suspend' : 'Refuse') + '</button>' : '') + '</div></div>' +
       '<p class="ad-muted ad-small">At launch, approving or refusing also emails the customer.</p></div>' +
       '<footer class="ad-drawer-foot">' + (m.email ? '<a class="ad-btn ad-btn--primary" href="mailto:' + esc(m.email) + '?subject=' + encodeURIComponent('Your Signel account') + '">Email ' + esc((m.name || m.email).split(' ')[0]) + '</a>' : '') +
-      (A.backend() && hasAccount(key) ? '<button type="button" class="ad-btn" data-newpw>Give a new password</button>' : '') + '</footer>';
+      (A.backend() && hasAccount(key) ? '<button type="button" class="ad-btn" data-viewas-m>View the website as ' + esc((m.name || m.email).split(' ')[0]) + '</button><button type="button" class="ad-btn" data-newpw>Give a new password</button>' : '') + '</footer>';
     dr.setAttribute('aria-hidden', 'false'); dr.classList.add('on'); $('[data-drawer-scrim]').hidden = false; dr.focus();
     dr.onclick = function (e) {
       if (e.target.closest('[data-dclose]')) return close();
+      // what this customer sees: their prices (or "under review"); nothing can be ordered from it
+      if (e.target.closest('[data-viewas-m]')) { A.viewAs({ email: m.email }); return; }
       // a customer who lost their password: a new one, shown once, to give them by phone or email
       if (e.target.closest('[data-newpw]')) {
         if (!confirm('Give ' + (m.name || m.email) + ' a new password? The old one stops working, and they are signed out.')) return;
