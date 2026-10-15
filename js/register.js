@@ -4,7 +4,8 @@
  * closed tab loses nothing. Served by the back end, finishing creates the account there (it
  * waits for the team's review in Members) and signs it in; on a static host it is the demo,
  * signed in on this device only. Either way the account is remembered in localStorage
- * 'signel.account', read by src/js/shop.js. */
+ * 'signel.account', read by src/js/shop.js: only who it is and how it stands (email, name,
+ * status, class), never the phone, address or message typed here. */
 (function () {
   'use strict';
   var root = document.querySelector('[data-register]'); if (!root) return;
@@ -97,10 +98,12 @@
   });
 
   // draft: every field but the password, kept on this device
-  var timer;
+  var timer, finished = false;
   function saveDraft() {
+    if (finished) return;
     clearTimeout(timer);
     timer = setTimeout(function () {
+      if (finished) return;
       var d = {};
       Array.prototype.forEach.call(form.elements, function (el) {
         if (!el.name || el.name === 'password') return;
@@ -144,19 +147,27 @@
         .then(function (x) {
           if (x.ok) { remember(Object.assign({ backend: true }, x.d.account)); return done(); }
           if (x.status === 409) { go(1); show(form.email, msg('exists')); form.email.focus(); return; }
-          fail(x.d.error || String(x.status));
+          fail(typeof x.d.error === 'string' ? x.d.error : '');   // the server's sentence; never a status code
         }, function () { fail(''); });
     }).then(function () { btn.disabled = false; });
-    function fail(why) { out.textContent = msg('server').replace('{n}', why).replace(/\s*:\s*$/, '.'); out.hidden = false; out.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    function fail(why) { out.textContent = msg('server').replace('{n}', function () { return why; }).replace(/\s*:\s*$/, '.'); out.hidden = false; out.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
   });
   // the back end (backend/server.js), when the site is served by it: it marks its pages
   var BACKEND = Promise.resolve(document.documentElement.hasAttribute('data-backend'));
   function backend() { return BACKEND; }
   backend().then(function (yes) { if (yes) $$('[data-preview-note]', document).forEach(function (n) { n.hidden = true; }); });
-  function remember(acc) { try { localStorage.setItem('signel.account', JSON.stringify(acc)); localStorage.removeItem(DRAFT); } catch (err) {} }
+  // the account as this device keeps it (src/js/shop.js slim()); the draft is gone for good: a
+  // save still waiting (the last field's change) must not bring it back
+  function remember(acc) {
+    finished = true; clearTimeout(timer);
+    var keep = { email: acc.email || '', name: acc.name || '', status: acc.status || 'pending', cls: acc.cls || null };
+    if (acc.backend) keep.backend = true;
+    try { localStorage.setItem('signel.account', JSON.stringify(keep)); localStorage.removeItem(DRAFT); } catch (err) {}
+  }
   function done() {
     var get = function (k) { return (form[k] && form[k].value || '').trim(); };
     form.hidden = true;
+    try { localStorage.removeItem(DRAFT); } catch (err) {}
     var box = $('[data-rg-done]'); box.hidden = false;
     $('[data-rg-done-title]').textContent = root.getAttribute('data-done').replace('{name}', get('first_name'));
     box.scrollIntoView({ block: 'center', behavior: 'smooth' });

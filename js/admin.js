@@ -6,7 +6,7 @@
      Products          the catalogue as a table with filters; a product opens in the editor
      Requests          a board of what visitors sent (account, message)
      Publish           the changes made here (products, jobs, page text), and how they go online
-     Website versions  every published version (rollback switched on at launch)
+     Website versions  every published version (who, what); going back to one is done on the server
      Backups           copies of the changes, to go back to
    Served by the back end (backend/server.js), the dashboard signs in against it, keeps every
    change in its shared draft (each save sends what changed: one product, one job, one text)
@@ -122,7 +122,10 @@
   var ME = JSON.parse(sessionStorage.getItem(SESSION));
   if (!ME.role) { var u0 = staff().filter(function (x) { return x.email === ME.email; })[0]; ME.role = u0 ? u0.role : 'administration'; ME.name = u0 ? u0.name : 'Administration'; }
   var SECTION = {}; ACCESS.sections.forEach(function (x) { SECTION[x.id] = x; });
-  function can(id) { var x = SECTION[id === 'product' || id === 'fix' ? 'products' : id]; return !!x && x.roles.indexOf(ME.role) >= 0; }
+  // a part of a section counts as its section: a product and the To fix list are Products',
+  // and so are the items of To fix checked or left out (the back end's records/checked)
+  var PART_OF = { product: 'products', fix: 'products', checked: 'products' };
+  function can(id) { var x = SECTION[PART_OF[id] || id]; return !!x && x.roles.indexOf(ME.role) >= 0; }
   $('[data-me-name]').textContent = ME.name || ME.email;
   // the role under the name, or the address when the name is the role's
   var roleLabel = (ACCESS.roles[ME.role] || {}).label || ME.role;
@@ -146,7 +149,8 @@
     if (!w) { toast('Your browser blocked the new tab: allow pop-ups for this address, then try again.'); return; }
     api('POST', 'view-as', what).then(function (d) {
       try { localStorage.setItem('signel.account', JSON.stringify(Object.assign({ backend: true }, d.account))); } catch (e) {}
-      w.location.href = ROOT + '/';
+      // the dashboard is in English: the website in English too
+      w.location.href = ROOT + '/en/';
     }).catch(function (e) { w.close(); toast(e.message); });
   }
   var viewBox = $('[data-viewas]');
@@ -245,7 +249,11 @@
     if (e.key === 'Escape') closeDrawer();
   });
 
-  function pendingCount() { return Object.keys(changes.products).length + changes.new.length + Object.keys(changes.jobs).length + Object.keys(changes.text).length + Object.keys(changes.replace || {}).length + (PRICES_PENDING ? 1 : 0); }
+  // How many changes: one per product changed, product added, job posting changed, text,
+  // replaced file, and the imported price list. The one rule the badge, the Publish page, a
+  // backup and the version a publish saves all count by (backend/lib/draft.js countChanges).
+  function countOf(c, prices) { c = c || {}; return Object.keys(c.products || {}).length + (c.new || []).length + Object.keys(c.jobs || {}).length + Object.keys(c.text || {}).length + Object.keys(c.replace || {}).length + (prices ? 1 : 0); }
+  function pendingCount() { return countOf(changes, PRICES_PENDING); }
   function paintBadges() {
     var counts = { publish: pendingCount(), requests: requests().filter(function (x) { return x.status === 'new'; }).length };
     Object.keys(MOD).forEach(function (k) { if (MOD[k].badge) counts[k] = MOD[k].badge(); });
@@ -329,7 +337,7 @@
     if (can('publish')) { var n = pendingCount(); tiles.push(tile('publish', ICON.up, 'Not published yet', n, n ? 'Changes made here' : 'Everything is published', n ? 'warn' : '')); }
     Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].cards) cards = cards.concat(MOD[k].cards()); });
     viewEl.innerHTML = '<div class="ad-page">' +
-      '<div class="ad-head"><div><p class="ad-eyebrow">' + new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + esc((ACCESS.roles[ME.role] || {}).label || '') + '</p><h1>Good ' + (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + ', ' + esc((ME.name || '').split(' ')[0]) + '</h1></div></div>' +
+      '<div class="ad-head"><div><p class="ad-eyebrow">' + new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }) + ' · ' + esc((ACCESS.roles[ME.role] || {}).label || '') + '</p><h1>Good ' + (hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + greetName() + '</h1></div></div>' +
       '<div class="ad-stats">' + tiles.join('') + '</div>' +
       (can('fix') ? '<section class="ad-card ad-fix" data-fix-card></section>' : '') +
       (cards.length ? '<div class="ad-cols">' + cards.join('') + '</div>' : '') + '</div>';
@@ -338,12 +346,22 @@
     $$('[data-req]', viewEl).forEach(function (b) { b.addEventListener('click', function () { go('requests'); setTimeout(function () { openRequest(b.getAttribute('data-req')); }, 60); }); });
     Object.keys(MOD).forEach(function (k) { if (can(k) && MOD[k].bindOverview) MOD[k].bindOverview(viewEl); });
   }
-  // the part of the product editor an item of the To fix list is about, shown and lit up
+  // ", Régine" after Good morning: a person's first name, nothing for a shared team account
+  // (named after its role: "Human resources", "Marketing"), whose role shows above
+  function greetName() {
+    var n = String(ME.name || '').trim();
+    var team = !n || n === ME.email || ACCESS.staff.some(function (u) { return u.name === n; }) || Object.keys(ACCESS.roles).some(function (k) { return ACCESS.roles[k].label === n; });
+    return team ? '' : ', ' + esc(n.split(' ')[0]);
+  }
+  // the part of the product editor an item of the To fix list is about, shown and lit up (on
+  // its tab: the others are hidden)
   function spotlight(part) {
     var f = $('[data-admin-form]'); if (!f) return;
     var el = { pictures: $('[data-pics-card]', f), documents: ($('[data-docs]', f) || {}).closest && $('[data-docs]', f).closest('.ad-card'),
                categories: ($('[data-cats]', f) || {}).closest && $('[data-cats]', f).closest('.ad-card'), sku: f.sku && f.sku.closest('label') }[part];
     if (!el) return;
+    var panel = el.closest('[data-panel]');
+    if (panel && panel.hidden) { var tab = $('[data-tab="' + panel.getAttribute('data-panel') + '"]', f); if (tab) tab.click(); }
     var fold = el.closest('details'); if (fold) fold.open = true;
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     el.classList.add('ad-spot'); setTimeout(function () { el.classList.remove('ad-spot'); }, 2600);
@@ -387,7 +405,8 @@
       }).join('') + '</ul>' : '<p class="ad-ok">Nothing to fix: every check passes.</p>');
     bindGo(box);
   }
-  var FX = { done: false };
+  // the To fix list's To do / Done choice, for each list on its own
+  var FX = { done: {} };
   function showFix(args) {
     var gid = args && args[0];
     viewEl.innerHTML = '<div class="ad-page"><div class="ad-loading">Loading…</div></div>';
@@ -418,13 +437,13 @@
   function paintFix(g) {
     changes.replace = changes.replace || {};   // changes restored from an older backup have none
     var c = checkedItems(), open = g.items.filter(function (i) { return !c[i.id]; }), done = g.items.filter(function (i) { return c[i.id]; });
-    var list = FX.done ? done : open;
+    var showDone = !!FX.done[g.id], list = showDone ? done : open;
     viewEl.innerHTML = '<div class="ad-page ad-page--wide"><div class="ad-head"><div><button type="button" class="ad-back" data-go="overview">' + ICON.left + 'Overview</button><h1>' + esc(g.title) + '</h1><p class="ad-muted">' + esc(g.help) + '</p></div>' +
-      '<div class="ad-head-tools"><div class="ad-chips" role="group" aria-label="Show"><button type="button" class="ad-chip-btn' + (FX.done ? '' : ' on') + '" data-fx-show="open">To do <small>' + open.length + '</small></button><button type="button" class="ad-chip-btn' + (FX.done ? ' on' : '') + '" data-fx-show="done">Done <small>' + done.length + '</small></button></div></div></div>' +
+      '<div class="ad-head-tools"><div class="ad-chips" role="group" aria-label="Show"><button type="button" class="ad-chip-btn' + (showDone ? '' : ' on') + '" data-fx-show="open">To do <small>' + open.length + '</small></button><button type="button" class="ad-chip-btn' + (showDone ? ' on' : '') + '" data-fx-show="done">Done <small>' + done.length + '</small></button></div></div></div>' +
       (list.length ? '<ul class="ad-fix-items">' + list.map(function (i) { return fixItem(i, c[i.id]); }).join('') + '</ul>'
-        : '<div class="ad-empty-state">' + ICON.inbox + '<h2>' + (FX.done ? 'Nothing here yet' : 'All done') + '</h2><p>' + (FX.done ? 'Items checked or left out show here, with who did it.' : 'Every item of this list is fixed, checked or left out.') + '</p></div>') + '</div>';
+        : '<div class="ad-empty-state">' + ICON.inbox + '<h2>' + (showDone ? 'Nothing here yet' : 'All done') + '</h2><p>' + (showDone ? 'Items checked or left out show here, with who did it.' : 'Every item of this list is fixed, checked or left out.') + '</p></div>') + '</div>';
     bindGo(viewEl);
-    $$('[data-fx-show]', viewEl).forEach(function (b) { b.addEventListener('click', function () { FX.done = b.getAttribute('data-fx-show') === 'done'; paintFix(g); }); });
+    $$('[data-fx-show]', viewEl).forEach(function (b) { b.addEventListener('click', function () { FX.done[g.id] = b.getAttribute('data-fx-show') === 'done'; paintFix(g); }); });
     var itemOf = function (el) { var id = el.closest('[data-fix]').getAttribute('data-fix'); return g.items.filter(function (i) { return i.id === id; })[0]; };
     viewEl.onclick = function (e) {
       var t = e.target, i;
@@ -509,7 +528,7 @@
     bindEditor(v);
     if (part) setTimeout(function () { spotlight(part); }, 80);
     saved = JSON.stringify(collect($('[data-admin-form]')));
-    paintDirty();
+    dirty = false; paintDirty();
   }
   var TABS = [['basics', 'Basics'], ['description', 'Description'], ['categories', 'Categories'], ['price', 'Price & choices'], ['details', 'Specs & documents']];
   function row(cls, inner) { return '<div class="adm-rowedit ' + cls + '">' + inner + '<button type="button" class="ad-icon-btn" data-del title="Remove" aria-label="Remove">' + ICON.x + '</button></div>'; }
@@ -556,7 +575,7 @@
     var samePics = !v.images_fr || JSON.stringify(v.images_fr) === JSON.stringify(v.images || []);
     var grid = function (key, list, l) {
       return '<div class="ad-pics" data-imgs="' + key + '"' + (l ? ' data-l="' + l + '"' : '') + '>' + (list || []).map(imgTile).join('') +
-        '<label class="ad-pic ad-pic--add">' + ICON.pic + '<span>Add a picture</span><small>JPG, PNG or WebP, under 3 MB</small><input type="file" accept="image/*" data-img-file hidden multiple></label></div>';
+        '<label class="ad-pic ad-pic--add">' + ICON.pic + '<span>Add a picture</span><small>JPG, PNG, WebP or GIF, under ' + maxMB() + ' MB</small><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-img-file hidden multiple></label></div>';
     };
     var panel = function (id, inner) { return '<section class="ad-panel" data-panel="' + id + '"' + (id === 'basics' ? '' : ' hidden') + '>' + inner + '</section>'; };
     return '<form class="ad-editor" data-admin-form data-elang="' + EL + '" novalidate>' +
@@ -565,7 +584,7 @@
         (v.sku ? '<em class="ad-chip">SKU ' + esc(v.sku) + '</em>' : '<em class="ad-chip ad-chip--warn">No SKU</em>') +
         (isNew ? '<em class="ad-chip ad-chip--green">New, not published</em>' : changes.products[v.id] ? '<em class="ad-chip ad-chip--amber">Edited, not published</em>' : '<em class="ad-chip ad-chip--ok">On the website</em>') +
         (v.hidden ? '<em class="ad-chip ad-chip--red">Hidden</em>' : '') + '<small class="ad-muted">ID ' + v.id + '</small></p></div>' +
-        '<div class="ad-ed-actions">' + (v.url && !isNew ? '<a class="ad-btn" href="' + ROOT + v.url + '" target="_blank" rel="noopener">View on site</a>' : '') +
+        '<div class="ad-ed-actions">' + (v.url && !isNew && !(byId[v.id] || {}).hidden ? '<a class="ad-btn" href="' + ROOT + v.url + '" target="_blank" rel="noopener">View on site</a>' : '') +
         '<button type="button" class="ad-btn" data-preview-toggle aria-pressed="false">Live preview</button>' +
         '<details class="ad-more"><summary class="ad-btn" aria-label="More actions">•••</summary><div class="ad-menu-pop">' +
           '<button type="button" data-backup>Back up all changes</button>' +
@@ -621,8 +640,10 @@
       '</form>';
   }
 
+  // the largest file one can add: sent to the back end at once, or kept in this browser (demo)
+  function maxMB() { return SERVER ? 25 : 3; }
   function readFile(file, cb) {
-    var max = SERVER ? 25 : 3;
+    var max = maxMB();
     if (file.size > max * 1024 * 1024) { toast(file.name + ' is over ' + max + ' MB. Use a smaller file.'); return; }
     var r = new FileReader();
     r.onload = function () {
@@ -736,6 +757,13 @@
     paintStyleArt(f);
     f.addEventListener('change', function (e) { if (e.target.closest('[data-cats]')) paintCats(f); });
     f.addEventListener('submit', function (e) { e.preventDefault(); saveProduct(); });
+    // Enter in a field does not save the whole product: in the picture address it adds the
+    // picture, in Find a category it does nothing (Save, or Ctrl S, saves)
+    f.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || /^(checkbox|radio|button|submit)$/.test(e.target.type)) return;
+      e.preventDefault();
+      if (e.target.matches('[data-img-url]')) $('[data-img-add]', f).click();
+    });
     ['input', 'change'].forEach(function (ev) { f.addEventListener(ev, function (e) { if (e.target.matches('[data-catfilter], [data-img-url]')) return; changed(); }); });
     f.name.addEventListener('input', function () { $('[data-ed-name]', f).textContent = f.name.value || 'Untitled product'; });
     paintCats(f); paintLang(f);
@@ -807,21 +835,41 @@
       if (quiet) { toast('This product still needs ' + problems.map(function (p) { return p[1]; }).join(', ') + ': its edits are not in the backup.'); return false; }
       paintDirty(msg); var tab = $('[data-tab="' + problems[0][0] + '"]', f); if (tab) tab.click(); return false;
     }
-    if (current.isNew) Object.assign(changes.new.filter(function (x) { return x.id === current.id; })[0], v);
-    else {
-      var orig = Object.assign({}, byId[current.id]), patch = {};
+    // HTML typed in the description: nothing in it may run or load on its own (the build
+    // cleans it again: src/lib/safe-html.js)
+    var start = JSON.parse(saved);
+    ['description', 'description_fr'].forEach(function (k) { if (v[k] !== start[k] && cleanHtml(v[k]) !== v[k]) { v[k] = cleanHtml(v[k]); f[k].value = v[k]; } });
+    // Only what was changed in this editor is saved: the rest of the product is what the shared
+    // draft has now (someone else may have changed another field since this editor opened)
+    var sorted = function (a) { return (a || []).slice().sort(function (x, y) { return x - y; }); };
+    var differ = function (k, a, b) { return k === 'hidden' ? !!a !== !!b : k === 'categories' ? !same(sorted(a), sorted(b)) : !same(a, b); };
+    var mine = FIELDS.filter(function (k) { return differ(k, v[k], start[k]); });
+    if (current.isNew) {
+      var n = changes.new.filter(function (x) { return x.id === current.id; })[0];
+      if (!n) { toast('This new product was deleted meanwhile (Publish page): it was not saved.'); return false; }
+      mine.forEach(function (k) { n[k] = v[k]; });
+    } else {
+      var orig = Object.assign({}, byId[current.id]), patch = Object.assign({}, changes.products[current.id] || {});
       if (same(orig.images_fr, orig.images)) orig.images_fr = null;
-      var sorted = function (a) { return (a || []).slice().sort(function (x, y) { return x - y; }); };
-      FIELDS.forEach(function (k) {
-        var diff = k === 'hidden' ? v.hidden !== !!orig.hidden : k === 'categories' ? !same(sorted(v[k]), sorted(orig[k])) : !same(v[k], orig[k]);
-        if (diff) patch[k] = v[k];
-      });
+      // a field back to what is published leaves the draft
+      mine.forEach(function (k) { if (differ(k, v[k], orig[k])) patch[k] = v[k]; else delete patch[k]; });
       if (Object.keys(patch).length) changes.products[current.id] = patch; else delete changes.products[current.id];
     }
     if (!save()) { paintDirty('This browser is full (probably large files). Publish or back up your changes, then remove large files.'); return false; }
     saved = JSON.stringify(v); dirty = false; paintDirty();
+    // what someone else changed meanwhile shows in the editor now
+    var now = editorValues(current.id);
+    if (now && !same(now, v) && !quiet) { var tab = $('[data-tab][aria-selected="true"]', f); openProduct(current.id); if (tab) { var t2 = $('[data-tab="' + tab.getAttribute('data-tab') + '"]'); if (t2) t2.click(); } toast('Saved. Changes someone else made to this product meanwhile are shown too.'); return true; }
     if (!quiet) toast('Saved. Publish when you are ready to put it on the website.');
     return true;
+  }
+  // the product as the editor would show it now (published, with the draft over it), in the
+  // shape collect() gives
+  function editorValues(id) {
+    var f = $('[data-admin-form]'); if (!f) return null;
+    var box = document.createElement('div'), p = find(id); if (!p) return null;
+    box.innerHTML = editorHtml(byId[id] ? Object.assign({}, p, changes.products[id] || {}) : p, !byId[id]);
+    return collect(box.firstChild);
   }
   function save() {
     if (!SERVER) { var ok = store.set(CHANGES, changes); paintBadges(); return ok; }
@@ -951,15 +999,34 @@
   }
   window.addEventListener('focus', pollRecords);
   setInterval(pollRecords, 60000);
+  // a small form, the passwords hidden as they are typed
   function changePassword() {
-    var current = prompt('Your current password'); if (current == null) return;
-    var next = prompt('Your new password (10 characters or more)'); if (next == null) return;
-    if (prompt('Your new password, once more') !== next) { toast('The two new passwords are not the same.'); return; }
-    api('POST', 'me/password', { current: current, next: next }).then(function () { toast('Password changed.'); }).catch(function (e) { toast(e.message); });
+    var dlg = document.body.appendChild(Object.assign(document.createElement('dialog'), { className: 'adm-dialog' }));
+    dlg.innerHTML = '<form method="dialog" class="ad-pwform"><h3>Change my password</h3>' +
+      '<input type="email" name="username" autocomplete="username" value="' + esc(ME.email) + '" hidden>' +
+      '<label><span>Current password</span><input class="ad-input" type="password" name="current" autocomplete="current-password" required></label>' +
+      '<label><span>New password <small class="ad-muted">10 characters or more</small></span><input class="ad-input" type="password" name="next" autocomplete="new-password" minlength="10" required></label>' +
+      '<label><span>New password, once more</span><input class="ad-input" type="password" name="again" autocomplete="new-password" required></label>' +
+      '<p class="ad-bad" data-pw-err hidden></p>' +
+      '<div class="adm-dialog-actions"><button value="cancel" class="ad-btn" formnovalidate>Cancel</button><button type="submit" value="ok" class="ad-btn ad-btn--primary">Change my password</button></div></form>';
+    var f = $('form', dlg), err = $('[data-pw-err]', dlg);
+    var say = function (m) { err.textContent = m; err.hidden = !m; };
+    dlg.addEventListener('close', function () { dlg.remove(); });
+    f.addEventListener('submit', function (e) {
+      if (e.submitter && e.submitter.value === 'cancel') return;
+      e.preventDefault();
+      if (f.next.value.length < 10) return say('The new password needs 10 characters or more.');
+      if (f.next.value !== f.again.value) return say('The two new passwords are not the same.');
+      say(''); e.submitter && (e.submitter.disabled = true);
+      api('POST', 'me/password', { current: f.current.value, next: f.next.value })
+        .then(function () { dlg.close(); toast('Password changed.'); })
+        .catch(function (x) { say(x.message); if (e.submitter) e.submitter.disabled = false; });
+    });
+    dlg.showModal(); f.current.focus();
   }
   function toast(msg) {
     var t = $('.adm-toast') || document.body.appendChild(Object.assign(document.createElement('div'), { className: 'adm-toast', role: 'status' }));
-    t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('on'); }, 3500);
+    t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('on'); }, Math.max(3500, String(msg).length * 55));
   }
   function download(name, obj) {
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type: 'application/json' }));
@@ -984,7 +1051,8 @@
     var undoers = {};
     Object.keys(MOD).forEach(function (k) {
       if (!MOD[k].changes) return;
-      MOD[k].changes().forEach(function (c, i) { var key = k + ':' + i; undoers[key] = c.undo; list.push(Object.assign({ thumb: '<span class="ad-thumb ad-thumb--none">' + (c.icon || ICON.up) + '</span>', undo: key, undoTitle: 'Undo these changes' }, c)); });
+      // the row's undo is the key of its function (c.undo is the function itself)
+      MOD[k].changes().forEach(function (c, i) { var key = k + ':' + i; undoers[key] = c.undo; list.push(Object.assign({ thumb: '<span class="ad-thumb ad-thumb--none">' + (c.icon || ICON.up) + '</span>', undoTitle: 'Undo these changes' }, c, { undo: key })); });
     });
     if (PRICES_PENDING) list.unshift({ thumb: '<span class="ad-thumb ad-thumb--none">' + ICON.tag + '</span>', title: 'Price list: ' + PRICES_PENDING.file,
       what: plural(PRICES_PENDING.cells, 'price', 'prices') + ' changed on ' + plural(PRICES_PENDING.lines, 'line', 'lines') + ', imported ' + ago(PRICES_PENDING.at), chip: 'Imported', go: can('prices') ? 'prices' : '', undo: 'prices', undoTitle: 'Undo the import' });
@@ -1001,13 +1069,15 @@
         '<button type="button" class="ad-btn ad-btn--primary" data-pub-go>Publish now</button></div></div></div>'
       : '<div class="ad-card ad-publish"><div class="ad-step"><b>1</b><div><h2>Download the changes</h2><p class="ad-muted">One file with every change above (catalog.json).</p><button type="button" class="ad-btn ad-btn--primary" data-export>Download the changes</button></div></div>' +
         '<div class="ad-step"><b>2</b><div><h2>Send it to put it online</h2><p class="ad-muted">This is the demo dashboard (no back end): the file is added to the website project (data/admin/catalog.json) and the site is rebuilt. Run the dashboard from the back end (backend/server.js) to publish with one button.</p></div></div></div>';
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(list.length, 'change', 'changes') + (SERVER ? ' not on the website yet.' : ' made in this browser, not on the website yet.') : 'Everything you changed is on the website.') + '</p></div></div>' +
+    // counted as the badge counts (pendingCount): a row may hold several changes (a page's texts)
+    var total = pendingCount();
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Publish</h1><p class="ad-muted">' + (list.length ? plural(total, 'change', 'changes') + (SERVER ? ' not on the website yet' : ' made in this browser, not on the website yet') + (list.length !== total ? ', in ' + plural(list.length, 'place', 'places') + '.' : '.') : 'Everything you changed is on the website.') + '</p></div></div>' +
       '<div data-pub-progress></div>' +
       (list.length ? '<div class="ad-card ad-card--flush"><ul class="ad-change-list">' + list.map(function (c) {
         return '<li>' + c.thumb + '<span class="ad-mini-t"><b>' + esc(c.title) + '</b><small>' + esc(c.what) + '</small></span><em class="ad-chip ad-chip--' + (chipTone[c.chip] || 'amber') + '">' + esc(c.chip) + '</em>' +
           (c.go ? '<button type="button" class="ad-btn" data-go="' + esc(c.go) + '">Open</button>' : '') + '<button type="button" class="ad-icon-btn" data-undo="' + esc(c.undo) + '" title="' + esc(c.undoTitle) + '" aria-label="Undo">' + ICON.x + '</button></li>';
       }).join('') + '</ul></div>' + publishCard : '<div class="ad-empty-state">' + ICON.up + '<h2>Nothing to publish</h2><p>Changes you save to products appear here until they are on the website.</p><button type="button" class="ad-btn ad-btn--primary" data-go="products">Go to products</button></div>') +
-      '<div class="ad-card"><h2>Changes file from someone else?</h2><p class="ad-muted">Load a catalog.json or a backup to continue where they left off. It replaces the changes in this browser.</p><label class="ad-btn">Load a file…<input type="file" accept="application/json" data-import hidden></label></div></div>';
+      '<div class="ad-card"><h2>Changes file from someone else?</h2><p class="ad-muted">Load a catalog.json or a backup to continue where they left off. Its changes are put back over the ones waiting now; the rest stays.</p><label class="ad-btn">Load a file…<input type="file" accept="application/json" data-import hidden></label></div></div>';
     bindGo(viewEl);
     var ex = $('[data-export]', viewEl);
     if (ex) ex.addEventListener('click', function () {
@@ -1041,19 +1111,7 @@
       if (byId[id]) delete changes.products[id]; else changes.new = changes.new.filter(function (n) { return n.id !== id; });
       save(); showPublish();
     });
-    $('[data-import]', viewEl).addEventListener('change', function (e) {
-      var file = e.target.files[0]; if (!file) return;
-      var r = new FileReader();
-      r.onload = function () {
-        try {
-          var d = JSON.parse(r.result), c = d.kind === 'signel-admin-backup' ? d.changes : d;
-          if (!c || (!c.products && !c.new && !c.jobs && !c.text && !c.replace)) throw new Error('no changes');
-          if (!confirm('Replace the changes in this browser with the ones in ' + file.name + '?')) return;
-          changes = { products: c.products || {}, new: c.new || [], jobs: c.jobs || {}, text: c.text || {}, replace: c.replace || {} }; save(); showPublish(); toast('Loaded ' + file.name);
-        } catch (err) { toast('That file is not a Signel changes file or backup.'); }
-      };
-      r.readAsText(file);
-    });
+    $('[data-import]', viewEl).addEventListener('change', function (e) { var file = e.target.files[0]; e.target.value = ''; if (file) restoreFile(file, showPublish); });
   }
 
   // a publish on the back end, step by step; once done, the dashboard reloads the new site's data
@@ -1069,6 +1127,8 @@
           '<ol class="ad-pubsteps">' + j.steps.map(function (st) { return '<li class="is-' + st.state + '"><b>' + mark[st.state] + '</b> ' + esc(st.name) + (st.ms && st.state !== 'running' ? ' <small>' + Math.round(st.ms / 1000) + ' s</small>' : '') + (st.error ? '<small class="ad-bad"> ' + esc(st.error) + '</small>' : '') + '</li>'; }).join('') + '</ol>' +
           (j.state === 'failed' ? '<p class="ad-bad">' + esc(j.error || '') + '</p><p class="ad-muted">The website is as it was, and every change is still here: fix what the message says, then publish again.</p>' : '') +
           (j.state === 'done' ? '<p class="ad-muted">' + [res.git ? 'Version: ' + res.git : '', res.online ? 'Online: ' + res.online : ''].filter(Boolean).map(esc).join('<br>') + '</p><button type="button" class="ad-btn ad-btn--primary" data-pub-reload>Continue</button>' : '') +
+          // what went wrong, in full: the build's and the check's own messages
+          (j.state === 'failed' && (j.failLog || j.log || []).length ? '<details class="ad-publog-more"><summary>Show the log</summary><pre class="ad-publog">' + esc((j.failLog || j.log).join('\n')) + '</pre></details>' : '') +
           (j.state === 'running' ? '<pre class="ad-publog">' + esc(j.log.slice(-6).join('\n')) + '</pre>' : '') + '</div>';
         var r = $('[data-pub-reload]', box); if (r) r.addEventListener('click', function () { location.reload(); });
         if (j.state === 'running') setTimeout(tick, 1500);
@@ -1088,7 +1148,7 @@
      /admin/price-import.js), and shows what changes before anything is kept. */
   var PRICES = null, CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
   function priceList() { return PRICES || (PRICES = fetch(ROOT + '/admin/price-list.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })); }
-  var cad = function (n) { return n == null ? 'On request' : n.toLocaleString('fr-CA', { style: 'currency', currency: 'CAD' }); };
+  var cad = function (n) { return n == null ? 'On request' : n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' }); };
   function inflateRaw(bytes) {
     return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer().then(function (b) { return new Uint8Array(b); });
   }
@@ -1121,12 +1181,12 @@
     var out = $('[data-price-result]', viewEl);
     out.innerHTML = '<div class="ad-card"><p class="ad-muted">Reading ' + esc(file.name) + '…</p></div>';
     Promise.all([file.arrayBuffer(), import(ROOT + '/admin/xlsx.js'), import(ROOT + '/admin/price-import.js'), priceList()]).then(function (a) {
-      return a[1].readXlsx(new Uint8Array(a[0]), inflateRaw).then(function (sheets) { return a[2].checkPriceSheet(sheets, a[3]); });
+      return a[1].readXlsx(new Uint8Array(a[0]), inflateRaw).then(function (sheets) { return a[2].checkPriceSheet(sheets, a[3], { lang: 'en' }); });
     }).then(function (res) {
       var list = function (items, cls) { return items.length ? '<ul class="ad-notes ' + cls + '">' + items.slice(0, 50).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + (items.length > 50 ? '<li>… and ' + (items.length - 50) + ' more</li>' : '') + '</ul>' : ''; };
       if (!res.next) { out.innerHTML = '<div class="ad-card"><h2>This file cannot be imported</h2>' + list(res.errors, 'is-bad') + '</div>'; return; }
       var ch = res.changes, MAX = 300;
-      var head = res.cells === 1 ? '1 price changes' : res.cells ? res.cells.toLocaleString('en-CA') + ' prices change' : ch.length ? 'Breaks or price categories change' : 'No changes';
+      var head = res.cells ? plural(res.cells, 'changed price', 'changed prices').replace(/^\d+/, function (n) { return Number(n).toLocaleString('en-CA'); }) : ch.length ? 'Breaks or price categories change' : 'No changes';
       out.innerHTML = '<div class="ad-card"><div class="ad-card-head"><h2>' + head + (ch.length ? ' <small class="ad-muted">on ' + plural(ch.length, 'line', 'lines') + '</small>' : '') + '</h2><span class="ad-muted">' + esc(file.name) + ' · ' + res.read.toLocaleString('en-CA') + ' lines read</span></div>' +
         list(res.errors, 'is-bad') + list(res.warnings, 'is-warn') +
         (ch.length ? '<div class="ad-table-wrap"><table class="ad-table ad-price-diff"><thead><tr><th>Code</th><th>Product</th><th>Changes</th></tr></thead><tbody>' + ch.slice(0, MAX).map(function (c) {
@@ -1134,7 +1194,7 @@
             var how = x.from != null && x.to != null ? (x.to > x.from ? 'up' : 'down') : x.to == null ? 'off' : 'new';
             return '<span class="ad-pchg is-' + how + '"><b>' + x.cls + '</b> ' + (x.from == null ? '—' : cad(x.from)) + ' → ' + (x.to == null ? 'empty' : cad(x.to)) + '</span>';
           });
-          if (c.qty) bits.push('<span class="ad-pchg"><b>Quantité</b> ' + esc(c.qty.from || '—') + ' → ' + esc(c.qty.to || '—') + '</span>');
+          if (c.qty) bits.push('<span class="ad-pchg"><b>Quantity</b> ' + esc(c.qty.from || '—') + ' → ' + esc(c.qty.to || '—') + '</span>');
           var brk = function (b) { return b ? b[0] + ' / ' + (b[1] || '—') : '—'; };
           if (c.breaks) bits.push('<span class="ad-pchg"><b>QTY2 / QTY3</b> ' + esc(brk(c.breaks.from)) + ' → ' + esc(brk(c.breaks.to)) + '</span>');
           var SHOW = { show: 'show price', login: 'login to see price', quote: 'ask for quote', remove: 'remove from website' };
@@ -1167,21 +1227,44 @@
   }
 
   /* ---------- a small visual text editor (bold, italic, lists, links): staff never see HTML.
-     rte(html, onChange) -> { el, get() }; what it returns keeps only the tags a page's text may
-     hold (the build cleans it again before it reaches a page). ---------- */
-  var RTE_TAGS = { P: 1, BR: 1, STRONG: 1, B: 1, EM: 1, I: 1, UL: 1, OL: 1, LI: 1, A: 1, H3: 1, H4: 1 };
+     rte(html, onChange) -> { el, get(), changed() }. A text the person did not change comes back
+     exactly as it was (get() returns it untouched): the editor never rewrites what it was given.
+     A changed one is cleaned by cleanHtml, which keeps everything a page's text may hold, also
+     what the toolbar cannot make (pictures, videos, tables, headings, sup/sub, classes and
+     styles), and takes out only what could run or load on its own. The build cleans with the
+     same rules (src/lib/safe-html.js) before anything reaches a page. ---------- */
+  // dropped with what they hold
+  var RTE_DROP = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1, OBJECT: 1, EMBED: 1, APPLET: 1, FRAME: 1, FRAMESET: 1, LINK: 1, META: 1, BASE: 1, TITLE: 1,
+                   FORM: 1, INPUT: 1, BUTTON: 1, TEXTAREA: 1, SELECT: 1, OPTION: 1, FOREIGNOBJECT: 1, PARAM: 1, NOEMBED: 1, NOFRAMES: 1, XMP: 1 };
+  // the videos a text may show in a frame (the website's security policy allows the same)
+  var VIDEO_FRAME = /^https:\/\/(www\.)?(youtube(-nocookie)?\.com\/embed\/|player\.vimeo\.com\/video\/)/i;
+  var URL_ATTR = /^(href|src|action|formaction|xlink:href|data|poster|background|cite|longdesc|usemap|dynsrc|lowsrc|codebase)$/i;
+  function safeUrl(v, name, tag) {
+    v = String(v).replace(/[\u0000-\u0020\u007f-\u009f]/g, '').toLowerCase();
+    if (/^(javascript|vbscript|livescript|mocha):/.test(v)) return false;
+    if (/^data:/.test(v)) return name === 'src' && tag === 'IMG' && /^data:image\/(png|jpe?g|gif|webp);/.test(v);
+    return true;
+  }
   function cleanHtml(html) {
-    var box = document.createElement('div'); box.innerHTML = html;
+    // parsed where nothing loads or runs (a template's content), unlike a <div> of this page
+    var t = document.createElement('template'); t.innerHTML = String(html == null ? '' : html);
     (function walk(n) {
       Array.prototype.slice.call(n.childNodes).forEach(function (c) {
         if (c.nodeType === 8) { c.remove(); return; }
         if (c.nodeType !== 1) return;
-        walk(c);
-        if (!RTE_TAGS[c.tagName]) { while (c.firstChild) c.parentNode.insertBefore(c.firstChild, c); c.remove(); return; }
-        Array.prototype.slice.call(c.attributes).forEach(function (a) { if (!(c.tagName === 'A' && a.name === 'href')) c.removeAttribute(a.name); });
+        var tag = c.tagName.toUpperCase();
+        if (RTE_DROP[tag] || (tag === 'IFRAME' && !VIDEO_FRAME.test(c.getAttribute('src') || ''))) { c.remove(); return; }
+        Array.prototype.slice.call(c.attributes).forEach(function (a) {
+          var name = a.name.toLowerCase();
+          if (/^on/.test(name) || name === 'srcdoc' || name === 'formaction' || name === 'is' ||
+              (URL_ATTR.test(name) && !safeUrl(a.value, name, tag)) ||
+              (name === 'srcset' && a.value.split(',').some(function (x) { return !safeUrl(x.trim().split(/\s+/)[0], 'src', tag); })) ||
+              (name === 'style' && /expression\s*\(|javascript:|vbscript:|-moz-binding|behavior\s*:|@import/i.test(a.value.replace(/\\/g, '')))) c.removeAttribute(a.name);
+        });
+        walk(c.content || c);
       });
-    })(box);
-    return box.innerHTML.replace(/<b>/g, '<strong>').replace(/<\/b>/g, '</strong>').replace(/<i>/g, '<em>').replace(/<\/i>/g, '</em>').replace(/(<br>\s*)+$/, '').trim();
+    })(t.content);
+    return t.innerHTML.replace(/(<br>\s*)+$/, '').trim();
   }
   function rte(html, onChange) {
     var wrap = document.createElement('div'); wrap.className = 'ad-rte';
@@ -1189,16 +1272,21 @@
       [['bold', '<b>B</b>', 'Bold'], ['italic', '<i>I</i>', 'Italic'], ['insertUnorderedList', '• List', 'Bullet list'], ['insertOrderedList', '1. List', 'Numbered list'], ['link', 'Link', 'Link'], ['removeFormat', 'Clear', 'Clear formatting']]
         .map(function (b) { return '<button type="button" data-cmd="' + b[0] + '" title="' + b[2] + '">' + b[1] + '</button>'; }).join('') +
       '</div><div class="ad-rte-area" contenteditable="true"></div>';
-    var area = wrap.querySelector('.ad-rte-area'); area.innerHTML = cleanHtml(html || '');
+    var given = html == null ? '' : String(html), touched = false;
+    var area = wrap.querySelector('.ad-rte-area'); area.innerHTML = cleanHtml(given);
+    var shown = area.innerHTML;
+    var edit = function () { touched = true; if (onChange) onChange(); };
     wrap.querySelector('.ad-rte-tools').addEventListener('mousedown', function (e) {
       var b = e.target.closest('[data-cmd]'); if (!b) return; e.preventDefault(); area.focus();
       var cmd = b.getAttribute('data-cmd');
       if (cmd === 'link') { var u = prompt('Link address (https://… or /page/)', 'https://'); if (u) document.execCommand('createLink', false, u); }
       else document.execCommand(cmd, false, null);
-      if (onChange) onChange();
+      edit();
     });
-    area.addEventListener('input', function () { if (onChange) onChange(); });
-    return { el: wrap, get: function () { return cleanHtml(area.innerHTML); } };
+    area.addEventListener('input', edit);
+    // unchanged (not typed in, or typed back to what it was): the text as it was given
+    var changed = function () { return touched && area.innerHTML !== shown; };
+    return { el: wrap, changed: changed, get: function () { return changed() ? cleanHtml(area.innerHTML) : given; } };
   }
   var slugify = function (t) { return norm(t).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70); };
 
@@ -1495,8 +1583,9 @@
       options: (v.options || []).map(function (o) { return { label: o.label_fr || o.label, values: o.values.map(function (x, i) { return (o.values_fr || [])[i] || x; }) }; }),
       specs: (v.specs || []).map(function (o) { return { label: o.label_fr || o.label, values: o.values.map(function (x, i) { return (o.values_fr || [])[i] || x; }) }; })
     });
-    var pub = byId[current.id] || {};
-    var url = (EL === 'fr' ? pub.url_fr : pub.url) || (EL === 'fr' ? DATA.products[0].url_fr : DATA.products[0].url);   // a new product borrows any product page's frame
+    var pub = byId[current.id] || {}, any = DATA.products.filter(function (x) { return !x.hidden; })[0];
+    // a new product (or one hidden, whose page is not on the site) borrows any product page's frame
+    var url = (!pub.hidden && (EL === 'fr' ? pub.url_fr : pub.url)) || (EL === 'fr' ? any.url_fr : any.url);
     template(url).then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html'), prod = doc.querySelector('.product');
       if (!prod) return;
@@ -1514,20 +1603,67 @@
   var BACKUPS = 'signel.admin.backups';
   function backup() {
     if (current) { var before = JSON.stringify(changes); if (dirty) saveProduct(true); if (JSON.stringify(changes) !== before) toast('Your edits to this product were saved first.'); }
-    var n = Object.keys(changes.products).length + changes.new.length;
-    var at = new Date(), snap = { id: at.getTime(), at: at.toISOString(), label: 'Backup of ' + at.toLocaleString('en-CA'), count: n, catalogBuilt: DATA.generated, changes: JSON.parse(JSON.stringify(changes)) };
+    var n = countOf(changes);
+    var at = new Date(), snap = { id: at.getTime(), at: at.toISOString(), label: 'Backup of ' + at.toLocaleString('en-CA'), count: n, by: ME.email, catalogBuilt: DATA.generated, changes: JSON.parse(JSON.stringify(changes)) };
     var list = store.get(BACKUPS, []); list.unshift(snap);
     var kept = store.set(BACKUPS, list.slice(0, 20));
     download('signel-backup-' + at.toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.json',
              { kind: 'signel-admin-backup', at: snap.at, catalogBuilt: DATA.generated, changes: snap.changes, publishedCatalog: DATA.products });
-    toast(kept ? 'Backup made (' + plural(n, 'changed product', 'changed products') + ') and downloaded.' : 'Backup downloaded (this browser is full, so it is not in the list).');
+    toast(kept ? 'Backup made (' + plural(n, 'change', 'changes') + ') and downloaded.' : 'Backup downloaded (this browser is full, so it is not in the list).');
+  }
+  // a changes file in any of its shapes (a backup, a catalog.json, an older one without jobs,
+  // texts or replacements), as the dashboard keeps changes
+  function changesOf(d) {
+    var c = d && d.kind === 'signel-admin-backup' ? d.changes : d;
+    if (!c || typeof c !== 'object' || (!c.products && !c.new && !c.jobs && !c.text && !c.replace)) return null;
+    return { products: c.products || {}, new: (c.new || []).map(function (n) { var x = Object.assign({}, n); delete x.isNew; return x; }), jobs: c.jobs || {}, text: c.text || {}, replace: c.replace || {} };
+  }
+  // the section a part of the changes belongs to (backend/lib/draft.js sectionOf)
+  function sectionOfPart(k, id) {
+    if (k === 'products' || k === 'new') return 'products';
+    if (k === 'jobs') return 'jobs';
+    if (k === 'replace') return 'pages';
+    return /\/job-/.test(id) || (MOD.jobs && MOD.jobs.ownsText && MOD.jobs.ownsText(id)) ? 'jobs' : 'pages';
+  }
+  /* Puts back what a backup (or a changes file) holds, over the changes waiting now: only its
+     own items, each as the backup has it; everything else waiting (other people's newer work
+     included) stays. Items of sections this role cannot change are left out, and said so. */
+  function restoreChanges(c, name) {
+    var parts = [];
+    ['products', 'jobs', 'text', 'replace'].forEach(function (k) { Object.keys(c[k]).forEach(function (id) { parts.push({ k: k, id: id, v: c[k][id] }); }); });
+    c.new.forEach(function (n) { parts.push({ k: 'new', id: String(n.id), v: n }); });
+    var nowOf = function (p) { return p.k === 'new' ? changes.new.filter(function (n) { return String(n.id) === p.id; })[0] : (changes[p.k] || {})[p.id]; };
+    var mine = parts.filter(function (p) { return can(sectionOfPart(p.k, p.id)); }), skipped = parts.length - mine.length;
+    var todo = mine.filter(function (p) { return !same(nowOf(p), p.v); }), over = todo.filter(function (p) { return nowOf(p) !== undefined; }).length;
+    if (!todo.length) { toast(parts.length ? 'Nothing to restore: what ' + name + ' holds is already waiting to be published' + (skipped ? ' (or is for sections your role cannot change)' : '') + '.' : name + ' holds no changes.'); return; }
+    if (!confirm('Put back ' + plural(todo.length, 'change', 'changes') + ' from ' + name + '?\n\n' +
+      (over ? plural(over, 'of them replaces', 'of them replace') + ' what is waiting now for the same item (newer work on it, by you or someone else, goes back to the backup\'s version).\n' : '') +
+      'Every other change waiting to be published stays as it is' + (SERVER ? ', other people\'s included' : '') + '.' +
+      (skipped ? '\n' + plural(skipped, 'change', 'changes') + ' in it are for sections your role cannot change: left out.' : ''))) return;
+    todo.forEach(function (p) {
+      var v = clone(p.v);
+      if (p.k === 'new') { var i = -1; changes.new.forEach(function (n, j) { if (String(n.id) === p.id) i = j; }); if (i >= 0) changes.new[i] = v; else changes.new.unshift(v); }
+      else changes[p.k][p.id] = v;
+    });
+    save(); toast('Restored ' + plural(todo.length, 'change', 'changes') + ' from ' + name + (skipped ? ' (' + skipped + ' left out)' : '') + '.');
+    return true;
+  }
+  function restoreFile(file, then) {
+    var r = new FileReader();
+    r.onload = function () {
+      var c = null; try { c = changesOf(JSON.parse(r.result)); } catch (err) {}
+      if (!c) { toast('That file is not a Signel backup or catalog.json.'); return; }
+      if (restoreChanges(c, file.name) && then) then();
+    };
+    r.readAsText(file);
   }
   function showBackups() {
     var list = store.get(BACKUPS, []);
-    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Backups</h1><p class="ad-muted">A backup keeps every change made in this dashboard at that moment, to go back to if something goes wrong. Each is also downloaded as a file.</p></div>' +
+    viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Backups</h1><p class="ad-muted">A backup keeps every change waiting to be published at that moment, to go back to if something goes wrong. Each is also downloaded as a file. Restoring one puts back its changes over the ones waiting now; ' + (SERVER ? 'everything else waiting, other people\'s work included, stays.' : 'the rest stays.') + (SERVER ? ' The list below is kept in this browser.' : '') + '</p></div>' +
       '<div class="ad-head-tools"><label class="ad-btn">Restore from a file…<input type="file" accept="application/json" data-bk-file hidden></label><button type="button" class="ad-btn ad-btn--primary" data-backup>Back up now</button></div></div>' +
       (list.length ? '<div class="ad-card ad-card--flush"><ul class="ad-change-list">' + list.map(function (b) {
-        return '<li><span class="ad-mini-t"><b>' + esc(b.label) + '</b><small>' + plural(b.count, 'changed product', 'changed products') + '</small></span><button type="button" class="ad-btn" data-bk-restore="' + b.id + '">Restore</button><button type="button" class="ad-btn" data-bk-download="' + b.id + '">Download</button><button type="button" class="ad-icon-btn" data-bk-delete="' + b.id + '" aria-label="Delete this backup">' + ICON.x + '</button></li>';
+        var n = b.changes ? countOf(changesOf(b.changes) || {}) : b.count;
+        return '<li><span class="ad-mini-t"><b>' + esc(b.label) + '</b><small>' + plural(n, 'change', 'changes') + '</small></span><button type="button" class="ad-btn" data-bk-restore="' + b.id + '">Restore</button><button type="button" class="ad-btn" data-bk-download="' + b.id + '">Download</button><button type="button" class="ad-icon-btn" data-bk-delete="' + b.id + '" aria-label="Delete this backup">' + ICON.x + '</button></li>';
       }).join('') + '</ul></div>' : '<div class="ad-empty-state"><h2>No backups yet</h2><p>Make one before big changes, so you can always go back.</p></div>') +
       '<p class="ad-muted ad-small">To put the whole website back as it was, see <button type="button" class="ad-link" data-go="versions">Website versions</button>.</p></div>';
     bindGo(viewEl);
@@ -1535,59 +1671,40 @@
       var t = e.target, id;
       if (t.closest('[data-backup]')) { backup(); return showBackups(); }
       var all = store.get(BACKUPS, []), pick = function (x) { return all.filter(function (b) { return String(b.id) === x; })[0]; };
-      if ((id = t.getAttribute('data-bk-restore'))) { var b = pick(id); if (!b || !confirm('Replace the current changes with “' + b.label + '”? Back up first if you may want them.')) return; changes = JSON.parse(JSON.stringify(b.changes)); save(); toast('Restored: ' + b.label); return; }
+      if ((id = t.getAttribute('data-bk-restore'))) { var b = pick(id), c = b && changesOf(b.changes); if (c) restoreChanges(c, '“' + b.label + '”'); return; }
       if ((id = t.getAttribute('data-bk-download'))) { var d = pick(id); if (d) download('signel-backup-' + id + '.json', { kind: 'signel-admin-backup', at: d.at, catalogBuilt: d.catalogBuilt, changes: d.changes }); return; }
       if ((id = t.closest('[data-bk-delete]') && t.closest('[data-bk-delete]').getAttribute('data-bk-delete'))) { if (!confirm('Delete this backup?')) return; store.set(BACKUPS, all.filter(function (b) { return String(b.id) !== id; })); showBackups(); }
     };
-    $('[data-bk-file]', viewEl).addEventListener('change', function (e) {
-      var file = e.target.files[0]; if (!file) return;
-      var r = new FileReader();
-      r.onload = function () {
-        try {
-          var d = JSON.parse(r.result), c = d.kind === 'signel-admin-backup' ? d.changes : d;
-          if (!c || (!c.products && !c.new)) throw new Error('no changes');
-          if (!confirm('Replace the current changes with the ones in this file?')) return;
-          changes = { products: c.products || {}, new: c.new || [] }; save(); toast('Restored from ' + file.name);
-        } catch (err) { toast('That file is not a Signel backup or catalog.json.'); }
-      };
-      r.readAsText(file);
-    });
+    $('[data-bk-file]', viewEl).addEventListener('change', function (e) { var file = e.target.files[0]; e.target.value = ''; if (file) restoreFile(file); });
   }
 
-  /* ---------- Website versions: every published version, to roll the whole site back to.
-     Rolling back is switched on at launch, when a back end can restore a version. ---------- */
+  /* ---------- Website versions: every published version (a git commit: who published, and
+     what), newest first. Going back to one is done on the server, by the person who runs it
+     (ops/README.md, "Going back to a version"): the dashboard lists them, it does not roll back. ---------- */
   function showVersions() {
     viewEl.innerHTML = '<div class="ad-page"><div class="ad-loading">Loading the versions…</div></div>';
-    fetch(ROOT + '/admin/versions.json').then(function (r) { return r.json(); }).then(function (d) {
+    fetch(ROOT + '/admin/versions.json', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
       var when = function (iso) { var t = new Date(iso); return t.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) + ' · ' + t.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' }); };
-      viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Website versions</h1><p class="ad-muted">Every version of the website that was published, newest first. Rolling back puts the whole site back as it was; the versions after it are kept, so a rollback can be undone.</p></div></div>' +
-        '<p class="adm-launch">Rollback is switched on when the site goes live. Until then you can browse the versions; nothing is changed.</p>' +
-        (d.versions.length ? '<div class="ad-card ad-card--flush"><ol class="ad-timeline">' + d.versions.map(function (v, i) {
-          return '<li' + (i ? '' : ' class="is-current"') + '><span class="ad-dot"></span><span class="ad-mini-t"><b>' + esc(v.title) + '</b><small>' + esc(when(v.at)) + ' · version ' + esc(v.id) + '</small></span>' +
-            (i ? '<button type="button" class="ad-btn" data-roll="' + esc(v.id) + '">Roll back to this</button>' : '<em class="ad-chip ad-chip--green">Live now</em>') + '</li>';
-        }).join('') + '</ol></div>' : '<p>No versions available in this build.</p>') +
-        '<dialog class="adm-dialog" data-roll-dialog><form method="dialog"><h3>Roll the website back?</h3><p data-roll-what></p>' +
-        '<p class="ad-muted ad-small">The site will look and work exactly as it did in that version. Versions published since stay in the history. Dashboard changes not yet published are not affected.</p>' +
-        '<p class="adm-launch" data-roll-note hidden>Rollback is switched on when the site goes live. Nothing was changed.</p>' +
-        '<div class="adm-dialog-actions"><button value="cancel" class="ad-btn">Cancel</button><button type="button" class="ad-btn ad-btn--danger" data-roll-confirm>Roll back</button></div></form></dialog></div>';
-      var dlg = $('[data-roll-dialog]', viewEl);
-      viewEl.onclick = function (e) {
-        var b = e.target.closest('[data-roll]');
-        if (b) {
-          var v = d.versions.filter(function (x) { return x.id === b.getAttribute('data-roll'); })[0];
-          $('[data-roll-what]', dlg).innerHTML = 'Back to <b>' + esc(v.title) + '</b>, published ' + esc(when(v.at));
-          $('[data-roll-note]', dlg).hidden = true; $('[data-roll-confirm]', dlg).hidden = false;
-          dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
-        }
-        // at launch: ask the back end to publish this version again (POST /api/versions/<id>/restore)
-        if (e.target.closest('[data-roll-confirm]')) { $('[data-roll-note]', dlg).hidden = false; $('[data-roll-confirm]', dlg).hidden = true; }
+      // "Published by Marketing: 3 changes — 2 products (…)": who and what, apart
+      var parts = function (v) {
+        var m = /^Published by (.+?): (.*)$/.exec(v.title || '');
+        if (m) return { title: m[2].replace(/^\d+ changes? — /, ''), who: m[1], kind: 'Published from the dashboard' };
+        if (/^Dashboard: /.test(v.title || '')) return { title: v.title.replace(/^Dashboard: /, ''), who: v.by, kind: 'Published from the dashboard' };
+        return { title: v.title, who: v.by, kind: 'Website code' };
       };
+      viewEl.innerHTML = '<div class="ad-page"><div class="ad-head"><div><h1>Website versions</h1><p class="ad-muted">Every version of the website, newest first: each publish from this dashboard saves one, named after who published and what changed. Updates of the website\'s code are versions too.</p></div></div>' +
+        '<p class="adm-launch">Going back to an older version is not done from the dashboard: ask the person who runs the website\'s server, with the version number (the short code under each one). They put it back as it explains in its guide (ops/README.md, “Going back to a version”), and the versions after it stay in the history.</p>' +
+        (d.versions.length ? '<div class="ad-card ad-card--flush"><ol class="ad-timeline">' + d.versions.map(function (v, i) {
+          var x = parts(v);
+          return '<li' + (i ? '' : ' class="is-current"') + '><span class="ad-dot"></span><span class="ad-mini-t"><b>' + esc(x.title) + '</b><small>' + esc(x.kind) + (x.who ? ' by ' + esc(x.who) : '') + ' · ' + esc(when(v.at)) + ' · version ' + esc(v.id) + '</small></span>' +
+            (i ? '' : '<em class="ad-chip ad-chip--green">Live now</em>') + '</li>';
+        }).join('') + '</ol></div>' : '<p>No versions available in this build.</p>') + '</div>';
     }).catch(function () { viewEl.innerHTML = '<div class="ad-page"><p>The list of versions could not be loaded.</p></div>'; });
   }
 
   // other tabs: a request sent from the site, or changes made in another dashboard tab
   window.addEventListener('storage', function (e) {
     if (e.key === REQUESTS) { paintBadges(); if (location.hash === '#requests') paintBoard(); }
-    if (e.key === CHANGES) { changes = store.get(CHANGES, { products: {}, new: [] }); paintBadges(); }
+    if (e.key === CHANGES && !SERVER) { changes = changesOf(store.get(CHANGES, null)) || { products: {}, new: [], jobs: {}, text: {}, replace: {} }; paintBadges(); }
   });
 })();

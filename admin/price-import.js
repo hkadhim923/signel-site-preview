@@ -104,14 +104,51 @@ const pick = list => {
   return Object.keys(n).sort((a, b) => n[b] - n[a] || ORDER.indexOf(a) - ORDER.indexOf(b))[0] || '';
 };
 
-export function checkPriceSheet(sheets, ref) {
-  const errors = [], warnings = [];
+// What the import says, in French (the tool, Signel's price people) or English (the dashboard)
+const SAY = {
+  fr: {
+    noPrices: () => 'Aucune colonne de prix (P1 à P7) trouvée. Utilisez la liste de prix exportée du site.',
+    missingCols: (tab, cols) => `${tab ? tab + ' : c' : 'C'}olonnes absentes du fichier : ${cols}. Ces prix ne changent pas.`,
+    line: (tab, n) => `${tab} ligne ${n}`,
+    noMatch: (line, code) => `${line} : ${code || 'sans code'} ne correspond à aucun article du site (ignorée).`,
+    twice: (line, what, first) => `${line} : ${what} est aussi à la ${first}; la ${line} est retenue.`,
+    notPrice: (line, what, cls, raw) => `${line} (${what}), ${cls} : « ${raw} » n'est pas un prix. Prix inchangé.`,
+    badBreaks: (line, what, q2, q3) => `${line} (${what}) : QTY2 « ${q2} » et QTY3 « ${q3} » ne forment pas des paliers (ex. 25 et 125). Paliers inchangés.`,
+    badQty: (line, what, raw) => `${line} (${what}) : « ${raw} » n'est pas une quantité (ex. 1-24 ou 125+). Quantité inchangée.`,
+    badDisplay: (line, what, raw) => `${line} (${what}) : affichage « ${raw} » inconnu (show price, login to see price, ask for quote ou remove from website).`,
+    parentPrices: n => `${n} lignes « ${KIND.parent} » avaient des prix : ignorés, seules les lignes vendues (enfants, articles, variantes) ont un prix.`,
+    mixed: (n, list) => `${n} produits ont plusieurs affichages selon leurs lignes; le plus fréquent est retenu : ${list}`,
+    codes: n => `${n} codes SIGNEL ajoutés ou modifiés.`,
+    notes: n => `${n} commentaires ajoutés ou modifiés.`,
+    missing: n => `${n} articles du site ne sont pas dans le fichier : leurs prix ne changent pas.`
+  },
+  en: {
+    noPrices: () => 'No price columns (P1 to P7) found. Use the price list exported from the site.',
+    missingCols: (tab, cols) => `${tab ? tab + ': c' : 'C'}olumns missing from the file: ${cols}. Those prices do not change.`,
+    line: (tab, n) => `${tab} line ${n}`,
+    noMatch: (line, code) => `${line}: ${code || 'no code'} matches no item of the site (skipped).`,
+    twice: (line, what, first) => `${line}: ${what} is also on ${first}; ${line} is kept.`,
+    notPrice: (line, what, cls, raw) => `${line} (${what}), ${cls}: "${raw}" is not a price. Price unchanged.`,
+    badBreaks: (line, what, q2, q3) => `${line} (${what}): QTY2 "${q2}" and QTY3 "${q3}" are not quantity breaks (e.g. 25 and 125). Breaks unchanged.`,
+    badQty: (line, what, raw) => `${line} (${what}): "${raw}" is not a quantity (e.g. 1-24 or 125+). Quantity unchanged.`,
+    badDisplay: (line, what, raw) => `${line} (${what}): unknown Price Category "${raw}" (show price, login to see price, ask for quote or remove from website).`,
+    parentPrices: n => `${n} "${KIND.parent}" lines had prices: ignored, only the lines sold (children, items, variants) have a price.`,
+    mixed: (n, list) => `${n} products have different Price Categories on their lines; the most common is kept: ${list}`,
+    codes: n => `${n} Code SIGNEL added or changed.`,
+    notes: n => `${n} comments added or changed.`,
+    missing: n => `${n} items of the site are not in the file: their prices do not change.`
+  }
+};
+
+/** opts.lang: 'fr' (the default) or 'en', the language of the errors and warnings. */
+export function checkPriceSheet(sheets, ref, { lang = 'fr' } = {}) {
+  const errors = [], warnings = [], say = SAY[lang] || SAY.fr;
   const isHeader = r => (r || []).some(c => classOf(fold(c)) >= 0 || lonePrice(fold(c)));
   const headerAt = rows => rows.slice(0, 15).findIndex(isHeader);
   // every tab with price columns; the general one first, so a source's own tab speaks last
   const tabs = sheets.filter(s => headerAt(s.rows) >= 0)
     .sort((a, b) => (sheetSource(a.name) !== 'general') - (sheetSource(b.name) !== 'general'));
-  if (!tabs.length) return { errors: ['Aucune colonne de prix (P1 à P7) trouvée. Utilisez la liste de prix exportée du site.'], warnings, changes: [], cells: 0, next: null, read: 0 };
+  if (!tabs.length) return { errors: [say.noPrices()], warnings, changes: [], cells: 0, next: null, read: 0 };
 
   const byV = new Map(), byP = new Map(), byCode = new Map();
   const once = (m, k, r) => { if (k) m.set(k, m.has(k) ? null : r); };
@@ -139,18 +176,18 @@ export function checkPriceSheet(sheets, ref) {
     const classCols = CLASS_NAMES.map((_, i) => head.findIndex(c => classOf(c) === i));
     if (classCols[0] < 0) classCols[0] = head.findIndex(lonePrice);
     const missingCols = CLASS_NAMES.filter((_, i) => classCols[i] < 0);
-    if (missingCols.length && missingCols.length < CLASS_NAMES.length) warnings.push(`${tabs.length > 1 ? sheet.name + ' : c' : 'C'}olonnes absentes du fichier : ${missingCols.join(', ')}. Ces prix ne changent pas.`);
+    if (missingCols.length && missingCols.length < CLASS_NAMES.length) warnings.push(say.missingCols(tabs.length > 1 ? sheet.name : '', missingCols.join(', ')));
     const cell = (row, k) => (col[k] >= 0 ? row[col[k]] : null);
 
     for (let i = h + 1; i < sheet.rows.length; i++) {
-      const row = sheet.rows[i] || [], line = `${sheet.name} ligne ${i + 1}`;
+      const row = sheet.rows[i] || [], line = say.line(sheet.name, i + 1);
       if (!row.some(c => text(c))) continue;
       const vid = id(cell(row, 'vid')), pid = id(cell(row, 'pid')), any = id(cell(row, 'id'));
       const child = text(cell(row, 'child')).toUpperCase();
       const code = (child || (col.code >= 0 && col.child < 0 ? text(cell(row, 'code')) : '') || text(cell(row, 'parent'))).toUpperCase();
       let r = (vid && byV.get(vid)) || (pid && !vid && byP.get(pid)) || (any && (byV.get(any) || byP.get(any))) || null;
       if (!r && code) r = byCode.get(code) || null;
-      if (!r) { warnings.push(`${line} : ${code || 'sans code'} ne correspond à aucun article du site (ignorée).`); continue; }
+      if (!r) { warnings.push(say.noMatch(line, code)); continue; }
       const note = col.note >= 0 ? text(cell(row, 'note')) : undefined;
       if (r.kind === 'parent') {
         if (classCols.some(c => c >= 0 && text(row[c]))) parentPrices++;
@@ -161,7 +198,7 @@ export function checkPriceSheet(sheets, ref) {
       }
       const k = keyOf(r), e = seen.get(k) || { r, line, prices: null, qty: undefined, breaks: undefined, code: undefined, note: undefined, display: undefined, source: 'general', bad: false };
       if (!seen.has(k)) { seen.set(k, e); sold++; }
-      else if (e.lastSheet === sheet.name) warnings.push(`${line} : ${r.child || r.parent} est aussi à la ${e.line}; la ${line} est retenue.`);
+      else if (e.lastSheet === sheet.name) warnings.push(say.twice(line, r.child || r.parent, e.line));
       e.lastSheet = sheet.name;
 
       // prices: a source's own tab replaces what the general tab said, and the general tab
@@ -172,7 +209,7 @@ export function checkPriceSheet(sheets, ref) {
         classCols.forEach((c, ci) => {
           if (c < 0) return;                                        // column not in the file: unchanged
           const raw = row[c], v = readPrice(raw);
-          if (Number.isNaN(v) || (v != null && v < 0)) { errors.push(`${line} (${r.child || r.parent || r.name}), ${CLASS_NAMES[ci]} : « ${text(raw)} » n'est pas un prix. Prix inchangé.`); return; }
+          if (Number.isNaN(v) || (v != null && v < 0)) { errors.push(say.notPrice(line, r.child || r.parent || r.name, CLASS_NAMES[ci], text(raw))); return; }
           prices[ci] = v == null || v === 0 ? null : round(v);
         });
         e.prices = prices;
@@ -180,24 +217,24 @@ export function checkPriceSheet(sheets, ref) {
       }
       if (col.q2 >= 0 || col.q3 >= 0) {
         const b = readBreaks(cell(row, 'q2'), cell(row, 'q3'));
-        if (b === 'bad') { if (text(cell(row, 'q2')) !== '0') warnings.push(`${line} (${r.child || r.parent}) : QTY2 « ${text(cell(row, 'q2'))} » et QTY3 « ${text(cell(row, 'q3'))} » ne forment pas des paliers (ex. 25 et 125). Paliers inchangés.`); }
+        if (b === 'bad') { if (text(cell(row, 'q2')) !== '0') warnings.push(say.badBreaks(line, r.child || r.parent, text(cell(row, 'q2')), text(cell(row, 'q3')))); }
         else if (mine) e.breaks = b;
       }
       if (col.qty >= 0 && r.kind === 'child') {
         const q = readQty(cell(row, 'qty'));
-        if (q == null) errors.push(`${line} (${r.child}) : « ${text(cell(row, 'qty'))} » n'est pas une quantité (ex. 1-24 ou 125+). Quantité inchangée.`);
+        if (q == null) errors.push(say.badQty(line, r.child, text(cell(row, 'qty'))));
         else e.qty = q;
       }
       if (col.code >= 0 && col.child >= 0) { const c = text(cell(row, 'code')).toUpperCase(); if (c || e.code === undefined) e.code = c || e.code || ''; }
       if (note !== undefined && (note || e.note === undefined)) e.note = note;
       if (col.display >= 0) {
         const raw = cell(row, 'display'), d = readDisplay(raw);
-        if (d == null) warnings.push(`${line} (${r.child || r.parent}) : affichage « ${text(raw)} » inconnu (show price, login to see price, ask for quote ou remove from website).`);
+        if (d == null) warnings.push(say.badDisplay(line, r.child || r.parent, text(raw)));
         else if (d) e.display = d;
       }
     }
   }
-  if (parentPrices) warnings.push(`${parentPrices} lignes « ${KIND.parent} » avaient des prix : ignorés, seules les lignes vendues (enfants, articles, variantes) ont un prix.`);
+  if (parentPrices) warnings.push(say.parentPrices(parentPrices));
 
   // the list as published, then what the file changes
   const next = { products: {}, versions: {}, quantities: {}, breaks: {}, display: {}, sources: {}, codes: {}, notes: {} };
@@ -260,10 +297,10 @@ export function checkPriceSheet(sheets, ref) {
     }
     next.display[pid] = d;
   }
-  if (mixed.length) warnings.push(`${mixed.length} produits ont plusieurs affichages selon leurs lignes; le plus fréquent est retenu : ${mixed.slice(0, 8).join(' · ')}${mixed.length > 8 ? '…' : ''}`);
-  if (codes) warnings.push(`${codes} codes SIGNEL ajoutés ou modifiés.`);
-  if (notes) warnings.push(`${notes} commentaires ajoutés ou modifiés.`);
+  if (mixed.length) warnings.push(say.mixed(mixed.length, `${mixed.slice(0, 8).join(' · ')}${mixed.length > 8 ? '…' : ''}`));
+  if (codes) warnings.push(say.codes(codes));
+  if (notes) warnings.push(say.notes(notes));
   const missing = ref.rows.filter(r => r.kind !== 'parent' && !seen.has(r.vid ? 'v' + r.vid : 'p' + r.pid)).length;
-  if (missing) warnings.push(`${missing} articles du site ne sont pas dans le fichier : leurs prix ne changent pas.`);
+  if (missing) warnings.push(say.missing(missing));
   return { next, changes, cells, warnings, errors, read: sold };
 }

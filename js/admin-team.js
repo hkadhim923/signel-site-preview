@@ -128,8 +128,9 @@
       }
       if (e.target.closest('[data-approve]')) { var cls = $('[data-cls]', dr).value; review(key, { status: 'approved', cls: cls }); A.toast('Approved in class ' + cls + '.'); paint(); openMember(key); return; }
       if (e.target.closest('[data-refuse]')) {
+        var suspend = m.status === 'approved';
         var why = prompt('Why? (kept with the account; optional)', '') ; if (why === null) return;
-        review(key, { status: 'refused', note: why }); A.toast('Account refused.'); paint(); openMember(key);
+        review(key, { status: 'refused', note: why }); A.toast(suspend ? 'Account suspended: the customer no longer sees prices.' : 'Account refused.'); paint(); openMember(key);
       }
     };
   }

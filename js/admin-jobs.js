@@ -50,11 +50,17 @@
 
   // the fact line (location, schedule, date): signel.ca's icon list, its texts edited in place
   function factsOf(html) { var box = document.createElement('div'); box.innerHTML = html || ''; return $$('li', box).map(function (li) { var s = li.querySelectorAll('span'); return (s[s.length - 1] || li).textContent.trim(); }); }
-  function factsWith(html, texts) { var box = document.createElement('div'); box.innerHTML = html || ''; $$('li', box).forEach(function (li, i) { var s = li.querySelectorAll('span'), t = s[s.length - 1]; if (t && texts[i] != null) t.textContent = texts[i]; }); return box.innerHTML; }
+  // the fact line with these texts; a fact left empty leaves the line
+  function factsWith(html, texts) { var box = document.createElement('div'); box.innerHTML = html || ''; $$('li', box).forEach(function (li, i) { var s = li.querySelectorAll('span'), t = s[s.length - 1]; if (t && texts[i] != null) { if (texts[i]) t.textContent = texts[i]; else li.remove(); } }); return box.innerHTML; }
+  // a posting's date as its fact line writes it ("26 August 2026", "26 août 2026")
+  var DATE_FACT = /^\d{1,2}(er)?\s+\S+\s+\d{4}$|^\S+\s+\d{1,2},\s+\d{4}$/;
+  var dateFact = function (iso, l) { return new Date(iso).toLocaleDateString(l === 'fr' ? 'fr-CA' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); };
+  // now, as the published postings' dates are written: this computer's time, no time zone
+  var localNow = function () { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19); };
 
   function openNew() {
     var id = 'n' + Date.now().toString(36);
-    var j = { id: id, isNew: true, date: new Date().toISOString(), category: Object.keys(DATA.categories)[0] || '', slug: '' };
+    var j = { id: id, isNew: true, date: localNow(), category: Object.keys(DATA.categories)[0] || '', slug: '' };
     var k = keysOf(id, 3); Object.assign(j, k);
     editor(j, { facts: DATA.factsTemplate, defaults: [['Job description', 'Description du poste'], ['What we are looking for', 'Profil recherché'], ['What we offer', 'Ce que nous offrons']] });
   }
@@ -71,13 +77,16 @@
         ['en', 'fr'].map(function (l) { return '<label class="ad-pair-f"><span class="ad-lang-cap">' + (l === 'en' ? 'English' : 'Français') + '</span>' + (kind === 'rich' ? '<div data-rte="' + l + '"></div>' : kind === 'long' ? '<textarea class="ad-input" rows="2" data-l="' + l + '">' + esc(w[l]) + '</textarea>' : '<input class="ad-input" data-l="' + l + '" value="' + esc(w[l]) + '">') + '</label>'; }).join('') + '</div>';
     };
     var facts = opts.facts || word(j.facts), fen = factsOf(facts.en), ffr = factsOf(facts.fr);
+    // a new posting starts from the latest one's fact line: its location and schedule as hints
+    // (written only if typed), its date as this posting's
+    var template = !!opts.facts, factVal = function (t, i, l) { return !template ? t : DATE_FACT.test(t) ? dateFact(j.date, l) : ''; };
     A.view.innerHTML = '<div class="ad-page"><div class="ad-head"><div><button type="button" class="ad-link" data-go="jobs">← All postings</button><h1>' + (isNew ? 'New posting' : esc(word(j.title).en || 'Posting')) + '</h1>' +
       (j.url ? '<p class="ad-muted"><a href="' + esc(A.ROOT + j.url) + '" target="_blank" rel="noopener">View in English</a> · <a href="' + esc(A.ROOT + j.url_fr) + '" target="_blank" rel="noopener">Voir en français</a></p>' : '<p class="ad-muted">Appears on the Careers page once published.</p>') + '</div>' +
       '<div class="ad-head-tools">' + (isNew ? '' : '<button type="button" class="ad-btn" data-jclose>' + (j.closed ? 'Reopen the posting' : 'Close the posting') + '</button>') + '<button type="button" class="ad-btn ad-btn--primary" data-jsave>Save</button></div></div>' +
-      '<form class="ad-card ad-job" data-jform onsubmit="return false">' +
+      '<form class="ad-card ad-job" data-jform>' +
       pair(j.title, 'Title', 'line') + pair(j.seo, 'Summary (shown on the Careers page and in search results)', 'long') +
       '<div class="ad-pair ad-pair--select"><span class="ad-pair-l">Category</span><select class="ad-input" data-jcat>' + Object.keys(DATA.categories).map(function (c) { return '<option value="' + c + '"' + (j.category === c ? ' selected' : '') + '>' + esc(DATA.categories[c]) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="ad-pair ad-facts"><span class="ad-pair-l">Fact line (location, schedule, date…)</span><div class="ad-fact-list">' + fen.map(function (t, i) { return '<div class="ad-fact"><input class="ad-input" data-fact-en="' + i + '" value="' + esc(t) + '"><input class="ad-input" data-fact-fr="' + i + '" value="' + esc(ffr[i] || '') + '"></div>'; }).join('') + '</div></div>' +
+      '<div class="ad-pair ad-facts"><span class="ad-pair-l">Fact line (location, schedule, date…)' + (template ? '<small class="ad-pair-note">A fact left empty is not shown.</small>' : '') + '</span><div class="ad-fact-list">' + fen.map(function (t, i) { return '<div class="ad-fact"><input class="ad-input" data-fact-en="' + i + '" value="' + esc(factVal(t, i, 'en')) + '" placeholder="' + esc(t) + '" aria-label="Fact ' + (i + 1) + ', English"><input class="ad-input" data-fact-fr="' + i + '" value="' + esc(factVal(ffr[i] || '', i, 'fr')) + '" placeholder="' + esc(ffr[i] || '') + '" aria-label="Fact ' + (i + 1) + ', French"></div>'; }).join('') + '</div></div>' +
       '<h2 class="ad-job-h">Sections</h2><div data-jsections>' + sections.map(function (s, i) {
         var d = (opts.defaults || [])[i];
         return '<section class="ad-job-sec" data-sec="' + i + '">' + pair(s.head, 'Section heading', 'line', d) + pair(s.body, 'Section text', 'rich') + '</section>';
@@ -105,21 +114,45 @@
       else { if (!confirm('Close this posting? It leaves the Careers page when you publish.')) return; jobs[j.id] = Object.assign(cur, { closed: true }); }
       A.save(); A.toast(j.closed ? 'Reopened.' : 'Closed. Publish to take it off the site.'); A.go('jobs');
     });
+    // Enter in a field does not send the form (the website's security policy allows no inline handler)
+    $('[data-jform]', A.view).addEventListener('submit', function (e) { e.preventDefault(); });
+    // what each field showed, to know what was changed here
+    $$('[data-jform] input.ad-input, [data-jform] textarea', A.view).forEach(function (i) { i.setAttribute('data-was', i.value); });
     $('[data-jsave]', A.view).addEventListener('click', function () {
       var text = ch().text, jobs = ch().jobs, form = $('[data-jform]', A.view);
       var put = function (ref, en, fr) {
         var pub = DATA.texts[ref] || { en: '', fr: '' };
-        if (!isNew && en === pub.en && fr === pub.fr) delete text[ref]; else text[ref] = { en: en, fr: fr };
+        if (isNew ? !en && !fr : en === pub.en && fr === pub.fr) delete text[ref]; else text[ref] = { en: en, fr: fr };
       };
+      // a field not changed here keeps its text exactly as it was (never rewritten)
+      var edited = function (i) { return i.value !== i.getAttribute('data-was'); };
+      var valueOf = function (p, l) {
+        var ref = p.getAttribute('data-ref');
+        if (p.getAttribute('data-kind') === 'rich') return rtes[ref + '|' + l].get();
+        var i = $('[data-l="' + l + '"]', p);
+        return edited(i) || isNew ? i.value.trim() : word(ref)[l];
+      };
+      var changedHere = function (p) {
+        var ref = p.getAttribute('data-ref');
+        if (p.getAttribute('data-kind') === 'rich') return rtes[ref + '|en'].changed() || rtes[ref + '|fr'].changed();
+        return $$('[data-l]', p).some(edited);
+      };
+      // a section of a new posting without text is not saved (nor published), its heading with it
+      var empty = function (sec) { var b = $('.ad-pair[data-kind="rich"]', sec); return !['en', 'fr'].some(function (l) { return valueOf(b, l).replace(/<[^>]*>|&nbsp;/g, '').trim(); }); };
+      // checked before anything is kept
+      var tp = $('.ad-pair[data-ref="' + j.title + '"]', form);
+      if (!valueOf(tp, 'en') || !valueOf(tp, 'fr')) { A.toast('A posting needs its title in English and French.'); return; }
       $$('.ad-pair[data-ref]', form).forEach(function (p) {
-        var ref = p.getAttribute('data-ref'), kind = p.getAttribute('data-kind');
-        if (kind === 'rich') put(ref, rtes[ref + '|en'].get(), rtes[ref + '|fr'].get());
-        else put(ref, $('[data-l="en"]', p).value.trim(), $('[data-l="fr"]', p).value.trim());
+        var sec = p.closest('[data-sec]');
+        if (isNew && sec && empty(sec)) { delete text[p.getAttribute('data-ref')]; return; }
+        if (isNew || changedHere(p)) put(p.getAttribute('data-ref'), valueOf(p, 'en'), valueOf(p, 'fr'));
       });
-      var fe = $$('[data-fact-en]', form).map(function (i) { return i.value.trim(); }), ff = $$('[data-fact-fr]', form).map(function (i) { return i.value.trim(); });
-      put(j.facts, factsWith(facts.en, fe), factsWith(facts.fr, ff));
+      var factInputs = $$('[data-fact-en], [data-fact-fr]', form);
+      if (isNew || factInputs.some(edited)) {
+        var fe = $$('[data-fact-en]', form).map(function (i) { return i.value.trim(); }), ff = $$('[data-fact-fr]', form).map(function (i) { return i.value.trim(); });
+        put(j.facts, factsWith(facts.en, fe), factsWith(facts.fr, ff));
+      }
       var title = text[j.title] || DATA.texts[j.title] || {};
-      if (!title.en || !title.fr) { A.toast('A posting needs its title in English and French.'); return; }
       var cat = $('[data-jcat]', form).value;
       // its addresses, from its titles until it is published (then they stay)
       if (isNew) jobs[j.id] = { new: true, slug: A.slugify(title.fr), slug_en: A.slugify(title.en) || A.slugify(title.fr), date: j.date, category: cat, sections: sections.length };
@@ -130,6 +163,8 @@
 
   A.section('jobs', {
     show: show,
+    // a text that is a posting's words (HR's, not Pages')
+    ownsText: function (ref) { return /\/job-/.test(ref) || !!(DATA && DATA.texts[ref]); },
     tiles: function () {
       if (!DATA) { load().then(function () { if (/^#?(overview)?$/.test(location.hash)) A.go('overview'); }); return []; }
       var live = postings().filter(function (j) { return !j.closed && !j.isNew; }).length;
@@ -138,8 +173,10 @@
     changes: function () {
       if (!DATA) return [];
       return postings().filter(edited).map(function (j) {
-        var t = word(j.title);
-        return { title: t.en || t.fr || 'Posting', what: j.isNew ? 'New posting' : j.closed ? 'Closed posting' : 'Posting edited', chip: j.isNew ? 'New' : j.closed ? 'Closed' : 'Edited', go: 'jobs/' + encodeURIComponent(j.id),
+        var t = word(j.title), c = ch();
+        // counted as the Publish page counts: the posting itself, and each of its texts
+        var n = (c.jobs[j.id] ? 1 : 0) + [j.title, j.seo, j.facts].concat(j.sections.map(function (s) { return s.head; }), j.sections.map(function (s) { return s.body; })).filter(function (r) { return r && c.text[r]; }).length;
+        return { title: t.en || t.fr || 'Posting', what: (j.isNew ? 'New posting' : j.closed ? 'Closed posting' : 'Posting edited') + ' · ' + A.plural(n, 'change', 'changes'), chip: j.isNew ? 'New' : j.closed ? 'Closed' : 'Edited', go: 'jobs/' + encodeURIComponent(j.id),
           undo: function () {
             var c = ch(); delete c.jobs[j.id];
             [j.title, j.seo, j.facts].concat(j.sections.map(function (s) { return s.head; }), j.sections.map(function (s) { return s.body; })).forEach(function (r) { if (r) delete c.text[r]; });

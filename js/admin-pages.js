@@ -71,24 +71,40 @@
     A.view.innerHTML = '<div class="ad-page"><div class="ad-head"><div><button type="button" class="ad-link" data-go="pages">← All pages</button><h1>' + esc(p.title) + '</h1>' +
       (url === '*' ? '<p class="ad-muted">These texts appear on every page.</p>' : '<p class="ad-muted"><a href="' + esc(A.ROOT + p.url) + '" target="_blank" rel="noopener">View in English</a>' + (p.url_fr ? ' · <a href="' + esc(A.ROOT + p.url_fr) + '" target="_blank" rel="noopener">Voir en français</a>' : '') + '</p>') + '</div>' +
       '<div class="ad-head-tools"><button type="button" class="ad-btn ad-btn--primary" data-psave>Save</button></div></div>' +
-      '<form class="ad-card ad-job" data-pform onsubmit="return false">' + p.refs.map(field).join('') + '</form></div>';
+      '<form class="ad-card ad-job" data-pform>' + p.refs.map(field).join('') + '</form></div>';
     A.bindGo(A.view);
     $$('[data-kind="rich"]', A.view).forEach(function (box) {
       var ref = box.getAttribute('data-ref'), w = word(ref);
       ['en', 'fr'].forEach(function (l) { var r = A.rte(w[l]); $('[data-rte="' + l + '"]', box).appendChild(r.el); rtes[ref + '|' + l] = r; });
     });
+    // what each field showed, to know what was changed here
+    var shown = {};
+    $$('.ad-pair[data-ref]', A.view).forEach(function (box) { var ref = box.getAttribute('data-ref'); shown[ref] = word(ref); });
+    $$('.ad-pair[data-ref] [data-l]', A.view).forEach(function (i) { i.setAttribute('data-was', i.value); });
+    // Enter in a field does not send the form (the website's security policy allows no inline handler)
+    $('[data-pform]', A.view).addEventListener('submit', function (e) { e.preventDefault(); });
     $('[data-psave]', A.view).addEventListener('click', function () {
       var text = ch().text, n = 0, empty = false;
       $$('.ad-pair[data-ref]', A.view).forEach(function (box) {
-        var ref = box.getAttribute('data-ref'), rich = box.getAttribute('data-kind') === 'rich';
-        var en = rich ? rtes[ref + '|en'].get() : $('[data-l="en"]', box).value.trim(), fr = rich ? rtes[ref + '|fr'].get() : $('[data-l="fr"]', box).value.trim();
+        var ref = box.getAttribute('data-ref'), rich = box.getAttribute('data-kind') === 'rich', was = shown[ref];
+        // a language not changed here keeps its text exactly as it was (never rewritten)
+        var val = function (l) {
+          if (rich) return rtes[ref + '|' + l].get();
+          var i = $('[data-l="' + l + '"]', box);
+          return i.value === i.getAttribute('data-was') ? was[l] : i.value.trim();
+        };
+        var en = val('en'), fr = val('fr');
+        if (en === was.en && fr === was.fr) return;          // not changed here: as it is
         var pub = DATA.texts[ref] || { en: '', fr: '' };
+        n++;
         if (en === pub.en && fr === pub.fr) { delete text[ref]; return; }
         if ((pub.en && !en) || (pub.fr && !fr)) empty = true;
-        text[ref] = { en: en, fr: fr }; n++;
+        text[ref] = { en: en, fr: fr };
       });
-      if (empty) A.toast('An emptied text keeps its published words: write them again or undo the change.');
-      A.save(); A.toast(n ? 'Saved ' + A.plural(n, 'text', 'texts') + '. Publish to put them on the website.' : 'Nothing changed.'); A.go('pages');
+      A.save();
+      // one message: the warning is not covered by "Saved"
+      A.toast((n ? 'Saved ' + A.plural(n, 'text', 'texts') + '. ' : 'Nothing changed. ') + (empty ? 'An emptied text keeps its published words on the website: write them again, or undo the change on the Publish page.' : n ? 'Publish to put ' + (n === 1 ? 'it' : 'them') + ' on the website.' : ''));
+      A.go('pages');
     });
   }
 
@@ -97,12 +113,18 @@
     changes: function () {
       if (!DATA) return [];
       var seen = {};
-      return (DATA.shared.length ? [pageOf('*')] : []).concat(DATA.pages).map(function (p) {
+      var rows = (DATA.shared.length ? [pageOf('*')] : []).concat(DATA.pages).map(function (p) {
         var refs = editedRefs(p).filter(function (r) { if (seen[r]) return false; seen[r] = 1; return true; });
         if (!refs.length) return null;
         return { title: p.title, what: A.plural(refs.length, 'text', 'texts') + ' edited', chip: 'Edited', go: 'pages/' + encodeURIComponent(p.url),
           undo: function () { var c = ch(); refs.forEach(function (r) { delete c.text[r]; }); } };
       }).filter(Boolean);
+      // texts on no page listed here (a page since removed): shown too, so every change is counted
+      // and can be undone (a posting's words are in Jobs)
+      var rest = Object.keys(ch().text).filter(function (r) { return !seen[r] && !JOBREFS[r] && !/\/job-/.test(r); });
+      if (rest.length) rows.push({ title: 'Other texts', what: A.plural(rest.length, 'text', 'texts') + ' edited, on no page listed in Pages', chip: 'Edited', go: '',
+        undo: function () { var c = ch(); rest.forEach(function (r) { delete c.text[r]; }); } });
+      return rows;
     }
   });
   load().then(function () { A.badges(); });

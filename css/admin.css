@@ -557,3 +557,43 @@ textarea.ad-input { height: auto; padding: 10px 12px; resize: vertical; }
 .ad-pw code { display: inline-block; padding: 8px 14px; border-radius: 10px; background: var(--ad-soft); font: 700 20px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; user-select: all; }
 .ad-user-acts { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .ad-publish .ad-switch { margin: 4px 0 12px; }
+/* ---- narrow screens and narrow columns: nothing wider than the screen ----
+   A page's grid has one column that may shrink (its content wraps or scrolls in its own box),
+   not one as wide as its widest content. */
+.ad-page, .ad-editor, .ad-panel { grid-template-columns: minmax(0, 1fr); }
+.ad-ed-actions { flex-wrap: wrap; }
+.ad-crumbs { min-width: 0; flex-wrap: wrap; }
+.ad-crumbs span:last-child { min-width: 0; max-width: 100%; }
+.ad-ed-title h1 { overflow-wrap: anywhere; }
+/* the editor's tabs wrap onto a second line rather than hide the last ones (a narrow editor
+   beside the live preview, a phone) */
+.ad-tabbar .ad-tabs { flex: 1 1 auto; flex-wrap: wrap; overflow: visible; }
+.ad-tabbar .ad-tabs button { flex: 1 0 auto; }
+/* Orders: the table scrolls in its card, the filters wrap, the drawer is the screen's width */
+.ad-card--flush:has(> .ad-orders) { overflow-x: auto; }
+.ad-chips + .ad-chips { margin-left: 0; }
+.ad-drawer, .ad-drawer--wide { max-width: 100vw; }
+.ad-drawer-body > * { min-width: 0; }
+.ad-drawer-body { overflow-x: hidden; overflow-wrap: anywhere; }
+/* the hidden menu casts no shadow over the left edge of the page */
+@media (max-width: 960px) { .ad-nav { box-shadow: none; } .ad.nav-open .ad-nav { box-shadow: 20px 0 50px -20px rgba(14,23,27,.4); } }
+@media (max-width: 600px) {
+  /* View as customer: its icon only, so the search keeps its room */
+  .ad-viewas .ad-btn[data-viewas-toggle] { width: 44px; height: 44px; padding: 0; }
+  .ad-viewas .ad-btn[data-viewas-toggle] span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ad-search { flex: 1 1 auto; }
+  .ad-ed-title { min-width: 0; flex-basis: 100%; }
+  .ad-langsw { width: 100%; }
+  .ad-langsw button { flex: 1; padding: 0 10px; }
+  .ad-card { padding: 16px; }
+  .ad-drawer-head, .ad-drawer-body, .ad-drawer-foot { padding-left: 16px; padding-right: 16px; }
+}
+/* the password form (the key next to one's name) */
+.ad-pwform { display: grid; gap: 12px; }
+.ad-pwform h3 { margin: 0; }
+.ad-pwform label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.ad-pwform .ad-bad { margin: 0; font-size: 14px; }
+/* a failed publish: its log on demand */
+.ad-publog-more summary { cursor: pointer; font-size: 14px; color: var(--blue); }
+.ad-publog-more .ad-publog { margin-top: 8px; max-height: 320px; }
+.ad-pair-note { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }

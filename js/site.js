@@ -299,20 +299,28 @@
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
+  // A file as the server takes it: a data URL. A .csv is sent as text/csv whatever the computer
+  // calls it (Windows says application/vnd.ms-excel or nothing at all).
+  function readFile(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res({ name: file.name, data: /\.csv$/i.test(file.name) ? String(r.result).replace(/^data:[^;,]*;base64,/, 'data:text/csv;base64,') : r.result }); };
+      r.onerror = rej; r.readAsDataURL(file);
+    });
+  }
   function toBackend(f, data, msg) {
     var files = Array.prototype.slice.call((f.querySelector('input[type=file]') || {}).files || []);
     if (files.reduce(function (t, x) { return t + x.size; }, 0) > 10 * 1024 * 1024) { msg.className = 'msg err'; msg.textContent = say('form_too_big'); return; }
     var btn = f.querySelector('[type=submit]'); if (btn) btn.disabled = true;
-    Promise.all(files.map(function (file) {
-      return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res({ name: file.name, data: r.result }); }; r.onerror = rej; r.readAsDataURL(file); });
-    })).then(function (attachments) {
+    Promise.all(files.map(readFile)).then(function (attachments) {
       return fetch((document.documentElement.getAttribute('data-root') || '') + '/api/requests', { method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-Signel': '1', 'X-Signel-Lang': /^fr/.test(document.documentElement.lang) ? 'fr' : 'en' },
         body: JSON.stringify({ type: 'message', page: location.pathname, attachments: attachments,
           data: { customer: { name: [data.first_name, data.last_name].filter(Boolean).join(' '), company: data.company || '', email: data.email || '', phone: data.phone || '' }, message: data.message || '' } }) })
-        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw new Error(d.error || ''); }); });
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var e = new Error('HTTP ' + r.status); e.said = typeof d.error === 'string' ? d.error : ''; throw e; } }); });
     }).then(function () { msg.className = 'msg ok'; msg.textContent = say('form_sent'); f.reset(); })
-      .catch(function (e) { msg.className = 'msg err'; msg.textContent = e && e.message ? e.message : say('form_failed'); })
+      // the server's sentence (in the page's language) when it gave one, else the page's own words
+      .catch(function (e) { msg.className = 'msg err'; msg.textContent = (e && e.said) || say('form_failed'); })
       .then(function () { if (btn) btn.disabled = false; });
   }
 
@@ -320,6 +328,15 @@
   document.querySelectorAll('form[data-form]').forEach(function (f) {
     var endpoint = f.getAttribute('data-endpoint') || document.documentElement.getAttribute('data-form-endpoint') || '';
     var msg = f.querySelector('.msg');
+    // the browser's own "Please fill out this field" speaks the browser's language, not the page's:
+    // a field that is not valid says so in the page's
+    f.addEventListener('invalid', function (e) {
+      var el = e.target, v = el.validity;
+      el.setCustomValidity('');
+      if (v.valueMissing) el.setCustomValidity(say('required'));
+      else if (v.typeMismatch && el.type === 'email') el.setCustomValidity(say('bad_email'));
+    }, true);
+    f.addEventListener('input', function (e) { if (e.target.setCustomValidity) e.target.setCustomValidity(''); });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       if (!f.checkValidity()) { f.reportValidity(); return; }

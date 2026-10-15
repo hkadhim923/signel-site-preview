@@ -1,8 +1,9 @@
 /* Signel Services - account, prices, cart. No dependencies.
  *
  *  account  the signed-in account, remembered in localStorage ('signel.account': { email, name,
- *           cls, status, backend }). Signel reviews every new account and puts it in a price
- *           class (cls, P1 to P7); until then it is 'pending'. Served by the back end
+ *           cls, status, backend }: no phone, address or message, see slim()). Signel reviews
+ *           every new account and puts it in a price class (cls, P1 to P7); until then it is
+ *           'pending', and a refused or suspended one is 'refused'. Served by the back end
  *           (backend/server.js, <html data-backend>), it is a real account: each page asks the
  *           server for its review, an approved one gets its class's prices from
  *           /api/account/prices, and orders go to the server, which sets their prices. On a
@@ -34,41 +35,74 @@
   var money = function (n) { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'CAD' }).format(n); };
   var read = function (k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   var write = function (k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  // a quantity is a whole number from `min` (1: an order line; 0: a box left empty) to what the server takes
+  var whole = function (v, min) { var n = parseInt(v, 10); return Math.min(100000, Math.max(min, isNaN(n) ? min : n)); };
   var T = {};                                                  // UI strings, from the page
   try { T = JSON.parse($('#shop-i18n').textContent); } catch (e) {}
-  var t = function (k, n) { return String(T[k] || k).replace('{n}', n); };
+  // {n} is filled only when a value is given: t('order_failed') stays a template to fill later
+  var fill = function (s, n) { return n === undefined ? s : s.replace('{n}', function () { return n; }); };
+  var t = function (k, n) { return fill(String(T[k] || k), n); };
   // an address in the page's language (shop-i18n routes: /cart/ is /panier/ on French pages)
   var R = function (p) { return ROOT + ((T.routes || {})[p] || p); };
 
   /* ---------- account + prices ---------- */
-  var account = function () { return read(ACCOUNT, null); };
+  // what this device keeps of an account: who it is and how the team reviewed it, nothing of
+  // the sign-up form (phone, address, message). The company only for the team's preview bar.
+  var slim = function (a) {
+    var o = { email: a.email || '', name: a.name || '', status: a.status || 'pending', cls: a.cls || null };
+    if (a.backend) o.backend = true;
+    if (a.preview) { o.preview = true; if (a.company) o.company = a.company; }
+    return o;
+  };
+  var account = function () {
+    var a = read(ACCOUNT, null);
+    if (!a || typeof a !== 'object') return null;
+    var s = slim(a);
+    // a copy holding more (older, or written by the dashboard) is cut down at once
+    if (Object.keys(a).some(function (k) { return !(k in s); })) write(ACCOUNT, s);
+    return s;
+  };
+  var remember = function (a) { write(ACCOUNT, slim(a)); };
   // a public copy of the website (the demo, on a static host) carries no sign-in prices: its
   // demo accounts then see the public prices only
   var NOPRICES = false;
   var approved = function () { var a = account(); return !NOPRICES && !!a && a.status === 'approved'; };
   /* the back end (backend/server.js), when the site is served by it (it marks its pages
      <html data-backend>): real accounts, orders and per-class prices */
-  var BACKEND = Promise.resolve(document.documentElement.hasAttribute('data-backend'));
+  var IS_BACKEND = document.documentElement.hasAttribute('data-backend');
+  var BACKEND = Promise.resolve(IS_BACKEND);
   var backend = function () { return BACKEND; };
   function api(method, url, data) {
     var o = { method: method, credentials: 'same-origin', headers: { 'X-Signel': '1', 'X-Signel-Lang': LOCALE.slice(0, 2) } };
     if (data !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(data); }
     return fetch(ROOT + '/api/' + url, o).then(function (r) {
-      return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { var e = new Error(d.error || String(r.status)); e.status = r.status; throw e; } return d; });
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { var e = new Error(d.error || String(r.status)); e.status = r.status; e.said = typeof d.error === 'string' ? d.error : ''; throw e; }
+        return d;
+      });
     });
   }
-  // an account signed in on the back end: its review (pending, approved and class) as the team set it
+  // what the server said about a failure, as a sentence to show; empty when it said nothing
+  // (a dropped connection, a proxy's error page): the page then shows its own words
+  var said = function (e) { var m = e && e.said ? String(e.said).trim() : ''; return m && !/[.!?…]$/.test(m) ? m + '.' : m; };
+  var lastSync = 0, onSync = function () {};   // onSync: what a page draws besides prices when the account changed (the sign-in page)
+  // an account signed in on the back end: its review (pending, approved, refused and class) as the
+  // team set it. Resolves true when it changed, so the page can draw it again.
   function syncAccount() {
     var a = account();
-    if (!a || !a.backend) return Promise.resolve();
+    if (!a || !a.backend) return Promise.resolve(false);
+    lastSync = Date.now();
     return api('GET', 'account/me').then(function (d) {
-      var was = JSON.stringify(a), now = Object.assign({ backend: true }, d.account);
-      if (JSON.stringify(now) !== was) { write(ACCOUNT, now); prices = null; pricesLoading = null; RANGE = null; }
-    }).catch(function (e) { if (e.status === 401) { write(ACCOUNT, null); prices = null; pricesLoading = null; } });
+      var now = slim(Object.assign({ backend: true }, d.account));
+      if (JSON.stringify(now) === JSON.stringify(a)) return false;
+      write(ACCOUNT, now); resetPrices(); return true;
+    }).catch(function (e) { if (e.status === 401) { write(ACCOUNT, null); resetPrices(); return true; } return false; });
   }
   var CLASSES = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'];
   var classIndex = function () { var a = account(), i = CLASSES.indexOf((a && a.cls) || 'P1'); return i < 0 ? 0 : i; };
-  var prices = null, pricesLoading = null, RANGE = null;
+  var prices = null, pricesLoading = null, RANGE = null, gen = 0;
+  // another account, class or review: the prices held are dropped, and one still on its way is ignored
+  function resetPrices() { prices = null; pricesLoading = null; RANGE = null; gen++; }
   // "show" products' public prices (P1), by line key, as /prices/p/<id>.json gives them
   var PUB = {}, PUBIDS = {};
   function loadPublic(ids) {
@@ -84,11 +118,12 @@
     if (!approved()) return Promise.resolve(null);
     if (prices) return Promise.resolve(prices);
     // from the back end, only this account's class; on a static host, the demo's file
+    var g = gen;
     if (!pricesLoading) pricesLoading = (account().backend ? api('GET', 'account/prices') : fetch(ROOT + '/prices.json').then(function (r) {
       if (r.status === 404) { NOPRICES = true; throw new Error('no prices on this copy'); }
       return r.json();
     }))
-      .then(function (d) { prices = d; RANGE = null; return d; }).catch(function () { return null; });
+      .then(function (d) { if (g !== gen) return null; prices = d; RANGE = null; return d; }).catch(function () { return null; });
     return pricesLoading;
   }
   // the price this account's class pays: its own, else the nearest class before it
@@ -128,13 +163,21 @@
     if (l) return { min: l.price, max: l.price, sku: l.sku, tier: l.tier };
     return rangeOf(id);
   };
-  // where a price would be: the sign-in link, or for an account waiting for review, that
-  var pending = function () { return !!account() && !approved(); };
+  // where a price would be: the sign-in link; for an account waiting for review, that; for one
+  // refused or suspended, that it is not active (the account page of a team member: contact Signel)
+  var pending = function () { var a = account(); return !!a && !approved() && a.status !== 'refused'; };
+  var inactive = function () { var a = account(); return !!a && a.status === 'refused'; };
+  // the words for a signed-in account that has no price to show (short: tags, long: the sentence)
+  var heldKey = function (short) { return (inactive() ? 'inactive' : 'pending') + (short ? '_short' : '_price'); };
   var noPrice = function (short) {
-    return pending() ? '<span class="price-pending">' + esc(t(short ? 'pending_short' : 'pending_price')) + '</span>'
+    return account() ? '<span class="price-pending">' + esc(t(heldKey(short))) + '</span>'
       : '<a href="' + R('/login/') + '">' + esc(t(short ? 'login_for_price_short' : 'login_for_price')) + '</a>';
   };
   var priceText = function (p) { return p.max > p.min ? t('from') + ' ' + money(p.min) : money(p.min); };
+  // a line with no price to show: its words follow its price category. Priced after sign-in
+  // (not "show"): the sign-in link, the review, or "not active"; every other one is quoted.
+  var loginLine = function (l) { return !!l.priced && l.mode !== 'show' && !approved(); };
+  var unpricedTag = function (l) { return t(loginLine(l) ? (account() ? heldKey(true) : 'login_for_price_short') : 'price_on_request_tag'); };
 
   /* ---------- cart store ---------- */
   var cart = function () { return read(CART, []); };
@@ -142,10 +185,10 @@
   var count = function (lines) { return lines.reduce(function (n, l) { return n + l.qty; }, 0); };
   function add(item) {
     var lines = cart(), hit = lines.filter(function (l) { return l.key === item.key; })[0];
-    if (hit) hit.qty += item.qty; else lines.push(item);
+    if (hit) hit.qty = whole(hit.qty + item.qty, 1); else { item.lang = LOCALE.slice(0, 2); lines.push(item); }
     save(lines);
   }
-  function setQty(key, qty) { save(cart().map(function (l) { if (l.key === key) l.qty = Math.max(1, qty); return l; })); }
+  function setQty(key, qty) { save(cart().map(function (l) { if (l.key === key) l.qty = whole(qty, 1); return l; })); }
   function remove(key) { save(cart().filter(function (l) { return l.key !== key; })); }
 
   /* ---------- totals ---------- */
@@ -154,24 +197,44 @@
     lines.forEach(function (l) {
       var p = priceOf(l.id, l.key, l.qty);
       if (p) { out.priced += l.qty; out.subtotal += p.min * l.qty; if (p.max > p.min) out.ranged = true; }
-      else if (l.priced && l.mode !== 'show' && !approved()) out.hidden += l.qty;
+      else if (loginLine(l)) out.hidden += l.qty;
       else out.quoted += l.qty;
     });
     return out;
   }
 
+  /* ---------- a line's options, in the page's language ----------
+     A line keeps its options as the products name them (English: the words the price list matches
+     on). The page shows them through /option-labels[-fr].json, so a cart filled on one language's
+     page reads in the other's; until that file is here, a French page shows only what it knows
+     (a line added on a French page keeps what that page showed: l.show). */
+  var FR = LOCALE === 'fr-CA', LABELS = null, labelsAsked = false;
+  function loadLabels() {
+    if (labelsAsked) return; labelsAsked = true;
+    fetch(ROOT + (FR ? '/option-labels-fr.json' : '/option-labels.json')).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+      .then(function (d) { LABELS = d || {}; render(); });
+  }
+  function shownOpts(l) {
+    // a rental: its dates and site, written in the page's language
+    if (l.rent) return [[t('rent_line'), l.rent.from + ' → ' + l.rent.to]].concat(l.rent.site ? [[t('rent_where'), l.rent.site]] : []);
+    var pairs = l.opts || [];
+    if (!LABELS) { if (pairs.length) loadLabels(); return FR ? (l.lang === 'fr' && l.show) || [] : pairs; }
+    var names = LABELS.names || {}, values = LABELS.values || {};
+    return pairs.map(function (o) { var v = values[o[0]]; return [names[o[0]] || o[0], (v && v[o[1]]) || o[1]]; });
+  }
+
   /* ---------- line + summary markup (drawer and cart page share it) ---------- */
   function lineHtml(l, big) {
     var p = priceOf(l.id, l.key, l.qty), code = (p && p.sku) || l.sku;   // the code for this quantity (AD2001Q2)
-    var opts = (l.show || l.opts || []).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
+    var opts = shownOpts(l).map(function (o) { return '<span>' + esc(o[0]) + ': ' + esc(o[1]) + '</span>'; }).join('');
     var price = p ? '<span class="cl-unit">' + esc(priceText(p)) + ' <small>' + esc(t('each')) + '</small></span><b class="cl-total">' + esc(money(p.min * l.qty)) + (p.max > p.min ? '<sup>*</sup>' : '') + '</b>'
-      : (l.priced && l.mode !== 'show' && !approved() ? (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('login_for_price_short')) + '</a>') : '<span class="cl-tag">' + esc(t('price_on_request_tag')) + '</span>');
+      : (loginLine(l) && !account() ? '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(unpricedTag(l)) + '</a>' : '<span class="cl-tag">' + esc(unpricedTag(l)) + '</span>');
     return '<li class="cl' + (big ? ' cl--big' : '') + '" data-key="' + esc(l.key) + '">' +
       '<a class="cl-img" href="' + ROOT + esc(l.url) + '">' + (l.img ? '<img src="' + ROOT + esc(l.img) + '" alt="" loading="lazy">' : '') + '</a>' +
       '<div class="cl-main"><a class="cl-name" href="' + ROOT + esc(l.url) + '">' + esc(l.name) + '</a>' +
       '<div class="cl-meta">' + (code ? '<span>' + esc(t('code')) + ': ' + esc(code) + '</span>' : '') + opts + '</div>' +
       '<div class="cl-row"><div class="qty qty--sm"><button type="button" data-line-dec aria-label="' + esc(t('decrease')) + '">&minus;</button>' +
-      '<input type="number" min="1" value="' + l.qty + '" data-line-qty aria-label="' + esc(t('quantity')) + '"><button type="button" data-line-inc aria-label="' + esc(t('increase')) + '">+</button></div>' +
+      '<input type="number" min="1" step="1" inputmode="numeric" value="' + l.qty + '" data-line-qty aria-label="' + esc(t('quantity')) + '"><button type="button" data-line-inc aria-label="' + esc(t('increase')) + '">+</button></div>' +
       '<button type="button" class="cl-remove" data-line-remove>' + esc(t('remove')) + '</button></div></div>' +
       '<div class="cl-price">' + price + '</div></li>';
   }
@@ -181,11 +244,11 @@
     var rows = '<div class="cs-row"><span>' + esc(n === 1 ? t('item') : t('items', n)) + '</span></div>';
     if (s.priced) rows += '<div class="cs-row cs-sub"><span>' + esc(s.ranged ? t('subtotal_from') : t('subtotal')) + '</span><b>' + esc(money(s.subtotal)) + '</b></div>';
     if (s.quoted) rows += '<div class="cs-row cs-q"><span class="cl-tag">' + esc(t('quoted_count', s.quoted)) + '</span></div>';
-    if (s.hidden) rows += '<div class="cs-row cs-q">' + (pending() ? '<span class="cl-tag">' + esc(t('pending_short')) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a>') + '</div>';
+    if (s.hidden) rows += '<div class="cs-row cs-q">' + (account() ? '<span class="cl-tag">' + esc(t(heldKey(true))) + '</span>' : '<a class="cl-tag cl-tag--login" href="' + R('/login/') + '">' + esc(t('hidden_count', s.hidden)) + '</a>') + '</div>';
     var note = '<p class="cs-note">' + esc(t('taxes')) + (s.ranged ? ' ' + esc('* ' + t('range_note')) : '') + '</p>';
     var actions = page
       ? (CI.title ? '<button type="submit" form="co-form" class="ui-btn ui-btn--primary ui-btn--app ui-btn--full">' + esc(c(coState().pay === 'card' ? 'place_card' : 'place_invoice')) + '</button>' : '') +
-        (s.hidden && !pending() ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
+        (s.hidden && !account() ? '<a class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" href="' + R('/login/') + '">' + esc(t('login_cta')) + '</a>' : '') +
         '<div class="cs-links"><a href="' + R('/products/') + '">' + esc(t('continue')) + '</a><button type="button" class="linkish" data-clear>' + esc(t('clear')) + '</button></div>'
       : '<a class="ui-btn ui-btn--primary ui-btn--app ui-btn--full" href="' + R('/cart/') + '">' + esc(t('view_cart')) + '</a><button type="button" class="ui-btn ui-btn--outline ui-btn--app ui-btn--full" data-cart-close>' + esc(t('continue')) + '</button>';
     return (page ? '<h2>' + esc(t('summary')) + '</h2>' : '') + rows + note + actions;
@@ -198,7 +261,7 @@
      and the account is approved, otherwise invoiced by Signel. The choices are kept in CO so
      the summary can redraw (quantity changes) without losing them. */
   var CI = {}; try { CI = JSON.parse($('#checkout-i18n').textContent); } catch (e) {}
-  var c = function (k, n) { return String(CI[k] || k).replace('{n}', n); };
+  var c = function (k, n) { return fill(String(CI[k] || k), n); };
   var CO = null, LAST = null;
   function coState() {
     if (CO) return CO;
@@ -249,7 +312,13 @@
       if (sum) sum.insertAdjacentHTML('afterbegin', '<p class="co-err">' + esc(t('preview_no_send')) + '</p>');
       return;
     }
-    var need = function (k, msg) { var e = $('[data-co-err="' + k + '"]', form), miss = !String(st[k] || '').trim() || (k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(st[k])); if (e) { e.hidden = !miss; e.textContent = miss ? msg : ''; } if (miss && !bad) bad = k; };
+    // an empty field says it is needed; an email that is not one says what is wrong with it
+    var need = function (k, msg) {
+      var v = String(st[k] || '').trim(), e = $('[data-co-err="' + k + '"]', form);
+      var miss = !v, wrong = !miss && k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v);
+      if (e) { e.hidden = !(miss || wrong); e.textContent = miss ? msg : wrong ? c('bad_email') : ''; }
+      if ((miss || wrong) && !bad) bad = k;
+    };
     if (st.method === 'carrier') { need('carrier', c('choose_carrier')); need('account', c('need_account')); }
     if (!account()) { need('name', c('required')); need('email', c('required')); need('phone', c('required')); }
     if (bad) { var el = $('[data-co-f="' + bad + '"]', form); if (el) el.focus(); return; }
@@ -259,13 +328,15 @@
       id: num, number: num, at: d.toISOString(), lang: LOCALE.slice(0, 2), status: 'new',
       customer: acc ? { name: acc.name, company: acc.company, email: acc.email, phone: acc.phone, cls: approved() ? acc.cls || 'P1' : null, account: true }
                     : { name: st.name, company: st.company, email: st.email, phone: st.phone, account: false },
-      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, key: l.key, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: l.show || l.opts || [], rental: !!l.rental, unit: p && p.min === p.max ? p.min : null, tier: (p && p.tier) || null }; }),
+      lines: lines.map(function (l) { var p = priceOf(l.id, l.key, l.qty); return { id: l.id, key: l.key, sku: (p && p.sku) || l.sku, name: l.name, url: l.url, img: l.img, qty: l.qty, opts: shownOpts(l), rental: !!l.rental, unit: p && p.min === p.max ? p.min : null, tier: (p && p.tier) || null }; }),
       subtotal: s.priced ? s.subtotal : null,
       delivery: { method: st.method, carrier: st.method === 'carrier' ? st.carrier : '', account: st.method === 'carrier' ? st.account : '', pickup: st.method === 'pickup' ? st.pickup : '' },
       payment: { method: st.pay, status: st.pay === 'card' ? 'paid' : 'to_invoice' },
       po: st.po, note: st.note
     };
-    var done = function (o) { LAST = o; CO = null; save([]); };
+    // what a line with no price says (same words as the cart), kept for the copy of the order
+    var notes = {}; lines.forEach(function (l) { notes[l.key] = unpricedTag(l); });
+    var done = function (o) { o.lines.forEach(function (l) { l.note = notes[l.key]; }); LAST = o; CO = null; save([]); };
     var btn = $('button[form="co-form"]'); if (btn) btn.disabled = true;
     backend().then(function (yes) {
       // on the back end the order is kept there, its prices checked by the server
@@ -274,12 +345,14 @@
       done(order);
     }).catch(function (e) {
       if (btn) btn.disabled = false;
-      var box = $('[data-cart-summary]'); if (box) box.insertAdjacentHTML('afterbegin', '<p class="co-err">' + esc(t('order_failed').replace('{n}', e.message)) + '</p>');
+      // the server's sentence when it gave one; else the page's own words (never a code or "undefined")
+      var box = $('[data-cart-summary]', $('[data-cart-page]') || document), old = box && $('.co-err', box); if (old) old.remove();
+      if (box) box.insertAdjacentHTML('afterbegin', '<p class="co-err" role="alert">' + esc(t('order_failed', said(e) ? said(e) + ' ' : '')) + '</p>');
     });
   }
   function orderEmail(o) {
     var dl = o.delivery, how = dl.method === 'carrier' ? c('carrier_title') + ': ' + dl.carrier + ' (' + dl.account + ')' : dl.method === 'pickup' ? c('pickup_title') + ': ' + c('pickup_' + dl.pickup) : c('billed_title');
-    var body = o.lines.map(function (l) { return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name + (l.opts.length ? ' (' + l.opts.map(function (x) { return x[0] + ': ' + x[1]; }).join(', ') + ')' : '') + ' - ' + (l.unit != null ? money(l.unit) + ' ' + t('each') : t('price_on_request_tag')); }).join('\n') +
+    var body = o.lines.map(function (l) { return l.qty + ' x ' + (l.sku ? l.sku + ' - ' : '') + l.name + (l.opts.length ? ' (' + l.opts.map(function (x) { return x[0] + ': ' + x[1]; }).join(', ') + ')' : '') + ' - ' + (l.unit != null ? money(l.unit) + ' ' + t('each') : l.note || t('price_on_request_tag')); }).join('\n') +
       (o.subtotal != null ? '\n\n' + t('subtotal') + ': ' + money(o.subtotal) : '') + '\n\n' + c('delivery') + ': ' + how + '\n' + c('payment') + ': ' + c(o.payment.method === 'card' ? 'pay_card' : 'pay_invoice') +
       (o.po ? '\n' + c('po') + ': ' + o.po : '') + (o.note ? '\n' + o.note : '') + '\n\n' + [o.customer.name, o.customer.company, o.customer.email, o.customer.phone].filter(Boolean).join('\n');
     return 'mailto:' + (T.email || '') + '?subject=' + encodeURIComponent(c('order_subject', o.number)) + '&body=' + encodeURIComponent(body);
@@ -288,7 +361,7 @@
     return '<div class="co-done"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7 12 3.5 3.5L17 9"/></svg>' +
       '<h2>' + esc(c('done_title', o.number)) + '</h2><p>' + esc(c(o.payment.method === 'card' ? 'done_card' : 'done_invoice')) + '</p>' +
       (o.delivery.method === 'billed' ? '<p class="co-note">' + esc(c('billed_text')) + '</p>' : o.delivery.method === 'pickup' ? '<p class="co-note">' + esc(c('pickup_text')) + '</p>' : '') +
-      '<a class="ui-btn ui-btn--outline ui-btn--app" href="' + esc(orderEmail(o)) + '">' + esc(c('done_copy')) + '</a><p class="cs-hint">' + esc(c('done_preview')) + '</p></div>';
+      '<a class="ui-btn ui-btn--outline ui-btn--app" href="' + esc(orderEmail(o)) + '">' + esc(c('done_copy')) + '</a><p class="cs-hint">' + esc(c(IS_BACKEND ? 'done_sent' : 'done_preview')) + '</p></div>';
   }
 
   function emptyHtml() {
@@ -303,17 +376,18 @@
     if (!acc || !acc.preview) { if (bar) bar.remove(); return; }
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'preview-bar'; bar.setAttribute('data-preview-bar', ''); bar.setAttribute('role', 'status');
-      bar.innerHTML = '<p></p><button type="button" class="ui-btn ui-btn--app" data-preview-exit></button>';
+      bar.innerHTML = '<p><span class="pb-long"></span><span class="pb-short"></span></p><button type="button" class="ui-btn ui-btn--app" data-preview-exit></button>';
       document.body.insertBefore(bar, document.body.firstChild);
       $('[data-preview-exit]', bar).addEventListener('click', exitPreview);
     }
     var who = acc.email ? (acc.company || acc.name || acc.email) + (acc.status === 'approved' && acc.cls ? ' (' + acc.cls + ')' : '') : t('preview_class', acc.cls);
-    $('p', bar).textContent = t('preview_bar', who);
+    $('.pb-long', bar).textContent = t('preview_bar', who);
+    $('.pb-short', bar).textContent = t('preview_bar_short', who);   // phones: one line
     $('[data-preview-exit]', bar).textContent = t('preview_exit');
   }
   function exitPreview() {
     api('POST', 'account/logout', {}).catch(function () {}).then(function () {
-      write(ACCOUNT, null); prices = null; pricesLoading = null; RANGE = null;
+      write(ACCOUNT, null); resetPrices();
       // opened from the dashboard: back to it; otherwise the website as a visitor
       if (window.opener) { try { window.close(); } catch (e) {} }
       location.reload();
@@ -321,7 +395,20 @@
   }
 
   /* ---------- render everything that shows the cart or prices ---------- */
+  // A container is rewritten only when its markup changed: a page that asks the server again
+  // (every minute, when its tab is shown) does not take a field away from someone typing in it.
+  // The field that is taken away answers with change / blur, and those handlers ask for another
+  // draw while this one is half done: that one waits until this one ends (a nested innerHTML
+  // fails with "The node to be removed is no longer a child of this node").
+  var drawing = false, drawAgain = false;
+  function setHtml(el, html) { if (el._html === html) return; el._html = html; el.innerHTML = html; }
   function render() {
+    if (drawing) { drawAgain = true; return; }
+    drawing = true;
+    try { paintAll(); } finally { drawing = false; }
+    if (drawAgain) { drawAgain = false; render(); }
+  }
+  function paintAll() {
     var lines = cart(), n = count(lines), acc = account();
     paintPreview();
     $$('[data-cart-badge]').forEach(function (b) { b.textContent = n; b.hidden = !n; });
@@ -330,14 +417,14 @@
 
     var drawer = $('[data-cart-drawer]');
     if (drawer) {
-      $('[data-cart-lines]', drawer).innerHTML = n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, false); }).join('') + '</ul>' : emptyHtml();
-      var foot = $('[data-cart-summary]', drawer); foot.innerHTML = n ? summaryHtml(lines, false) : ''; foot.hidden = !n;
+      setHtml($('[data-cart-lines]', drawer), n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, false); }).join('') + '</ul>' : emptyHtml());
+      var foot = $('[data-cart-summary]', drawer); setHtml(foot, n ? summaryHtml(lines, false) : ''); foot.hidden = !n;
     }
     var page = $('[data-cart-page]');
     if (page) {
-      $('[data-cart-lines]', page).innerHTML = n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, true); }).join('') + '</ul>' : LAST ? doneHtml(LAST) : emptyHtml();
-      var co = $('[data-checkout]', page); if (co) { co.innerHTML = n ? checkoutHtml(lines) : ''; co.hidden = !n || !CI.title; }
-      var sum = $('[data-cart-summary]', page); sum.innerHTML = n ? summaryHtml(lines, true) : ''; sum.hidden = !n;
+      setHtml($('[data-cart-lines]', page), n ? '<ul class="cl-list">' + lines.map(function (l) { return lineHtml(l, true); }).join('') + '</ul>' : LAST ? doneHtml(LAST) : emptyHtml());
+      var co = $('[data-checkout]', page); if (co) { setHtml(co, n ? checkoutHtml(lines) : ''); co.hidden = !n || !CI.title; }
+      var sum = $('[data-cart-summary]', page); setHtml(sum, n ? summaryHtml(lines, true) : ''); sum.hidden = !n;
       page.classList.toggle('is-empty', !n);
     }
     // product cards: an approved account's own price replaces "Log in for price", and the
@@ -346,7 +433,7 @@
       var card = el.closest('.pcard'), show = card.getAttribute('data-price-mode') === 'show';
       if (!el.dataset.orig) el.dataset.orig = el.textContent;
       var p = full() ? priceOf(card.getAttribute('data-id')) : null;
-      el.textContent = p ? priceText(p) : show ? el.dataset.orig : t(pending() ? 'pending_short' : 'login_for_price_short');
+      el.textContent = p ? priceText(p) : show ? el.dataset.orig : t(account() ? heldKey(true) : 'login_for_price_short');
       el.classList.toggle('is-price', !!p || show);
     });
     $$('[data-buy]').forEach(paintBuy);
@@ -384,16 +471,21 @@
     if (co) { coState()[co.name.slice(3)] = co.value; render(); var again = $('[data-co] input[name="' + co.name + '"][value="' + co.value + '"]'); if (again) again.focus(); }
   });
   // checkout fields keep their value through redraws
+  // (what is typed is the form's markup from then on, so a redraw that changes nothing else leaves it alone)
+  var typed = function () { var co = $('[data-checkout]'); if (co && co._html != null && !co.hidden) co._html = checkoutHtml(cart()); };
   document.addEventListener('input', function (e) {
     var k = e.target.getAttribute && e.target.getAttribute('data-co-f'); if (!k) return;
-    coState()[k] = e.target.value;
+    coState()[k] = e.target.value; typed();
     var err = $('[data-co-err="' + k + '"]'); if (err && e.target.value.trim()) err.hidden = true;
   });
   document.addEventListener('submit', function (e) { if (e.target.matches('[data-co]')) { e.preventDefault(); placeOrder(); } });
   document.addEventListener('change', function (e) {
     var k = e.target.getAttribute && e.target.getAttribute('data-co-f');
-    if (k) { coState()[k] = e.target.value; var er = $('[data-co-err="' + k + '"]'); if (er && e.target.value) er.hidden = true; }
-    if (e.target.matches && e.target.matches('[data-line-qty]')) setQty(e.target.closest('[data-key]').getAttribute('data-key'), parseInt(e.target.value, 10) || 1);
+    if (k) { coState()[k] = e.target.value; typed(); var er = $('[data-co-err="' + k + '"]'); if (er && e.target.value) er.hidden = true; }
+    if (e.target.matches && e.target.matches('[data-line-qty]')) {
+      var n = whole(e.target.value, 1); e.target.value = n;   // a whole number from 1: not 0, -3 or 2.7
+      setQty(e.target.closest('[data-key]').getAttribute('data-key'), n);
+    }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
 
@@ -430,7 +522,7 @@
     // every choice made (or none to make): that item at the quantity asked, so the code and
     // the price follow the quantity (AD2001Q1 at 24, AD2001Q2 at 25)
     var all = s.groups.every(function (g) { return g.value; });
-    var qtyIn = $('input[name=qty]', box), qty = Math.max(1, parseInt(qtyIn && qtyIn.value, 10) || 1);
+    var qtyIn = $('input[name=qty]', box), qty = whole(qtyIn && qtyIn.value, 1);
     var p = all ? priceOf(box.getAttribute('data-id'), box.getAttribute('data-id') + '|' + JSON.stringify(s.groups.map(function (g) { return [g.key, g.value]; })), qty) : null;
     var code = box.closest('.pinfo') && $('.psku b', box.closest('.pinfo'));
     if (code) { if (!code.dataset.orig) code.dataset.orig = code.textContent; code.textContent = (p && p.sku) || code.dataset.orig; }
@@ -469,7 +561,7 @@
     var found = keys.map(function (k) { return lineAt(box.getAttribute('data-id') + '|' + JSON.stringify(k), qty); });
     return found.every(function (f) { return f && f.price === found[0].price; }) ? found[0] : null;
   }
-  var qtyOf = function (line) { return Math.max(0, parseInt($('[data-q]', line).value, 10) || 0); };
+  var qtyOf = function (line) { return whole($('[data-q]', line).value, 0); };
   function paintTable(box) {
     paintHead(box);
     var any = false;
@@ -500,7 +592,7 @@
     box.addEventListener('click', function (e) {
       var step = e.target.closest('[data-q-dec], [data-q-inc]');
       if (step) {
-        var inp = $('[data-q]', step.parentNode), q = parseInt(inp.value, 10) || 0;
+        var inp = $('[data-q]', step.parentNode), q = whole(inp.value, 0);
         q = step.hasAttribute('data-q-inc') ? q + 1 : Math.max(0, q - 1);
         inp.value = q || ''; paintTable(box); return;
       }
@@ -536,6 +628,8 @@
     });
     box.addEventListener('input', function (e) { if (e.target.matches('[data-q]')) paintTable(box); });
     box.addEventListener('change', function (e) {
+      // a quantity is a whole number: -3 and 2.7 do not stay in the box
+      if (e.target.matches('[data-q]')) { var q = whole(e.target.value, 0); e.target.value = q || ''; paintTable(box); return; }
       var fs = e.target.closest('[data-pt-set]'); if (!fs) return;
       fs.classList.remove('is-bad'); $('[data-pt-set-err]', fs).hidden = true;
       paintTable(box);
@@ -561,12 +655,13 @@
       err.hidden = true;
       var opts = [[t('rent_line'), from + ' → ' + to]]; if (site) opts.push([t('rent_where'), site]);
       add({ key: box.getAttribute('data-id') + '|rent|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'), name: box.getAttribute('data-name'),
-            url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: false, rental: true, opts: opts, qty: Math.max(1, parseInt($('[data-rent-qty]', box).value, 10) || 1) });
+            url: box.getAttribute('data-url'), img: box.getAttribute('data-img'), priced: false, rental: true, opts: opts, rent: { from: from, to: to, site: site }, qty: whole($('[data-rent-qty]', box).value, 1) });
       btn.classList.add('is-added'); var label = $('span', btn), was = label.textContent; label.textContent = t('added');
       setTimeout(function () { btn.classList.remove('is-added'); label.textContent = was; }, 1600);
       openDrawer();
     });
     rb.addEventListener('change', function (e) {
+      if (e.target.matches('[data-rent-qty]')) e.target.value = whole(e.target.value, 1);
       if (e.target.matches('[data-rent-from]')) { var to = $('[data-rent-to]', rb); to.min = e.target.value; if (to.value && to.value < e.target.value) to.value = e.target.value; }
     });
   });
@@ -579,13 +674,17 @@
 
   $$('[data-buy]').forEach(function (box) {
     var qty = $('input[name=qty]', box);
-    if (qty) qty.addEventListener('input', function () { paintBuy(box); });
+    if (qty) {
+      qty.addEventListener('input', function () { paintBuy(box); });
+      // a quantity is a whole number from 1: 0, -3 and 2.7 do not stay in the box
+      qty.addEventListener('change', function () { qty.value = whole(qty.value, 1); paintBuy(box); });
+    }
     box.addEventListener('change', function (e) {
       if (e.target.closest('[data-opt]')) { var err = $('[data-opt-err]', e.target.closest('[data-opt]')); if (err) err.hidden = true; paintBuy(box); }
     });
     box.addEventListener('click', function (e) {
-      if (e.target.closest('[data-qty-dec]')) { qty.value = Math.max(1, (parseInt(qty.value, 10) || 1) - 1); paintBuy(box); }
-      if (e.target.closest('[data-qty-inc]')) { qty.value = (parseInt(qty.value, 10) || 1) + 1; paintBuy(box); }
+      if (e.target.closest('[data-qty-dec]')) { qty.value = whole(whole(qty.value, 1) - 1, 1); paintBuy(box); }
+      if (e.target.closest('[data-qty-inc]')) { qty.value = whole(whole(qty.value, 1) + 1, 1); paintBuy(box); }
       var btn = e.target.closest('[data-add-to-cart]'); if (!btn) return;
       var s = boxState(box), missing = s.groups.filter(function (g) { return !g.value; });
       missing.forEach(function (g) { $('[data-opt-err]', g.el).hidden = false; });
@@ -599,7 +698,7 @@
       });
       add({ key: box.getAttribute('data-id') + '|' + JSON.stringify(opts), id: box.getAttribute('data-id'), sku: box.getAttribute('data-sku'),
             name: box.getAttribute('data-name'), url: box.getAttribute('data-url'), img: box.getAttribute('data-img'),
-            priced: box.hasAttribute('data-priced'), mode: box.getAttribute('data-price-mode') || '', opts: opts, show: show, qty: Math.max(1, parseInt(qty.value, 10) || 1) });
+            priced: box.hasAttribute('data-priced'), mode: box.getAttribute('data-price-mode') || '', opts: opts, show: show, qty: whole(qty.value, 1) });
       btn.classList.add('is-added'); var label = $('span', btn), was = label.textContent; label.textContent = t('added');
       setTimeout(function () { btn.classList.remove('is-added'); label.textContent = was; }, 1600);
       openDrawer();
@@ -656,13 +755,14 @@
       $('[data-auth-done]', auth).hidden = !acc;
       if (acc) $('[data-auth-name]', auth).textContent = acc.name || acc.email;
       var st = $('[data-auth-status]', auth);
-      if (st) st.textContent = !acc ? '' : NOPRICES ? t('demo_no_prices') : approved() ? t('price_class_is', acc.cls || 'P1') : t('pending_price');
+      if (st) st.textContent = !acc ? '' : NOPRICES ? t('demo_no_prices') : approved() ? t('price_class_is', acc.cls || 'P1') : t(heldKey(false));
     };
+    onSync = paintAuth;   // the team's review changed while this page was open
     auth.addEventListener('click', function (e) {
       var tab = e.target.closest('[data-auth-tab]'); if (tab) { showTab(tab.getAttribute('data-auth-tab')); return; }
       if (e.target.closest('[data-logout]')) {
         if ((account() || {}).backend) api('POST', 'account/logout', {}).catch(function () {});
-        write(ACCOUNT, null); prices = null; pricesLoading = null; paintAuth(); render();
+        write(ACCOUNT, null); resetPrices(); paintAuth(); render();
       }
     });
     $$('[data-auth-form]', auth).forEach(function (form) {
@@ -680,7 +780,7 @@
         if (!ok) return;
         var f = new FormData(form);
         var signedIn = function () {
-          prices = null; pricesLoading = null; RANGE = null;
+          resetPrices();
           loadPrices().then(function () {
             var next = new URLSearchParams(location.search).get('next');
             if (next && next.charAt(0) === '/') location.href = ROOT + next; else { paintAuth(); render(); }
@@ -690,15 +790,15 @@
           if (yes) {
             // the real account: its class is what the team gave it
             return api('POST', 'account/login', { email: f.get('email'), password: f.get('password') })
-              .then(function (d) { write(ACCOUNT, Object.assign({ backend: true }, d.account)); signedIn(); })
+              .then(function (d) { remember(Object.assign({ backend: true }, d.account)); signedIn(); })
               .catch(function (x) {
                 var inp = form.querySelector('input[name=password]'), msg = inp.parentNode.querySelector('.af-err');
                 if (!msg) { msg = document.createElement('small'); msg.className = 'af-err'; inp.parentNode.appendChild(msg); }
-                msg.textContent = x.status === 401 ? t('bad_login') : x.message; inp.classList.add('is-bad');
+                msg.textContent = x.status === 401 ? t('bad_login') : said(x) || t('login_failed'); inp.classList.add('is-bad');
               });
           }
           // demo: the class picked on the form
-          write(ACCOUNT, { email: f.get('email'), name: f.get('name') || '', company: f.get('company') || '', phone: f.get('phone') || '', cls: f.get('cls') || 'P1', status: 'approved' });
+          remember({ email: f.get('email'), name: f.get('name') || '', cls: f.get('cls') || 'P1', status: 'approved' });
           signedIn();
         });
       });
@@ -723,9 +823,18 @@
     return $$('[data-buy][data-price-mode="show"], [data-pt][data-price-mode="show"]').map(function (b) { return b.getAttribute('data-id'); })
       .concat(cart().filter(function (l) { return l.mode === 'show'; }).map(function (l) { return l.id; }));
   };
-  var refresh = function () { return syncAccount().then(function () { return Promise.all([loadPrices(), loadPublic(publicIds())]); }).then(render); };
+  var refresh = function () { return syncAccount().then(function () { return Promise.all([loadPrices(), loadPublic(publicIds())]); }).then(render).then(onSync); };
+  // A page left open follows the team's review (approved, a new class, suspended): it asks the
+  // server again when its tab is shown and once a minute, and draws the prices again if they changed.
+  var resync = function () {
+    if (document.visibilityState === 'hidden' || !(account() || {}).backend || Date.now() - lastSync < 5000) return;
+    refresh();
+  };
+  document.addEventListener('visibilitychange', resync);
+  window.addEventListener('focus', resync);
+  setInterval(resync, 60000);
   // Other tabs changing the cart or the account
-  window.addEventListener('storage', function (e) { if (e.key === CART || e.key === ACCOUNT) { prices = null; pricesLoading = null; refresh(); } });
+  window.addEventListener('storage', function (e) { if (e.key === CART || e.key === ACCOUNT) { resetPrices(); refresh(); } });
 
   render();
   refresh();
